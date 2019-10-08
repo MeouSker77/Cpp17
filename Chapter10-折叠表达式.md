@@ -294,8 +294,309 @@ std::cout << spaceBefore(arg1) << spaceBefore(arg2) << ...
 
 因此，对于参数包中args中的参数都会调用一次辅助函数来打印出一个前置空格。为了确保不会在第一个参数之前也打印一个空格，我们特意加了第一个不用spaceBefore()的参数。
 
-
 注意参数包的正确输出要求当一个spaceBefore()函数调用时它前边的所有输出都已经完成。得益于有定义的表达式求值顺序（见7.2节），这段代码自从C++17起将能够保证正确工作。
+
+我们也可以使用一个lambda在print()函数内定义一个spaceBefore()：
+
+```cpp
+template<typename First, typename... Args>
+void print (const First& firstarg, const Args&... args) {
+    std::cout << firstarg;
+    auto spaceBefore = [](const auto& arg) {
+        std::cout << ' ';
+        return arg;
+    };
+    (std::cout << ... << spaceBefore(args)) << '\n';
+}
+```
+
+然而，注意lambda默认以值传递返回值，这意味着这将创建参数的拷贝。避免这种情况的方法就是显式把lambda的返回类型声明为const auto& 或者 decltype(auto)：
+
+```cpp
+template<typename First, typename... Args>
+void print (const First& firstarg, const Args&... args) {
+    std::cout << firstarg;
+    auto spaceBefore = [](const auto& arg) -> const auto& {
+        std::cout << ' ';
+        return arg;
+    };
+    (std::cout << ... << spaceBefore(args)) << '\n';
+}
+```
+
+如果你不把这些合在一个语句中那么C++就不再是C++：
+
+```cpp
+template<typename First, typename... Args>
+void print (const First& firstarg, const Args&... args) {
+    std::cout << firstarg;
+    (std::cout << ... << [](const auto& arg) -> decltype(auto) {
+        std::cout << ' ';
+        return arg;
+    }(args)) << '\n';
+}
+```
+
+然而，print()的一个更简单的实现方式是使用lambda同时打印出空格和参数：
+
+```cpp
+template<typename First, typename... Args>
+void print(First first, const Args&... args) {
+    std::cout << first;
+    auto outWithSpace = [](const auto& arg) {
+                            std::cout << ' ' << arg;
+                        };
+    (..., outWithSpace(args));
+    std::cout << '\n';
+}
+```
+
+通过添加一个额外的用auto声明的模板参数(见12.1.1节)我们可以使print()变得更加灵活，可以通过参数来控制分割符是一个字符，或是一个字符串或是任何其它可打印的类型。
+
+### 10.2.2 支持的运算符
+
+你可以在折叠表达式中使用除了. -> []之外的二元运算符。
+
+#### 折叠函数调用
+
+折叠表达式也可以被用于逗号运算符来将多条语句转换为一条。例如，你可以折叠逗号运算符，来对一个基类数量可变的类的每个基类都调用一次成员函数：
+
+*tmpl/foldcalls.cpp*
+
+```cpp
+#include <iostream>
+
+//可变参数基类的模板
+template<typename... Bases>
+class MultiBase : private Bases...
+{
+  public:
+    void print() {
+        //调用每一个基类的print()函数
+        (... , Bases::print());
+    }
+};
+
+struct A {
+    void print() {std::cout << "A::print()\n";}
+};
+
+struct B {
+    void print() {std::cout << "B::print()\n";}
+};
+
+struct C {
+    void print() {std::cout << "C::print()\n";}
+};
+
+int main()
+{
+    MultiBase<A, B, C> mb;
+    mb.print();
+}
+```
+
+在这里，
+
+```cpp
+template<typename... Bases>
+class MultiBase : private Bases...
+{
+    ...
+};
+```
+
+允许我们用可变数量的基类来实例化对象：
+
+```cpp
+MultiBase<A, B, C> mb;
+```
+
+而且
+
+```cpp
+(... , Bases::print());
+```
+
+这句折叠表达式会被展开成调用每一个基类的print函数。也就是说，这个语句会被展开为如下形式：
+
+```cpp
+(A::print(), B::print()), C::print();
+```
+
+然而，请注意因为逗号运算符本身的特性无论我们使用左折叠还是右折叠都没有什么区别，结果都是所有函数从左向右调用。如果写成
+
+```cpp
+(Bases::print(), ...);
+```
+
+括号将会将一个print()调用和另外两个print()调用的结果连接起来，就像下面这样：
+
+```cpp
+A::print(), (B::print(), C::print());
+```
+
+但是因为逗号表达式被定义的求值顺序总是逗号左边的先求值，然后逗号右边的再求值，所以即使是展开成这种形式也会从左向右进行调用。
+
+不过，因为左折叠更符合正确的求值顺序，因此当使用逗号表达式调用多次函数时推荐使用左折叠表达式。
+
+#### 合并哈希函数
+
+另一个使用逗号运算符的例子是合并哈希值。这可以像下面这样做：
+
+```cpp
+template<typename T>
+void hashCombine (std::size_t& seed, const T& val)
+{
+    seed ^= std::hash<T>()(val) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+}
+
+template<typename... Types>
+std::size_t combinedHashValue (const Types&... args)
+{
+    std::size_t seed = 0;   //初始化seed
+    (... , hashCombine(seed, args));    //hashCombine()调用链
+    return seed;
+}
+```
+
+通过调用
+
+```cpp
+std::size_t combinedHashValue ("Hello", "World", 42);
+```
+
+折叠表达式将被展开为
+
+```cpp
+(hashCombine(seed, "Hello"), hashCombine(seed, "World")), hashCombine(seed, 42);
+```
+
+通过这个定义我们可以轻易的为一个新的类型例如Customer定义出一个新的哈希函数对象：
+
+```cpp
+struct CustomerHash
+{
+    std::size_t operator() (const Customer& c) const {
+        return combinedHashValue(c.getFirstname(), c.getLastname(), c.getValue());
+    }
+};
+```
+
+这样我们就可以将Customers放在无序容器里了：
+
+```cpp
+std::unordered_set<Customer, CustomerHash> coll;
+```
+
+#### 折叠的路径遍历
+
+你可以使用折叠表达式在一颗二叉树中使用->*遍历路径：
+
+*templ/foldtraverse.cpp*
+
+```cpp
+//定义二叉树结构和遍历辅助函数
+struct Node {
+    int value;
+    Node* left;
+    Node* right;
+    Node(int i=0) : value(i), left(nullptr), right(nullptr) {
+    }
+    ...
+};
+auto left = &Node::left;
+auto right = &Node::right;
+
+//使用折叠表达式遍历树
+template<typename T, typename... TP>
+Node* traverse (T np, TP... paths) {
+    return (np ->* ... ->* paths);  //np ->* path1 ->* path2...
+}
+
+int main()
+{
+    //初始化二叉树结构
+    Node* root = new Node{0};
+    root->left = new Node{1};
+    root->left->right = new Node{2};
+    ...
+    //遍历二叉树:
+    Node* node = traverse(root, left, right);
+    ...
+}
+```
+
+这里，
+
+```cpp
+(np ->* ... ->* paths)
+```
+
+使用了折叠表达式来遍历从np开始的可变长度的路径。当调用：
+
+```cpp
+traverse(root, left, right);
+```
+
+时折叠表达式会展开为：
+
+```cpp
+root -> left -> right
+```
+
+### 10.2.3 为类型使用折叠表达式
+
+通过使用类型特征我们也可以用折叠表达式来处理模板参数包（作为莫欧版参数被传入的任意数量的类型）。例如，你可以使用一个折叠表达式来判断传递的一列值是否是同一类型的：
+
+*tmpl/ishomogeneous.hpp*
+
+```cpp
+//检查传入的参数是否是同一类型
+template<typename T1, typename... TN>
+struct IsHomogeneous {
+    static constexpr bool value = (std::is_same<T1, TN>::value && ...);
+};
+
+//检查传递的参数是否是同一类型
+template<typename T1, typename... TN>
+constexpr bool isHomogeneous(T1, TN...)
+{
+    return (std::is_same<T1, TN>::value && ...);
+}
+```
+
+类型特征IsHomegeneous<>可以像下面这样使用：
+
+```cpp
+IsHomogeneous<int, Size, decltype(42)>::value
+```
+
+在这个例子中折叠表达式会被展开为：
+
+```cpp
+std::is_same<int, MyType>::value && std::is_same<int, decltype(42)>::value
+```
+
+函数模板isHomogeneous<>()可以像下面这样使用：
+
+```cpp
+isHomogeneous(43, -1, "hello", nullptr)
+```
+
+在这个例子中折叠表达式会被展开为：
+
+```cpp
+std::is_same<int, int>::value && (std::is_same<int, const char*>::value && std::is_same<int, std::nullptr_t>::value)
+```
+
+像通常一样，&&运算符仍然是短路求值（会在上式中第一个为false的项处中断）。
+
+标准库中的std::array<>的推导指引就使用了折叠表达式特性（见8.2.6节）
+
+## 10.3 后记
+
+折叠表达式最早由Andrew Sutton和Richard Smith在[https://wg21.link/n4191](https://wg21.link/n4191)上提出。最终被接受的正式提案由Andrew Sutton和Richard Smith在[https://wg21.link/n4295](https://wg21.link/n4295)上发表。对*，+，&，|等运算符的空序列支持随后根据Thibaut Le Jehan在[https://wg21.link/p0036](https://wg21.link/p0036)上的提议而被删除。
 
 
 
