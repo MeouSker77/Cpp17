@@ -597,8 +597,3 @@ std::is_same<int, int>::value && (std::is_same<int, const char*>::value && std::
 ## 10.3 后记
 
 折叠表达式最早由Andrew Sutton和Richard Smith在[https://wg21.link/n4191](https://wg21.link/n4191)上提出。最终被接受的正式提案由Andrew Sutton和Richard Smith在[https://wg21.link/n4295](https://wg21.link/n4295)上发表。对*，+，&，|等运算符的空序列支持随后根据Thibaut Le Jehan在[https://wg21.link/p0036](https://wg21.link/p0036)上的提议而被删除。
-
-
-
-
-
