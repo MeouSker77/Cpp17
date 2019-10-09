@@ -1,6 +1,6 @@
-# Chapter 2 带初始化的if和switch语句
+# Chapter 2 带初始化的`if`和`switch`语句
 
-if和switch结构现在允许我们在通常的条件表达式里声明一个初始化语句。例如，你可以这样写：
+`if`和`switch`结构现在允许我们在通常的条件表达式里声明一个初始化语句。例如，你可以这样写：
 
 ```cpp
 if (status s = check(); s != status::success) {
@@ -14,11 +14,11 @@ if (status s = check(); s != status::success) {
 status s = check();
 ```
 
-初始化了一个变量s，这个变量在整个if语句中都是可访问的。
+初始化了一个变量`s`，这个变量在整个`if`语句中都是可访问的。
 
-## 2.1 带初始化的if语句
+## 2.1 带初始化的`if`语句
 
-任何在if条件表达式中初始化的变量，都可以在整个if-else语句中访问。例如：
+任何在`if`条件表达式中初始化的变量，都可以在整个`if-else`语句中访问。例如：
 
 ```cpp
 if (std::ofstream strm = getLogStrm(); coll.empty()) {
@@ -32,7 +32,7 @@ else {
 //到此处strm不再有效
 ```
 
-strm的析构函数会在if-else语句结束时调用。
+`strm`的析构函数会在`if-else`语句结束时调用。
 
 另一个例子是关于锁的使用，假设我们要在并发的环境中执行一个依赖某些条件的任务：
 
@@ -61,9 +61,9 @@ if (std::lock_guard lg{collMutex}; !coll.empty()) {
 }
 ```
 
-有一点很小的区别是上边的情况中lg被定义在if语句的作用域中，因此和条件语句在同一个作用域中，类似于在for循环中初始化一样。
+有一点很小的区别是上边的情况中`lg`被定义在`if`语句的作用域中，因此和条件语句在同一个作用域中，类似于在`for`循环中初始化一样。
 
-注意任何在if语句中初始化的变量必须有一个变量名。否则初始化语句会在创建一个变量之后迅速销毁它。例如，初始化一个匿名的lock guard将不会有效：
+注意任何在`if`语句中初始化的变量必须有一个变量名。否则初始化语句会在创建一个变量之后迅速销毁它。例如，初始化一个匿名的`lock_guard`将不会有效：
 
 ```cpp
 if (std::lock_guard<std::mutex>{collMutex}; //运行时错误:
@@ -72,7 +72,7 @@ if (std::lock_guard<std::mutex>{collMutex}; //运行时错误:
 }
 ```
 
-原则上讲，一个单_作为变量名就已经足够了：
+原则上讲，一个单`_`作为变量名就已经足够了：
 
 ```cpp
 if (std::lock_guard<std::mutex> _{collMutes};   //OK,但是...
@@ -81,7 +81,7 @@ if (std::lock_guard<std::mutex> _{collMutes};   //OK,但是...
 }
 ```
 
-作为第三个例子，考虑向一个map或unordered_map中插入一个新的元素。你可以像下面这样检查插入是否成功：
+作为第三个例子，考虑向一个`map`或`unordered_map`中插入一个新的元素。你可以像下面这样检查插入是否成功：
 
 ```cpp
 std::map<std::string, int> coll;
@@ -93,7 +93,7 @@ if (auto [pos,ok] = coll.insert({"new", 42}); !ok) {
 }
 ```
 
-在这里我们又使用了结构化绑定（见第一章），来个两个返回值赋予一个有意义的名字，而不是用first和second成员来访问。在C++17之前，同样的检查必须写成如下的代码：
+在这里我们又使用了结构化绑定（见第一章），来个两个返回值赋予一个有意义的名字，而不是用`first`和`second`成员来访问。在C++17之前，同样的检查必须写成如下的代码：
 
 ```cpp
 auto ret = coll.insert({"new", 42});
@@ -104,11 +104,11 @@ if (!ret.second) {
 }
 ```
 
-注意新的初始化if语句特性也适用于新的编译期if语句（见第9章）。
+注意新的初始化`if`语句特性也适用于新的编译期`if`语句（见第9章）。
 
-## 2.2 带初始化的switch语句
+## 2.2 带初始化的`switch`语句
 
-通过使用带初始化的switch语句，我们可以在switch语句中的条件表达式之前初始化一个对象或实体来决定控制流。
+通过使用带初始化的`switch`语句，我们可以在`switch`语句中的条件表达式之前初始化一个对象或实体来决定控制流。
 
 例如，我们可以初始化一个文件系统路径（见第19章），然后根据该路径的类型做不同的处理：
 
@@ -131,8 +131,8 @@ switch(path p(name); status(p).type()) {
 }
 ```
 
-在这里，初始化的路径p可以在整个switch语句中使用。
+在这里，初始化的路径`p`可以在整个`switch`语句中使用。
 
 ## 2.3 后记
 
-带初始化的if和switch语句最早由Thomas Koppe在[https://wg21.link/p0305r0](https://wg21.link/p0305r0)中提出，最初目的是为了扩展if语句。该特性最终被接受的正式提案由Thomas Koppe在[https://wg21.link/p0305r1](https://wg21.link/p0305r1)发表。
+带初始化的`if`和`switch`语句最早由Thomas Koppe在[https://wg21.link/p0305r0](https://wg21.link/p0305r0)中提出，最初目的是为了扩展`if`语句。该特性最终被接受的正式提案由Thomas Koppe在[https://wg21.link/p0305r1](https://wg21.link/p0305r1)发表。

@@ -64,7 +64,7 @@ auto foldSumRec (T1 arg1, Ts... otheraArgs) {
 }
 ```
 
-这样的实现不仅写起来很笨重，还会给C++编译期带来很大压力。通过写成
+这样的实现不仅写起来很笨重，还会给C++编译器带来很大压力。通过写成
 
 ```cpp
 template<typename... T>
@@ -77,7 +77,7 @@ auto foldSum (T... args) {
 
 ## 10.2 使用折叠表达式
 
-给定一个参数args和一个操作符op，C++17允许我们写：
+给定一个参数`args`和一个操作符`op`，C++17允许我们写：
 
 * 一元左折叠
 
@@ -125,13 +125,13 @@ foldSumL(1, 2, 3)
 std::cout << foldSumL(std::string("hello"), "world", "!") << '\n';  //OK
 ```
 
-但是要记住只有当两边有一边是std::string时才能使用+。因为此处使用了左折叠，因此调用等价于
+但是要记住只有当两边有一边是`std::string`时才能使用+。因为此处使用了左折叠，因此调用等价于
 
 ```cpp
 (std::string("hello") + "world") + "!"
 ```
 
-第一个括号会返回一个std::string，所以能够继续和"!"进行+运算。
+第一个括号会返回一个`std::string`，所以能够继续和"!"进行+运算。
 
 然而，像这样的调用：
 
@@ -194,7 +194,7 @@ std::cout << foldSumR("hello", "world", std::string("!")) << '\n';  //OK
 * 如果使用,运算符，结果将会是void()
 * 对所有其他运算符，调用是错误的
 
-对于所有其他情况（任何情况下也都该如此）你可以添加一个初始值：给定一个参数包args，一个初始值value，一个操作符op，C++17允许我们这么写:
+对于所有其他情况（任何情况下也都该如此）你可以添加一个初始值：给定一个参数包`args`，一个初始值`value`，一个操作符`op`，C++17允许我们这么写:
 
 * 要么是一个**二元左折叠表达式**：
 
@@ -212,7 +212,7 @@ std::cout << foldSumR("hello", "world", std::string("!")) << '\n';  //OK
 
 将会被扩展为：*arg1 **op** (arg2 **op** ... (argN **op** value))*
 
-省略号两侧的操作符*op*必须是相同的。
+省略号两侧的操作符`op`必须是相同的。
 
 例如，下面的定义允许我们传递一个空参数包：
 
@@ -254,15 +254,15 @@ void print (const T&... args)
 std::cout << (args << ... << '\n');
 ```
 
-一个类似print(1)的调用将能够编译但会打印出1左移'\n'位的值，'\n'的值一般是10，所以打印出的结果就是1024。
+一个类似`print(1)`的调用将能够编译但会打印出1左移'\n'位的值，'\n'的值一般是10，所以打印出的结果就是1024。
 
-注意这里的print()示例中所有打印出的参数之间没有空白分割符。一个像print("hello", 42, "world")的调用将会打印出：
+注意这里的`print()`示例中所有打印出的参数之间没有空白分割符。一个像`print("hello", 42, "world")`的调用将会打印出：
 
 ```cpp
 hello42world
 ```
 
-为了用空格分隔每个元素，你可以使用一个辅助函数来确保除了第一个元素之外的每个元素之前都会填充一个空格。这可以像下面的spaceBefore()函数一样：
+为了用空格分隔每个元素，你可以使用一个辅助函数来确保除了第一个元素之外的每个元素之前都会填充一个空格。这可以像下面的`spaceBefore()`函数一样：
 
 *tmpl/addspace.hpp*
 
@@ -292,11 +292,11 @@ void print (const First& firstarg, const Args&... args) {
 std::cout << spaceBefore(arg1) << spaceBefore(arg2) << ...
 ```
 
-因此，对于参数包中args中的参数都会调用一次辅助函数来打印出一个前置空格。为了确保不会在第一个参数之前也打印一个空格，我们特意加了第一个不用spaceBefore()的参数。
+因此，对于参数包中`args`中的参数都会调用一次辅助函数来打印出一个前置空格。为了确保不会在第一个参数之前也打印一个空格，我们特意加了第一个不用`spaceBefore()`的参数。
 
-注意参数包的正确输出要求当一个spaceBefore()函数调用时它前边的所有输出都已经完成。得益于有定义的表达式求值顺序（见7.2节），这段代码自从C++17起将能够保证正确工作。
+注意参数包的正确输出要求当一个`spaceBefore()`函数调用时它前边的所有输出都已经完成。得益于有定义的表达式求值顺序（见7.2节），这段代码自从C++17起将能够保证正确工作。
 
-我们也可以使用一个lambda在print()函数内定义一个spaceBefore()：
+我们也可以使用一个lambda在`print()`函数内定义一个`spaceBefore()`：
 
 ```cpp
 template<typename First, typename... Args>
@@ -310,7 +310,7 @@ void print (const First& firstarg, const Args&... args) {
 }
 ```
 
-然而，注意lambda默认以值传递返回值，这意味着这将创建参数的拷贝。避免这种情况的方法就是显式把lambda的返回类型声明为const auto& 或者 decltype(auto)：
+然而，注意lambda默认以值传递返回值，这意味着这将创建参数的拷贝。避免这种情况的方法就是显式把lambda的返回类型声明为`const auto&`或者 `decltype(auto)`：
 
 ```cpp
 template<typename First, typename... Args>
@@ -337,7 +337,7 @@ void print (const First& firstarg, const Args&... args) {
 }
 ```
 
-然而，print()的一个更简单的实现方式是使用lambda同时打印出空格和参数：
+然而，`print()`的一个更简单的实现方式是使用lambda同时打印出空格和参数：
 
 ```cpp
 template<typename First, typename... Args>
@@ -351,7 +351,7 @@ void print(First first, const Args&... args) {
 }
 ```
 
-通过添加一个额外的用auto声明的模板参数(见12.1.1节)我们可以使print()变得更加灵活，可以通过参数来控制分割符是一个字符，或是一个字符串或是任何其它可打印的类型。
+通过添加一个额外的用`auto`声明的模板参数(见12.1.1节)我们可以使`print()`变得更加灵活，可以通过参数来控制分割符是一个字符，或是一个字符串或是任何其它可打印的类型。
 
 ### 10.2.2 支持的运算符
 
@@ -418,7 +418,7 @@ MultiBase<A, B, C> mb;
 (... , Bases::print());
 ```
 
-这句折叠表达式会被展开成调用每一个基类的print函数。也就是说，这个语句会被展开为如下形式：
+这句折叠表达式会被展开成调用每一个基类的`print`函数。也就是说，这个语句会被展开为如下形式：
 
 ```cpp
 (A::print(), B::print()), C::print();
@@ -430,7 +430,7 @@ MultiBase<A, B, C> mb;
 (Bases::print(), ...);
 ```
 
-括号将会将一个print()调用和另外两个print()调用的结果连接起来，就像下面这样：
+括号将会将一个`print()`调用和另外两个`print()`调用的结果连接起来，就像下面这样：
 
 ```cpp
 A::print(), (B::print(), C::print());
@@ -472,7 +472,7 @@ std::size_t combinedHashValue ("Hello", "World", 42);
 (hashCombine(seed, "Hello"), hashCombine(seed, "World")), hashCombine(seed, 42);
 ```
 
-通过这个定义我们可以轻易的为一个新的类型例如Customer定义出一个新的哈希函数对象：
+通过这个定义我们可以轻易的为一个新的类型例如`Customer`定义出一个新的哈希函数对象：
 
 ```cpp
 struct CustomerHash
@@ -483,7 +483,7 @@ struct CustomerHash
 };
 ```
 
-这样我们就可以将Customers放在无序容器里了：
+这样我们就可以将`Customers`放在无序容器里了：
 
 ```cpp
 std::unordered_set<Customer, CustomerHash> coll;
@@ -533,7 +533,7 @@ int main()
 (np ->* ... ->* paths)
 ```
 
-使用了折叠表达式来遍历从np开始的可变长度的路径。当调用：
+使用了折叠表达式来遍历从`np`开始的可变长度的路径。当调用：
 
 ```cpp
 traverse(root, left, right);
@@ -566,7 +566,7 @@ constexpr bool isHomogeneous(T1, TN...)
 }
 ```
 
-类型特征IsHomegeneous<>可以像下面这样使用：
+类型特征`IsHomegeneous<>`可以像下面这样使用：
 
 ```cpp
 IsHomogeneous<int, Size, decltype(42)>::value
@@ -578,7 +578,7 @@ IsHomogeneous<int, Size, decltype(42)>::value
 std::is_same<int, MyType>::value && std::is_same<int, decltype(42)>::value
 ```
 
-函数模板isHomogeneous<>()可以像下面这样使用：
+函数模板`isHomogeneous<>()`可以像下面这样使用：
 
 ```cpp
 isHomogeneous(43, -1, "hello", nullptr)
@@ -592,7 +592,7 @@ std::is_same<int, int>::value && (std::is_same<int, const char*>::value && std::
 
 像通常一样，&&运算符仍然是短路求值（会在上式中第一个为false的项处中断）。
 
-标准库中的std::array<>的推导指引就使用了折叠表达式特性（见8.2.6节）
+标准库中的`std::array<>`的推导指引就使用了折叠表达式特性（见8.2.6节）
 
 ## 10.3 后记
 
