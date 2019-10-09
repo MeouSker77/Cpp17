@@ -1,6 +1,6 @@
 # Chapter 1 结构化绑定
 
-结构化绑定允许你用一个对象的成员或元素初始化多个变量。例如，考虑你定义了一个有两个不同成员的结构体：
+结构化绑定允许你用一个对象的成员或元素初始化多个变量。例如，如果你定义了一个有两个不同成员的结构体：
 
 ```cpp
 struct MyStruct {
@@ -17,9 +17,9 @@ MyStruct ms;
 auto [u,v] = ms;
 ```
 
-在这里，u和v被称为结构化绑定。某种程度上它们通过分解对象来初始化（某种意义上它们也被成为分解声明式）。
+在这里，`u`和`v`被称为结构化绑定。某种程度上它们通过分解对象来初始化（某种意义上它们也被成为分解声明式）。
 
-结构化绑定对于返回结构体或数组的函数尤其有用。例如，考虑你有一个返回一个结构体的函数：
+结构化绑定对于返回结构体或数组的函数尤其有用。例如，如果你有一个返回一个结构体的函数：
 
 ```cpp
 MyStruct getStruct() {
@@ -33,7 +33,7 @@ MyStruct getStruct() {
 auto [id,val] = getStruct(); //id和val分别对应返回结构体的i和s成员
 ```
 
-在这里，id和val分别是返回结构体中名为i和s的变量。它们有不同的类型，即int和std::string。它们可以被当作两个不同的变量使用：
+在这里，`id`和`val`分别是返回结构体中名为`i`和`s`的变量。它们有不同的类型，即`int`和`std::string`。它们可以被当作两个不同的变量使用：
 
 ```cpp
 if (id > 30) {
@@ -41,9 +41,9 @@ if (id > 30) {
 }
 ```
 
-这种写法的一个好处是可以直接访问变量，另外，我们还可以通过将值绑定到能体现语义的变量名上来增强代码的可读性。
+这种写法的一个好处是可以直接访问变量，另外，我们还可以将值绑定到能体现语义的变量名上，以增强代码的可读性。
 
-接下来的代码显示了结构化绑定带来的重要的代码改进。在没有结构化绑定的情况下，为了迭代一个std::map<>的元素你必须像下边这样编码：
+接下来的代码显示了结构化绑定如何显著地改进代码。在没有结构化绑定的情况下，为了迭代一个`std::map<>`的元素你必须像下边这样编码：
 
 ```cpp
 for (const auto& elem : mymap) {
@@ -51,7 +51,7 @@ for (const auto& elem : mymap) {
 }
 ```
 
-elem元素的类型是std::pair，你需要用它的first和second成员访问键和值。通过使用结构化绑定，可以让代码的可读性更强：
+elem元素的类型是`std::pair`，你需要用它的`first`和`second`成员访问键和值。通过使用结构化绑定，可以让代码的可读性更强：
 
 ```cpp
 for (const auto& [key,val] : mymap) {
@@ -63,7 +63,7 @@ for (const auto& [key,val] : mymap) {
 
 ## 1.1 结构化绑定的细节
 
-为了理解结构化绑定，很重要的一点是要认识到其中有一个匿名的实体参与。结构化绑定中新引入的变量名指向这些匿名的实体。
+为了理解结构化绑定，很重要的一点是要认识到其中有一个匿名变量参与。结构化绑定中新引入的变量名指向匿名变量。
 
 #### 绑定到匿名实体
 
@@ -81,7 +81,7 @@ auto& u = e.i;
 auto& v = e.s;
 ```
 
-唯一的不同之处在于我们没有赋给e一个名字，所以我们不能用名字直接访问这个匿名实体。如下语句的结果
+唯一的不同之处在于我们没有赋给e一个变量名，所以我们不能用变量名直接访问这个匿名实体。如下语句的结果
 
 ```cpp
 std::cout << u << ' ' << v << '\n';
@@ -89,7 +89,7 @@ std::cout << u << ' ' << v << '\n';
 
 会打印出e.i和e.s的值，这两个值是ms.i和ms.s的拷贝。
 
-只要指向e的结构化绑定存在，e就会继续存在。因此，当结构化绑定离开作用域时匿名实体也会被销毁。
+只要指向e的结构化绑定存在，e就会继续存在。因此，当结构化绑定离开作用域时，e也会被销毁。
 
 修改结构化绑定中用于初始化的对象的值并不会改变结构化绑定的变量值（反之亦然）：
 
@@ -110,7 +110,7 @@ u和ms.i拥有不同的内存地址。
 auto [u,v] = getStruct();
 ```
 
-其行为类似于我们用getStruct()的返回值初始化了一个新的实体e，然后我们使用结构化绑定将u和v绑定为e的两个成员的别名，类似于如下定义：
+其行为类似于我们用`getStruct()`的返回值初始化了一个新的实体e，然后我们使用结构化绑定将u和v绑定为e的两个成员的别名，类似于如下定义：
 
 ```cpp
 auto e = getStruct();
@@ -176,7 +176,7 @@ alignas(16) auto [u,v] = ms;    //对齐匿名对象，而不是v
 
 这里，我们对齐了初始化的匿名对象而不是结构化绑定中的u和v。这意味着u作为匿名对象的第一个成员会进行16字节对齐，但v不会。
 
-出于同样的原因，即便使用了auto关键字，结构化绑定也不会发生类型退化（这里术语退化指的是参数以值传递时发生的类型转换，比如原生数组会转换为指针，比如auto推断类型时会忽略const和引用修饰词）。例如，如果我们有一个有几个原生数组的结构体：
+出于同样的原因，即便使用了auto关键字，结构化绑定也不会发生类型退化（这里术语**退化**指的是参数以值传递时发生的类型转换，比如原生数组会转换为指针，比如auto推断类型时会忽略const和引用修饰词）。例如，如果我们有一个有几个原生数组的结构体：
 
 ```cpp
 struct S {
@@ -192,7 +192,7 @@ S s1{};
 auto [a,b] = s1;    //a和b会得到成员的精确类型
 ```
 
-a的类型仍然是const char [6]。auto会应用于匿名实体，该实体作为一个整体被初始化，因此内部成员是不会发生类型退化的。这和直接用auto初始化一个新的对象是不同的，后者会发生类型退化：
+a的类型仍然是`const char [6]`。auto会应用于匿名实体，该实体作为一个整体被初始化，因此内部成员是不会发生类型退化的。这和直接用auto初始化一个新的对象是不同的，后者会发生类型退化：
 
 ```cpp
 auto a2 = a;    //a2会得到a退化后的类型，即const char *
@@ -255,15 +255,12 @@ std::cout << "s:    " << s << '\n';     //打印出"Jim"
 * 如果在一个**struct或class**中所有非静态数据成员都是public的，你可以用新的名称绑定其中的每一个非静态数据成员。
 * 对于**原生数组**，你可以用新的名称绑定每一个元素
 * 对于任何提供**元组API**的类型你都可以绑定其中的元素。对于一个名为type的类型而言，要想满足该API需要满足以下几点：
+    - `std::tuple_size<type>::value`应该返回元素的个数
+    - `std::tuple_element<idx,type>::type`应该返回索引为idx的元素 类型
+    - 一个全局或成员函数`get<idx>()`应该返回索引为idx的元素的值（ 果该索引处有元素）
+标准库类型中的`std::pair<>`, `std::tuple<>`, `std::array<>`已经提供了该API
 
-```cpp
-  - std::tuple_size<type>::value应该返回元素的个数
-  - std::tuple_element<idx,type>::type应该返回索引为idx的元素的类型
-  - 一个全局或成员函数get<idx>()应该返回索引为idx的元素的值（如果该索引处有元素）
-  标准库类型中的std::pair<>, std::tuple<>, std::array<>已经提供了该API
-```
-
-在任何情况下，结构化绑定声明中的变量数量应该和元素或数据成员的数量保持一致。你不可以忽略某些变量名也不可以使用同一个变量名两次。然而，你可以用一个非常短的名字例如'_'，但一个名字在同一个作用域中只能用一次：
+无论在何种情况下，结构化绑定声明中的变量数量都应该和元素或数据成员的数量保持一致。你不可以忽略某些变量名也不可以使用同一个变量名两次。然而，你可以用一个非常短的名字例如'_'，但一个名字在同一个作用域中只能用一次：
 
 ```cpp
 auto [_,val1] = getStruct();    //OK
@@ -311,18 +308,18 @@ auto [z] = arr;         //错误：元素数量和变量数量不匹配
 ```cpp
 auto getArr() -> int(&)[2]; //getArr()返回一个原生int类型数组的引用
 ...
-auto [x, y] = getArr()      //x和y被返回的数组中的元素初始化
+auto [x, y] = getArr();      //x和y被返回的数组中的元素初始化
 ```
 
 你也可以对std::array使用结构化绑定，不过这是用元组API的方式实现的，接下来对这种方式进行描述。
 
-### 1.2.3 std::pair, std::tuple, 和std::array
+### 1.2.3 `std::pair`, `std::tuple`, 和`std::array`
 
-结构化绑定机制是可扩展的，因此你可以为任何类型添加对结构化绑定的支持。标准库里为std::pair<>, std::tuple<>, std::array<>添加了支持。
+结构化绑定机制是可扩展的，因此你可以为任何类型添加对结构化绑定的支持。标准库里为`std::pair<>`, `std::tuple<>`, `std::array<>`添加了支持。
 
-#### std::array
+#### `std::array`
 
-例如，下面的代码用std::array<>中的四个元素初始化了i，j，k，l：
+例如，下面的代码用`std::array<>`中的四个元素初始化了i，j，k，l：
 
 ```cpp
 std::array<int, 4> getArray();
@@ -341,9 +338,9 @@ auto& [i,j,k,l] = stdarr;
 i += 10;    //修改了stdarr[0]
 ```
 
-#### std::tuple
+#### `std::tuple`
 
-下面的代码用getTuple()函数返回的std::tuple<>中的元素初始化了a，b，c：
+下面的代码用`getTuple()`函数返回的`std::tuple<>`中的元素初始化了a，b，c：
 
 ```cpp
 std::tuple<char, float, std::string> getTuple();
@@ -351,11 +348,11 @@ std::tuple<char, float, std::string> getTuple();
 auto [a,b,c] = getTuple();  //a,b,c绑定了返回的tuple中的元素
 ```
 
-在这里，a的类型为char，b的类型为float，c的类型为std::string
+在这里，a的类型为`char`，b的类型为`float`，c的类型为`std::string`。
 
 #### std::pair
 
-作为另一个例子，下面代码将关联式容器的insert()函数的返回值绑定到两个能体现语义的变量名上，而不是用std::pair<>的first和second成员进行访问：
+作为另一个例子，下面代码将关联式容器的`insert()`函数的返回值绑定到两个能体现语义的变量名上，而不是用`std::pair<>`的first和second成员进行访问：
 
 ```cpp
 std::map<std::string, int> coll;
@@ -380,7 +377,7 @@ if (!ret.second) {
 
 ## 1.3 为结构化绑定提供元组API
 
-你可以通过提供元组API来为任何类型添加结构化绑定的支持，就像标准库为std::pair<>, std::tuple<>和std::array<>所做的那样。
+你可以通过提供元组API来为任何类型添加结构化绑定的支持，就像标准库为`std::pair<>`, `std::tuple<>`和`std::array<>`所做的那样。
 
 #### 允许只读结构化绑定
 
@@ -446,11 +443,11 @@ template<> auto get<2>(const Customer& c) {return c.getValue();}
 
 这里，我们为自定义的顾客类型定义了元组API，将顾客的3个属性映射到了不同的getter(其他自定义的映射也是可行的)：
 
-* 顾客的姓是std::string类型
-* 顾客的名是std::string类型
-* 顾客的消费金额是long类型
+* 顾客的姓是`std::string`类型
+* 顾客的名是`std::string`类型
+* 顾客的消费金额是`long`类型
 
-将Customer类的成员数量定义为std::tuple_size模板对Customer类的特化：
+将Customer类的成员数量定义为`std::tuple_size`模板对Customer类的特化：
 
 ```cpp
 template<>
@@ -459,7 +456,7 @@ struct std::tuple_size<Customer> {
 };
 ```
 
-3个成员的类型被定义为std::tuple_element模板的特化：
+3个成员的类型被定义为`std::tuple_element`模板的特化：
 
 ```cpp
 template<>
@@ -474,7 +471,7 @@ struct std::tuple_element<Idx, Customer> {
 
 其中第三个属性的类型被定义为Idx为2时的全特化版本。对于其他属性则使用半特化版本，函数匹配时半特化版本的优先级要低于全特化版本。
 
-最后，我们定义了相应的getter作为函数get<>()对Customer类型的重载:
+最后，我们定义了相应的getter作为函数`get<>()`对Customer类型的重载:
 
 ```cpp
 template<std::size_t> auto get(const Customer& c);
@@ -483,7 +480,7 @@ template<> auto get<1>(const Customer& c) {return c.getLast();}
 template<> auto get<2>(const Customer& c) {return c.getValue();}
 ```
 
-在这个例子中，我们首先定义了get<>()模板函数对Customer类型的重载，然后我们为重载的模板定义了每一种情况的全特化函数。注意所有的全特化函数模板必须有完全相同的签名（包括返回值）。原因是我们是要提供特化版的实现，而不是要提供新的声明。下面语句不能通过编译：
+在这个例子中，我们首先定义了`get<>()`模板函数对Customer类型的重载，然后我们为重载的模板定义了每一种情况的全特化函数。注意所有的全特化函数模板必须有完全相同的签名（包括返回值）。原因是我们是要提供特化版的实现，而不是要提供新的声明。下面语句不能通过编译：
 
 ```cpp
 template<std::size_t> auto get(const Customer& c);
@@ -536,9 +533,9 @@ int main()
 
 和往常一样，结构化绑定先用c初始化一个匿名实体，再将f,l,v定义为匿名实体的成员的引用。这个过程中，初始化语句会调用每一个成员对应的getter。因此，初始化完成之后修改c不会对绑定的变量造成任何影响（反之亦然）。因此，程序会有如下输出：
 
-```cpp
+```
     f/l/v:  Tim Starr 42
-    f/l/v:   Waters 52
+    f/l/v:  Waters 52
     c:      Tim Starr 42
     s:      Tim
 ```
@@ -585,7 +582,7 @@ public:
 
 为了获得读写权限，我们需要重载getter的常量和非常量引用的版本：
 
-*lang/structbind2.hpp
+*lang/structbind2.hpp*
 
 ```cpp
 #include "customer2.hpp"
@@ -645,7 +642,7 @@ template<std::size_t I> decltype(auto) get(Customer&& c) {
 }
 ```
 
-注意你应该有这三份重载来分别处理常量，非常量和可搬移的对象。为了让返回值是一个引用，你需要使用decltype(auto)(decltype(auto)从c++14引入，当auto进行类型推断时会发生退化，即会忽略引用修饰词，decltype(auto)用来解决这个问题).
+注意你应该有这三份重载来分别处理常量，非常量和可搬移的对象。为了让返回值是一个引用，你需要使用`decltype(auto)`（`decltype(auto)`从c++14引入，当auto进行类型推断时会发生退化，即会忽略引用修饰词，`decltype(auto)`用来解决这个问题）.
 
 我们又一次使用了新的编译期if特性（见第9章），这会简化我们不同版本getter的实现。如果没有它，我们就要再次写出完整的全特化版本，例如：
 
@@ -692,10 +689,10 @@ int main()
 
 程序的输出如下：
 
-```cpp
+```
     f/l/v:      Tim Starr 42
     f2/l2/v2:   Tim Starr 42
-    c:           Waters 52
+    c:          Waters 52
     s:          Tim
 ```
 
