@@ -25,7 +25,7 @@ if (std::ofstream strm = getLogStrm(); coll.empty()) {
     strm << "<no data>\n";
 }
 else {
-    for (const auto& elem : coll) {
+    for (const auto & elem : coll) {
         strm << elem << '\n';
     }
 }
