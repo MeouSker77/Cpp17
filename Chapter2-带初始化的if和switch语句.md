@@ -22,7 +22,7 @@ status s = check();
 
 ```cpp
 if (std::ofstream strm = getLogStrm(); coll.empty()) {
-    strm << "<no data>" << '\n';
+    strm << "<no data>\n";
 }
 else {
     for (const auto & elem : coll) {
@@ -38,7 +38,7 @@ else {
 
 ```cpp
 if (std::lock_guard<std::mutex> lg{collMutex}; !coll.empty()) {
-    std::cout << coll.fromt() << '\n';
+    std::cout << coll.front() << '\n';
 }
 ```
 
@@ -46,7 +46,7 @@ if (std::lock_guard<std::mutex> lg{collMutex}; !coll.empty()) {
 
 ```cpp
 if (std::lock_guard lg{collMutex}; !coll.empty()) {
-    std::cout << coll.fromt() << '\n';
+    std::cout << coll.front() << '\n';
 }
 ```
 
@@ -72,7 +72,7 @@ if (std::lock_guard<std::mutex>{collMutex}; //运行时错误:
 }
 ```
 
-原则上讲，一个单`_`作为变量名就已经足够了：
+原则上讲，一个`_`作为变量名就已经足够了：
 
 ```cpp
 if (std::lock_guard<std::mutex> _{collMutes};   //OK,但是...
@@ -93,7 +93,7 @@ if (auto [pos,ok] = coll.insert({"new", 42}); !ok) {
 }
 ```
 
-在这里我们又使用了结构化绑定（见第一章），来个两个返回值赋予一个有意义的名字，而不是用`first`和`second`成员来访问。在C++17之前，同样的检查必须写成如下的代码：
+在这里我们又使用了结构化绑定（见第一章），来给两个返回值分别赋予一个有意义的名字，而不是用`first`和`second`成员来访问。在C++17之前，同样的检查必须写成如下的代码：
 
 ```cpp
 auto ret = coll.insert({"new", 42});
