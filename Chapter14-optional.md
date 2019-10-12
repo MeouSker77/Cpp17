@@ -1,8 +1,8 @@
 # Chapter 14 `std::optional<>`
 
-在编程时我们**可能**会返回/传递/使用一个特定类型的对象。也就是说，我们有可能需要这样一个值也有可能不需要这样一个值。因此，我们需要一种能够模仿指针的语义，指针可以通过赋值为`nullptr`来表示不指向任何对象，我们需要模仿这种能力的语义。一种处理的方法是定义该对象的同时再定义一个附加的`bool`类型的值作为标志来表示是否该使用该对象。另外，`std::optional<>`提供了一种类型安全的方法来实现这种能力。
+在编程时我们**可能**会返回/传递/使用一个特定类型的对象。也就是说，我们有可能需要这样一个值也有可能不需要这样一个值。因此，我们需要一种能够模仿指针的语义，指针可以通过赋值为`nullptr`来表示不指向任何对象，我们需要模仿这种能力的语义。一种处理的方法是定义该对象的同时再定义一个附加的`bool`类型的值作为标志来表示是否应该使用该对象。另外，`std::optional<>`提供了一种类型安全的方法来实现这种能力。
 
-可选对象所占用的内存恰好就等于内含对象的大小加上一个`bool`类型的大小。因此，可选对象的大小一般比内含对象大一个字节。对于某些类型而言，可选的该类型对象的大小可能和类型本身相同，附加的`bool`信息有可能能填充到该类型对象之中。可选对象不会分配堆内存，和内含对象有相同的内存对齐方式。
+可选对象所占用的内存恰好就等于内含对象的大小加上一个`bool`类型的大小。因此，可选对象的大小一般比内含对象大一个字节。对于某些类型而言，该类型的可选对象的大小可能和类型本身相同，附加的`bool`信息有可能填充到该类型之中。可选对象不会分配堆内存，和内含对象有相同的内存对齐方式。
 
 然而，可选对象并不仅仅是一个对象加上一个`bool`值。例如，如果内含对象没有值，将不会为内含对象调用默认构造函数（因此，你可以给对象赋予一个默认状态）。
 
@@ -51,7 +51,7 @@ int main()
 
 在这段程序中asInt()是一个将字符串转换为整数的函数。然而，转换可能会失败，所以使用了一个`std::optional<>`来让我们可以返回"*no int*"并且避免定义一个特殊的`int`值来表示函数转换失败。
 
-因此，我们可能会用`stoi()`返回的int来初始化返回值，也可能会返回`std::nullopt`来表示没有一个`int`类型的值。我们可以像下面这样实现相同的行为:
+因此，我们可能会用`stoi()`返回的`int`来初始化返回值，也可能会返回`std::nullopt`来表示没有一个`int`类型的值。我们可以像下面这样实现相同的行为:
 
 ```cpp
 std::optional<int> asInt(const std::string&s)
@@ -121,7 +121,7 @@ class Name
           std::optional<std::string> m,
           std::string l)
     : first{std::move(f)}， middle{std::move(m)}, last{std::move(l)} {}
-    firend std::ostream& operator << (std::ostream& strm, const Name& n) {
+    friend std::ostream& operator << (std::ostream& strm, const Name& n) {
         strm << n.first << ' ';
         if (n.middle) {
             strm < *n.middle << ' ';
@@ -353,13 +353,110 @@ o = std::nullopt;       //o不再有值
 o.emplace(5.5, 7.7);    //值变为(5.5, 7.7)
 ```
 
+给可选对象赋值为`std::mullopt`会移除原本的值，这会调用内含类型的构造函数。你可以通过调用`reset()`函数来实现相同的效果：
 
+```cpp
+o.reset();      //o不再有值
+```
 
+或者使用空花括号赋值：
 
+```cpp
+o = {};         //o不再有值
+```
 
+最后，我们也可以使用*修改值，因为它以引用的方式返回值。然而，注意这种方式首先需要对象原本就持有值：
 
+```cpp
+std::optional<std::complex<double>> o;
+*o = 42;        //未定义行为
+...
+if (o) {
+    *o = 88;            //OK:值变为complex(88.0, 0.0)
+    *o = {1.2, 3.4};    //OK:值变为complex(1.2, 3.4)
+}
+```
 
+#### 移动语义
 
+`std::optional<>`也支持move语义。如果你搬移了整个对象，那么新的对象会复制旧对象的状态并搬移旧对象内含的值。结果是旧对象的状态仍然保持保持不变，但其值变为不确定状态。
 
+你既可以将内含的值搬移出去，也可以将一个值搬移进去。例如：
 
+```cpp
+std::optional<std::string> os;
+std::string s = "a very very very long string";
+os = std::move(s);                  //OK,移动
+std::string s2 = *os;               //OK,复制
+std::string s3 = std::move(*os);    //OK,移动
+```
 
+注意最后一条语句之后`os`仍然有一个字符串类型的值，但就像通常值被搬移走的对象一样，此时该值是不确定的。因此，只要你不对它的值做任何假设你就可以放心的使用它，例如你可以给它赋予一个新的字符串值。
+
+#### 哈希
+
+可选对象的哈希值等于其内含值的哈希值（如果有值的话）。
+
+## 14.3 特殊情况
+
+某些特定类型的可选对象可能会导致特殊或者预料之外的情况。
+
+### 14.3.1 `bool`或原生指针的可选对象
+
+注意`bool`类型和`bool`类型的可选对象的比较运算符会有不同的语义。如果内含对象类型为`bool`或指针类型会导致令人迷惑的行为：例如：
+
+```cpp
+std::optional<bool> ob{false};      //有值，值为false
+if (!ob) ...                        //返回false
+if (ob == false) ...                //返回true
+
+std::optional<int*> op{nullptr};
+if (!op) ...                        //返回false
+if (op == nullptr) ...              //返回true
+```
+
+### 14.3.2 可选对象的可选对象
+
+原则上你也可以定义可选对象的可选对象：
+
+```cpp
+std::optional<std::optional<std::string>> oos1;
+std::optional<std::optional<std::string>> oos2 = "hello";
+std::optional<std::optional<std::string>>
+    oos3{std::in_place, std::in_place, "hello"};
+
+std::optional<std::optional<std::complex<double>>>
+    ooc{std::in_place, std::in_place, 4.2, 5.3};
+```
+
+你也可以用隐式转换的方式进行赋值：
+
+```cpp
+oos1 = "hello";     //OK:赋了一个新值
+ooc.emplace(std::in_place, 7.2, 8.3);
+```
+
+一个可选对象的可选对象既可以是外层没有值，也可以是内层没有值，这两者的语义是不同的：
+
+```cpp
+*oos1 = std::nullopt;       //内层可选对象没有值
+oos1 = std::nullopt;        //外层可选对象没有值
+```
+
+所以你必须对这种对象进行一些特殊处理：
+
+```cpp
+if (!oos1)  std::cout << "no value\n";
+if (oos1 && !*oos1) std::cout << "no inner value\n";
+if (oos1 && *oos1) std::cout << "value: " << **oos1 << '\n';
+```
+
+然而，这样的话表示无值的语义就有两种，使用一个带两个`bool`类型或状态（见15.1节）的`std::variant<>`（见第15章）将会是一个更好的选择。
+
+## 14.4 后记
+
+可选对象最早在2005年由Fernando Cacciola在[https://wg21.link/n1878](https://wg21.link/n1878)上提出，Boost.Optional作为一个参考实现。这个类型由Fernando Cacciola和Andrzej Krzemienski在[https://wg21.link/n3793](https://wg21.link/n3793)上提出加入标准库技术规范。
+
+将这个类型和其他组件纳入C++17的提案由Beman Dawes和Alisdair Meredith在[https://wg21.link/p0220r1](https://wg21.link/p0220r1)上提出。
+
+Tony van Eerd在[https://wg21.link/n3765](https://wg21.link/n3765)和[https://wg21.link/p0307r2](https://wg21.link/p0307r2)上显著地改进了可选类型的比较运算符的语义。Vicente J. Botet Escriba在[https://wg21.link/p0032r3](https://wg21.link/p0032r3)协调了可选类型和`std::variant<>`，`std::any`间的API。Jonathan Wakely在[https://wg21.link/p0504r0](https://wg21.link/p0504r0)上修复了`in_place`标签类型的行为。
