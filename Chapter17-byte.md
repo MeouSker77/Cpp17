@@ -160,3 +160,57 @@ std::cout << static_cast<int>(std::to_integer<signed char>(ff));    //-1
 
 #### `std::byte`的I/O
 
+标准库并没有为`std::byte`定义输入输出运算符，因此你必须将它们先转换为一个整型值：
+
+```cpp
+std::byte b;
+...
+std::cout << std::to_integer<int>(b);     //以十进制打印出值
+std::cout << std::hex << std::to_integer<int>(b);   //以十六进制打印出值
+```
+
+通过使用`std::bitset<>`，你也可以以二进制的形式输出值（一串bit）：
+
+```cpp
+#include <bitset>
+#include <limits>
+
+using ByteBitset = std::bitset<std::numeric_limits<unsigned char>::digits>;
+std::cout << ByteBitset{std::to_integer<unsigned char>(b1)};
+```
+
+这里的`using`声明定义了一个和`std::byte`有相同位数的`bitset`类型，然后我们用`std::byte`转换为的整数类型初始化并输出了一个这样的`bitset`对象。
+
+你也可以用这种方式来将一个`std::byte`的二进制表示转换为字符串：
+
+```cpp
+std::string s = ByteBitset{std::to_integer<unsigned char>(b1)}.to_string();
+```
+
+`std::byte`的输入也可以用类似的方式：直接读入一个整数，字符串或者`bitset`然后将它们转换为`std::byte`。例如，你可以像下面这样写一个输入运算符读入一个`byte`的二进制表示：
+
+```cpp
+std::istream& operator>> (std::istream& strm, std::byte& b)
+{
+  //读入一个`bitset`:
+  std::bitset<std::numeric_limits<unsigned char>::digits> bs;
+  strm >> bs;
+  //如果读取无误就转换为std::byte：
+  if (!std::cin.fail()) {
+    b = static_cast<std::byte>(bs.to_ulong());    //OK
+  }
+  return strm;
+}
+```
+
+注意我们使用了一个`static_cast<>()`来将一个`bitset`转换为的`unsigned long`转换为一个`std::byte`。这里不能使用列表初始化因为会发生窄化：
+
+```cpp
+b = std::byte{bs.to_ulong()};     //错误：发生窄化
+```
+
+我们也没有别的初始化方式。
+
+## 17.3 后记
+
+`std::byte`最早由Neil MacIntosh在[https://wg21.link/p0298r0](https://wg21.link/p0298r0)上提出。最后被接受的正式提案由Neil MacIntosh在[https://wg21.link/p0298r3](https://wg21.link/p0298r3)上发表。
