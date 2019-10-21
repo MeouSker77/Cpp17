@@ -2,7 +2,7 @@
 
 在C++17中，标准库提供了一个特殊的类型叫做`std::string_view`，它允许我们在不分配内存的情况下处理字符序列例如`string`。也就是说，`std::string_view`对象指向外部的字符序列，而不是持有这些字符。也就是说，这个对象可以被看作是对一个字符序列的引用。
 
-![图18.1](images/18.1.png)
+![图18.1](images/graph_18.1.png)
 
 使用一个`string_view`的开销是很小的（以值传递一个`string_view`的开销总是很小），而且速度很快。然而，它可能导致潜在的危险，因为它就像原始指针一样要求程序员确保指向的字符序列仍然有效。
 
@@ -287,3 +287,297 @@ class Person {
 如果这些规则太复杂或者难以遵守，请根本不要使用`std::string_view`（除非你知道你正在做什么）。
 
 ## 18.4 `string view`类型和操作
+
+这一节详细描述`string view`的类型和操作.
+
+### 18.4.1 `string view`的具体类型
+
+在头文件`<string_view>`中C++标准库定义了基类`basic_string_view<>`的几个特化版本:
+
+* 类`std::string_view`是类型`char`的预定义特化模板:
+
+```cpp
+namespace std {
+    using string_view = basic_string_view<char>;
+}
+```
+
+* 对于宽字符集，例如Unicode或者一些亚洲的字符集，还定义了另外三个类型：
+
+```cpp
+namespace std {
+    using u16string_view = basic_string_view<char16_t>;
+    using u32string_view = basic_string_view<char32_t>;
+    using wstring_view = basic_string_view<wchar_t>;
+}
+```
+
+在下面的章节中，我们不区别这几种类型。因为它们的使用方法和需要注意的问题都是一样的，因为所有的`string view`类都有相同的接口。因此，`string view`意味着任何`string view`类型：`string_view`，`u16string_view`，`u32string_view`和`wstring_view`。这本书中的示例通常使用类型`string_view`因为欧洲和英美环境是软件开发行业的公共环境。
+
+### 18.4.2 `string view`操作
+
+表18.1列出了`string view`支持的所有操作。
+
+除了`remove_prefix()`和`remove_suffix()`之外，所有`string view`的操作也提供给`std::string`。然而，这些操作的行为保证可能有些不同因为`string view`通过`data()`返回的值可能是`nullptr`而且缺少结尾处有一个`null`终止符的保证。
+
+![表18.1](images/table_18.1.png)
+
+#### 构造
+
+你可以使用默认构造函数创建一个`string view`，或者从原生字符数组（以`null`终止符结尾或指明长度）、`std::string`、带有`sv`后缀的字符串字面量创建`string view`。然而，注意下面几点：
+
+* 默认构造的`string view`使用`data()`将会返回`nullptr`。因此，对它使用运算符`[]`是无效的。
+
+```cpp
+std::string_view sv;
+auto p = sv.data();         //返回nullptr
+std::cout << sv[0];         //错误：无效的字符
+```
+
+* 当使用一个`null`终止的字节流初始化`string view`时，生成的`string view`的`size`是去掉`'\0'`之后的字符的数量。这时使用`null`字符的索引进行访问是无效的：
+
+```cpp
+std::string_view sv{"hello"};
+std::cout << sv;                //OK
+std::cout << sv.size();         //5
+std::cout << sv.at(5);          //抛出std::out_of_range异常
+std::cout << sv[5];             //未定义行为，但这里通常能工作
+std::cout << sv.data();         //未定义行为，但这里通常能工作
+```
+
+严格意义上讲后两个调用都是未定义行为。因此，它们不能保证能工作，尽管在这种情况下你可以假设最后一个字符后面有一个`null`终止符。
+
+你可以通过传递包含`null`在内的字符的数量来迫使`string view`包含最后的`null`终止符：
+
+```cpp
+std::string_view sv{"hello", 6};    //注意：包括'\0'共有6个字符
+std::cout << sv.size();             //6
+std::cout << sv.at(5);              //OK，打印出'\0'的值
+std::cout << sv[5];                 //OK，打印出'\0'的值
+std::cout << sv.data();             //OK
+```
+
+* 为了从一个`std:string`创造一个`string view`，`std::string`特地提供了一个隐式转换。再一次强调，虽然`string`类通常保证结尾有`null`终止符，但`string view`并没有这个保证：
+
+```cpp
+std::string s = "hello";
+std::cout << s.size();          //5
+std::cout << s.at(5);           //OK,打印出'\0'的值
+std::cout << s[5];              //OK,打印出'\0'的值
+
+std::string_view sv{s};
+std::cout << sv.size();         //5
+std::cout << sv.at(5);          //抛出std::out_of_range异常
+std::cout << sv[5];             //未定义行为，但此处通常能工作
+std::cout << sv.data();             //未定义行为，但此处通常能工作
+```
+
+* 通过使用定义好的字面量后缀`sv`，你也可以像下面这样创建一个`string view`：
+
+```cpp
+using namespace std::literals;
+auto s = "hello"sv;
+```
+
+关键点是一般来说你不应该假设有`null`终止符，并且**总是**在访问字符之前使用`size()`获取大小（除非你已经知道了具体的值）。
+
+作为一个解决方法，你可以使`'\0'`作为`string view`的一部分。除非使`'\0'`成为一个`string view`的一部分否则你不应该将它作为一个`null`终止的字符串。
+
+#### 哈希
+
+c++标准库保证了`string view`和`string`的哈希值是相同的。
+
+#### 修改`string view`
+
+修改`string view`的操作只有如下几种：
+
+* 你可以赋给它一个新的值或者交换两个`string view`的值。
+
+```cpp
+std::string_view sv1 = "hey";
+std::stirng_view sv2 = "world";
+sv1.swap(sv2);
+sv2 = sv1;
+```
+
+* 你可以跳过开头或结尾的字符（例如，将开头设置为第二个字符或将结尾设置为倒数第二个字符）。
+
+```cpp
+std::string_view sv = "I like my kindergarten";
+sv.remove_prefix(2);
+sv.remove_suffix(8);
+std::cout << sv;        //打印出：like my kind
+```
+
+注意，没有预定义的运算符`+`，也就是说：
+
+```cpp
+std::string_view sv1 = "hello";
+std::string_view sv2 = "world";
+auto s1 = sv1 + sv2;    //错误
+```
+
+其中一个操作数必须为`string`才能使用`+`：
+
+```cpp
+auto s2 = std::string(sv1) + sv2;   //OK
+```
+
+注意它没有向`string`的隐式转换，这是一个开销很大的操作，因为它需要分配内存。出于这个原因，只能使用显示的转换。
+
+### 18.4.3 其他类型对`string view`的支持
+
+原则上讲，任何可以传递`string`的地方都可以传递一个`string view`，除非需要一个`null`终止符结尾的字符串（例如，传递给需要C风格字符串的函数）。
+
+然而，我们只能够在最重要的地方提供支持：
+
+* 字符串可以使用`string view`或者和`string view`一起使用。你可以从`string view`创建一个`string`（需要显式构造），也可以在`string`的扩张，插入，替换，比较或查找字串操作中使用`string view`。也有从`string`到`string view`的隐式转换。
+
+* 你可以像`std::quoted`传递一个`string view`，这将返回它的转义表示。例如：
+
+```cpp
+using namespace std::literals;
+
+auto s = R"(some\value)"sv;     //原始string view
+std::cout << std::quoted(s);    //输出："some\\value"
+```
+
+* 你可以使用`string view`初始化，扩展或比较文件系统路径（见19.2.3）。
+
+然而，C++标准库里没有为`string view`提供在正则表达式中的应用。
+
+## 18.5 在API中使用`string view`
+
+`string view`的开销很小，并且每一个`std::string`都可以被用作`string view`。因此，看起来`std::string_view`是处理字符串参数时更好的选择。然而，使用它的时候一定要注意细节。。。
+
+首先，只有当函数使用满足如下约束的参数的时候使用`std::string_view`才有意义：
+
+* 它并不预期结尾处有一个`null`终止符。例如，一个接受单个`const char*`参数的C函数就不符合这种情况。
+* 它不会改变参数的生命周期。通常这意味着函数在结束之前只会使用传入的值。
+* 函数不应该修改底层自负的所有权（例如删除它，改变它的值或者释放它的内存）
+* 它可以处理`nullptr`的情况
+
+注意如果函数重载了`std::string`和`std::string_view`两个版本的话将可能产生歧义错误：
+
+```cpp
+void foo(const std::string&);
+void foo(std::string_view);
+
+foo("hello");       //错误：歧义
+```
+
+### 18.5.1 使用`string view`初始化`string`
+
+看起来`string view`的一个简单而有用的应用就是当需要初始化一个`string`时将参数类型声明为`string view`。但是请注意并不总是如此！
+
+考虑以下初始化`string`成员时的"旧式好方法"：
+
+```cpp
+class Person {
+    std::string name;
+  public:
+    Person (const std::string& n) : name(n) {
+    }
+    ...
+};
+```
+
+这个构造函数有它的缺点。当使用一个字符串字面量初始化一个`Person`实例的时候会创建一个不必要的临时拷贝，这可能会导致不必要的堆内存分配。例如：
+
+```cpp
+Person p("Aprettylong NonSSO Name");
+```
+
+这个调用首先调用`std::string`的构造函数来创建一个临时的`string`，因为函数需要一个`std::string`类型的引用。如果字符串很长或者没有短字符串优化的话就需要在堆上分配内存。然后临时变量被拷贝用来初始化成员`name`，这意味着又一次内存分配。你可以通过添加一个重载的模板构造函数来避免开销，但这可能导致更多问题。
+
+如果我们使用一个`string view`，性能将会更好：
+
+```cpp
+class Person {
+    std::string name;
+  public:
+    Person (std::string_view n) : name(n) {
+    }
+};
+```
+
+现在将会创建一个临时的`string view`，这个过程并不会分配内存，因为`string view`只是指向字符串字面量中的字符。只有成员`name`初始化时会分配内存。
+
+然而，这里也有一个问题：如果你传递一个临时`string`或者使用了`std::move()`的`string`，那么这个字符串将会转换为一个`string view`（这个开销很低）然后这个`string view`会被用来初始化`name`，这仍然需要分配内存（开销较大）。换句话说：`string view`的使用会禁止`move`语义除非你为它提供一个重载。（译者注：使用这种方式在任何情况下都需要分配一次内存，但如果使用接下来的方式，在传递`move`的`string`或者临时`string`时可以一次内存也不分配）
+
+这里对如何初始化一个`string`成员有一个推荐的做法：以值传递`string`然后再`move`：
+
+```cpp
+class Person {
+    std::string name;
+  public:
+    Person (std::string n) : name(std::move(n)) {
+    }
+};
+```
+
+无论如何我们要创建一个`string`。因此，当我们传递参数时尽快创建它可以让我们享受尽可能的优化。然后当我们有了`n`之后我们只需要`move`它，这是一个开销很小的操作。
+
+如果我们用一个返回临时`string`的函数来初始化`string`：
+
+```cpp
+std::string newName()
+{
+    ...
+    return std::string{...};
+}
+
+Person p{newName()};
+```
+
+强制省略临时变量拷贝（见第5章）将会推迟新的`string`的实质化直到它被传递给构造函数。在那里我们有一个`string`名为`n`，它是一个有`location`的对象（一个glvalue）。这个对象的值之后会被`move`到成员`name`里·。
+
+这个示例再次展示了：
+
+* `string view`并不是代替`string`的一个更好的接口
+* 事实上，`string view`只应该用于调用链中，在这种情况下它们不会被用作`string`。
+
+### 18.5.2 使用`string view`代替`string`
+
+这里有一些其他可以用`string view`代替`string`的例子。但是再一次提醒，请小心。
+
+例如，原本的下列代码：
+
+```cpp
+//将时间点(带有前缀)转换为string:
+std::string toString (const std::string& prefix, const std::chrono::system_clock::time_point& tp)
+{
+    //转换为日历时间
+    auto rawtime = std::chrono::system_clock::to_time_t(tp);
+    std::string ts = std::ctime(&rawtime);  //注意：没有线程安全性
+
+    ts.resize(ts.size()-1);     //跳过结尾的换行符
+
+    return prefix + ts;
+}
+```
+
+你可以像下面这样实现：
+
+```cpp
+std::string toString (std::string_view prefix, const std::chrono::system_clock::time_point& tp)
+{
+    auto rawtime = std::chrono::system_clock::to_time_t(tp);
+    std::string_view ts = std::ctime(&rawtime); //注意：没有线程安全性
+
+    ts.remove_suffix(1);    //跳过结尾的换行符
+
+    return std::string(prefix) + ts;    //不幸没有运算符+
+}
+```
+
+除了将作为`prefix`的参数设为`std::string_view`类型的优化之外，我们还在内部使用了一个`string view`。`ctime()`返回的C字符串只在短时间内有效（它只在下一次的`ctime()`和`asctime()`之前有效）。注意我们可以移除尾部的换行符，但我们不能直接用运算符+来连接两个`string view`。因此我们必须将其中一个转换为`std::string`（很不幸这一步可能会需要不必要的内存分配）。
+
+## 18.6 后记
+
+第一个引用语义的字符串最早由Jeffrey Yasskin在[https://wg21.link/n3334](https://wg21.link/n3334)（命名为`string_ref`）。这个类由Jeffrey Yasskin在[https://wg21.link/n3921](https://wg21.link/n3921)上提出作为标准库技术规范的一部分。
+
+这个类由Beman Dawes和Alisdair Meredith在[https://wg21.link/p0220r1](https://wg21.link/p0220r1)上提出和其他组件一起加入C++17。为了更好的集成效果Marshall Clow在[https://wg21.link/p0254r2](https://wg21.link/p0254r2)上，Nicolai Josuttis在 [https://wg21.link/p0392r0](https://wg21.link/p0392r0)上提出了一些修改。
+
+Daniel Krugler在[https://wg21.link/lwg2946](https://wg21.link/lwg2946)上提出了另外的一些修复（可能作为C++17的缺陷提出）。
+
