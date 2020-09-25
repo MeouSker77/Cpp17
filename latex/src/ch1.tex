@@ -1,0 +1,754 @@
+\section{结构化绑定}\label{ch1}
+结构化绑定允许你用一个对象的元素或成员同时实例化多个实体。
+例如，假设你定义了一个有两个不同成员的结构体：
+\begin{lstlisting}
+    struct MyStruct {
+        int i = 0;
+        std::string s;
+    };
+
+    MyStruct ms;
+\end{lstlisting}
+你可以通过如下的声明直接把该结构体的两个成员绑定到新的变量名：
+\begin{lstlisting}
+    auto [u, v] = ms;
+\end{lstlisting}
+这里，变量\texttt{u}和\texttt{v}的声明方式称为\emph{结构化绑定}。
+某种程度上可以说它们解构了用来初始化的对象（有些观点称它们为\emph{解构声明}）。
+
+如下的每一种声明方式都是支持的：
+\begin{lstlisting}
+    auto [u2, v2] {ms};
+    auto [u3, v3] (ms);
+\end{lstlisting}
+结构化绑定对于返回结构体或者数组的函数来说非常有用。例如，考虑一个返回结构体的函数：
+\begin{lstlisting}
+    MyStruct getStruct() {
+        return MyStruct{42, "hello"};
+    }
+\end{lstlisting}
+你可以直接把返回的数据成员赋值给两个新的局部变量：
+\begin{lstlisting}
+    auto [id, val] = getStruct();   // id和val分别是返回结构体中的i和s成员
+\end{lstlisting}
+这里，\texttt{id}和\texttt{val}分别是返回结构体中的\texttt{i}和\texttt{s}成员。
+它们的类型分别对应\texttt{int}和\texttt{std::string}，可以被当作两个不同的对象来使用：
+\begin{lstlisting}
+    if (id > 30) {
+        std::cout << val;
+    }
+\end{lstlisting}
+这么做的好处是可以直接访问成员，
+另外通过把值绑定到能体现语义的变量名可以使代码的可读性更强\footnote{感谢Zachary Turner指出这一点}。
+
+下面的代码演示了使用结构化绑定带来的显著改进。
+在不使用结构化绑定的情况下遍历\texttt{std::map<>}的元素需要这么写：
+\begin{lstlisting}
+    for (const auto& elem : mymap) {
+        std::cout << elem.first << ": " << elem.second << '\n';
+    }
+\end{lstlisting}
+元素的类型是键和值组成的\texttt{std::pair}类型，
+\texttt{std::pair}的成员分别是\texttt{first}和\texttt{second}，
+上边的例子中必须使用成员的名字来访问键和值。通过使用结构化绑定，代码的可读性大大提升：
+\begin{lstlisting}
+    for (const auto& [key, val] : mymap) {
+        std::cout << key << ": " << val << '\n';
+    }
+\end{lstlisting}
+上面的例子中我们可以使用准确体现语义的变量名直接访问每一个元素。
+
+\subsection{细说结构化绑定}
+为了理解结构化绑定，必须意识到这里面其实有一个隐藏的匿名对象。
+结构化绑定时新引入的局部变量名其实都指向这个匿名对象的成员/元素。
+
+\subsubsection*{绑定到一个匿名实体}
+如下代码的精确行为：
+\begin{lstlisting}
+    auto [u, v] = ms;
+\end{lstlisting}
+其实等价于我们用\texttt{ms}初始化了一个新的实体\texttt{e}，
+并且让结构化绑定中的\texttt{u}和\texttt{v}变成了\texttt{e}的成员的别名，类似于如下定义：
+\begin{lstlisting}
+    auto e = ms;
+    aliasname u = e.i;
+    aliasname v = e.s;
+\end{lstlisting}
+这意味着\texttt{u}和\texttt{v}仅仅是\texttt{ms}的一份本地拷贝的成员的别名。
+然而，我们没有为\texttt{e}声明一个名称，因此我们不能直接访问这个匿名对象。
+注意\texttt{u}和\texttt{v}并不是\texttt{e.i}和\texttt{e.s}的引用（而是它们的别名）。
+\texttt{decltype(u)}的结果是成员\texttt{i}的类型，
+\texttt{declytpe(v)}的结果是成员\texttt{s}的类型。
+因此：
+\begin{lstlisting}
+    std::cout << u << ' ' << v << '\n';
+\end{lstlisting}
+会打印出\texttt{e.i}和\texttt{e.s}（分别是\texttt{ms.i}和\texttt{ms.s}的拷贝）。
+
+\texttt{e}的生命周期和结构化绑定的生命周期相同，当结构化绑定离开作用域时\texttt{e}也会被自动销毁。
+另外，除非使用了引用，否则修改结构化绑定的变量并不会影响被绑定的变量：
+\begin{lstlisting}
+    MyStruct ms{42, "hello"};
+    auto [u, v] = ms;
+    ms.i = 77;
+    std::cout << u;     // 打印出42
+    u = 99;
+    std::cout << ms.i;  // 打印出77
+\end{lstlisting}
+在这个例子中\texttt{u}和\texttt{ms.i}有不同的内存地址。
+
+当使用结构化绑定来绑定返回值时，规则是相同的。如下初始化
+\begin{lstlisting}
+    auto [u, v] = getStruct();
+\end{lstlisting}
+的行为等价于我们用\texttt{getStruct()}的返回值初始化了一个新的实体\texttt{e}，
+之后结构化绑定的变量\texttt{u}和\texttt{v}变成了\texttt{e}的两个成员的别名，类似于如下定义：
+\begin{lstlisting}
+    auto e = getStruct();
+    aliasname u = e.i;
+    aliasname v = e.s;
+\end{lstlisting}
+也就是说，结构化绑定绑定到了一个新的实体\texttt{e}上，而不是直接绑定到了返回值上。
+匿名实体\texttt{e}同样遵循通常的内存对齐规则，结构化绑定的每一个变量都会根据相应成员的类型进行对齐。
+
+\subsubsection*{使用修饰符}
+我们可以在结构化绑定中使用修饰符，例如\texttt{const}和引用，这些修饰符会作用在匿名实体\texttt{e}上。
+通常情况下，作用在匿名实体上和作用在结构化绑定的变量上的效果是一样的，但有些时候又是不同的（见下文）。
+
+例如，我们可以把声明一个结构化绑定声明为\texttt{const}引用：
+\begin{lstlisting}
+    const auto& [u, v] = ms;    // 引用，因此u/v指向ms.i/ms.s
+\end{lstlisting}
+这里，匿名实体被声明为\texttt{const}引用，
+而\texttt{u}和\texttt{v}分别是这个引用的成员\texttt{i}和\texttt{s}的别名。
+因此，对\texttt{ms}的成员的修改会影响到\texttt{u}和\texttt{v}的值：
+\begin{lstlisting}
+    ms.i = 77;          // 影响u的值
+    std::cout << u;     // 打印出77
+\end{lstlisting}
+如果声明为非\texttt{const}引用，你甚至可以修改对象的成员：
+\begin{lstlisting}
+    MyStruct ms{42, "hello"};
+    auto& [u, v] = ms;      // 被初始化的实体是ms的引用
+    ms.i = 77;              // 影响到u的值
+    std::cout << u;         // 打印出77
+    u = 99;                 // 修改了ms.i
+    std::cout << ms.i;      // 打印出99
+\end{lstlisting}
+如果一个结构化绑定是引用类型，而且是对一个临时对象的引用，那么和往常一样，
+临时对象的生命周期会被延长到结构化绑定的生命周期：
+\begin{lstlisting}
+    MyStruct getStruct();
+    ...
+    const auto& [a, b] = getStruct();
+    std::cout << "a: " << a << '\n';    // OK
+\end{lstlisting}
+
+\subsubsection*{修饰符并不是作用在结构化绑定引入的变量上}
+修饰符会作用在新的匿名实体上，而不是结构化绑定引入的新的变量名上。事实上，如下代码中：
+\begin{lstlisting}
+    const auto& [u, v] = ms;    // 引用，因此u/v指向ms.i/ms.s
+\end{lstlisting}
+无论是\texttt{u}还是\texttt{v}都不是引用， 只有匿名实体\texttt{e}是一个引用。
+\texttt{u}和\texttt{v}分别是\texttt{ms}对应的成员的类型，
+只不过变成了\texttt{const}的。
+根据我们的推导，\texttt{decltype(u)}是\texttt{const int}，
+\texttt{decltype(v)}是\texttt{const std::string}。
+
+当声明对齐时也是类似：
+\begin{lstlisting}
+    alignas(16) auto [u, v] = ms;   // 对齐匿名实体，而不是v
+\end{lstlisting}
+这里，我们对齐了匿名实体而不是\texttt{u}和\texttt{v}。
+这意味着\texttt{u}作为第一个成员会按照16字节对齐，但\texttt{v}不会。
+
+因此，即使使用了\texttt{auto}结构化绑定也不会发生类型退化(\emph{decay})
+\footnote{术语\emph{decay}是指当参数按值传递时发生的类型转换，
+例如原生数组会转换为指针，顶层修饰符例如\texttt{const}和引用会被忽略}。
+例如，如果我们有一个原生数组组成的结构体：
+\begin{lstlisting}
+    struct S {
+        const char x[6];
+        const char y[3];
+    };
+\end{lstlisting}
+那么如下声明之后：
+\begin{lstlisting}
+    S s1{};
+    auto [a, b] = s1;    // a和b的类型是结构体成员的精确类型
+\end{lstlisting}
+这里\texttt{a}的类型仍然是\texttt{char[6]}。
+再次强调，\texttt{auto}关键字应用在匿名实体上，这里匿名实体整体并不会发生类型退化。
+这和用\texttt{auto}初始化新对象不同，如下代码中会发生类型退化：
+\begin{lstlisting}
+    auto a2 = a;    // a2的类型是a的退化类型
+\end{lstlisting}
+
+\subsubsection*{move语义}
+move语义也遵循之前介绍的规则，如下声明：
+\begin{lstlisting}
+    MyStruct ms = { 42, "Jim" };
+    auto&& [v, n] = std::move(ms);     // 匿名实体是ms的右值引用
+\end{lstlisting}
+这里\texttt{v}和\texttt{n}指向的匿名实体是\texttt{ms}的右值引用。
+同时\texttt{ms}的值仍然保持不变：
+\begin{lstlisting}
+    std::cout << "ms.s: " << ms.s << '\n';  // 打印出"Jim"
+\end{lstlisting}
+然而，你可以对指向\texttt{ms.s}的\texttt{n}进行移动赋值：
+\begin{lstlisting}
+    std::string s = std::move(n);   // 把ms.s移动到s
+    std::cout << "ms.s: " << ms.s << '\n';  // 打印出未定义的值
+    std::cout << "n:    " << n << '\n';     // 打印出未定义的值
+    std::cout << "s:    " << s << '\n';     // 打印出"Jim"
+\end{lstlisting}
+像通常一样值被移动走的对象处于一个值未定义但却有效的状态。因此打印它们的值是没有问题的，
+但不要对打印出的值做任何假设\footnote{对于\texttt{string}来说，
+值被移动走之后一般是处于空字符串的状态，但并不保证这一点}。
+
+上面的例子和直接用\texttt{ms}被移动走的值进行结构化绑定有些不同：
+\begin{lstlisting}
+    MyStruct ms = {42, "Jim" };
+    auto [v, n] = std::move(ms);    // 新的匿名实体持有从ms处移动走的值
+\end{lstlisting}
+这里新的匿名实体是用\texttt{ms}被移动走的值来初始化的。因此，\texttt{ms}已经失去了值：
+\begin{lstlisting}
+    std::cout << "ms.s: " << ms.s << '\n';  // 打印出未定义的值
+    std::cout << "n:    " << n << '\n';     // 打印出"Jim"
+\end{lstlisting}
+你可以继续用\texttt{n}进行移动赋值或者给\texttt{n}赋予新值，但已经不会再影响到\texttt{ms.s}了：
+\begin{lstlisting}
+    std::string s = std::move(n);   // 把n移动到s
+    n = "Lara";
+    std::cout << "ms.s: " << ms.s << '\n';  // 打印出未定义的值
+    std::cout << "n:    " << n << '\n';     // 打印出"Lara"
+    std::cout << "s:    " << s << '\n';     // 打印出"Jim"
+\end{lstlisting}
+
+\subsection{结构化绑定的适用场景}
+原则上讲，结构化绑定适用于所有只有\texttt{public}数据成员的结构体、
+C风格数组和类似元组(tuple-like)的对象：
+\begin{itemize}[leftmargin=*]
+    \item 对于所有非静态数据成员都是\texttt{public}的\textbf{结构体和类}，
+    你可以把每一个成员绑定到一个新的变量名上。
+    \item 对于\textbf{原生数组}，你可以把数组的每一个元素绑定到新的变量名上。
+    \item 对于任何类型，你可以使用\textbf{tuple-like API}来绑定新的名称，
+    无论这套API是如何定义“元素”的。对于一个类型\emph{type}这套API需要如下的组件：
+    \begin{itemize}[leftmargin=*]
+        \item \texttt{std::tuple\_size<type>::value}要返回元素的数量。
+        \item \texttt{std::tuple\_element<idx, type>::type}
+        要返回第\texttt{idx}个元素的类型。
+        \item 一个全局或成员函数\texttt{get<idx>()}要返回第\texttt{idx}个元素的值。
+    \end{itemize}
+    标准库类型\texttt{std::pair<>}、\texttt{std::tuple<>}、\texttt{std::array<>}
+    就是提供了这些API的示例。
+\end{itemize}
+如果结构体和类提供了tuple-like API，那么将会使用这些API进行绑定，而不是直接绑定数据成员。
+
+在任何情况下，结构化绑定中声明的变量名的数量必须和元素或数据成员的数量相同。
+你不能跳过某个元素，也不能重复使用变量名。然而，你可以使用非常短的名称例如\texttt{'\_'}
+（有的程序员喜欢这个名字，有的讨厌它，但注意全局命名空间不允许使用它），
+但这个名字在同一个作用域只能使用一次：
+\begin{lstlisting}
+    auto [_, val1] = getStruct();   // OK
+    auto [_, val2] = getStruct();   // ERROR:变量名_已经被使用过
+\end{lstlisting}
+目前还不支持嵌套化的结构化绑定。
+
+下一小节将详细讨论结构化绑定的使用。
+
+\subsubsection{结构体和类}
+上面几节里已经介绍了对只有\texttt{public}成员的结构体和类使用结构化绑定的方法，
+一个典型的应用是直接对包含多个数据的返回值使用结构化绑定。然而有一些边缘情况需要注意。
+
+注意要使用结构化绑定需要继承时遵循一定的规则。所有的非静态数据成员必须在同一个类中定义
+（也就是说，这些成员要么是全部直接来自于最终的类，要么是全部来自同一个父类）：
+\begin{lstlisting}
+    struct B {
+        int a = 1;
+        int b = 2;
+    };
+
+    struct D1 : B {
+    };
+    auto [x, y] = D1{};     // OK
+
+    struct D2 : B {
+        int c = 3;
+    };
+    auto [i, j, k] = D2{};  // 编译期ERROR
+\end{lstlisting}
+注意只有当\texttt{public}成员的顺序保证是固定的时候你才应该使用结构化绑定。
+否则如果\texttt{B}中的\texttt{int a}和\texttt{int b}的顺序发生了变化，
+\texttt{x}和\texttt{y}的值也会随之变化。为了保证固定的顺序，
+C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义了成员顺序。
+
+联合还不支持使用结构化绑定。
+
+\subsubsection{原生数组}
+下面的代码用C风格数组的两个元素初始化了\texttt{x}和\texttt{y}：
+\begin{lstlisting}
+    int arr[] = { 47, 11 };
+    auto [x, y] = arr;  // x和y是arr中的int元素的拷贝
+    auto [z] = arr;     // ERROR：元素的数量不匹配
+\end{lstlisting}
+注意这是C++中少数几种原生数组会按值拷贝的场景之一。
+
+只有当数组的长度已知时才可以使用结构化绑定。
+对于传递进入的数组参数不能使用结构化绑定，因为数组会\emph{退化(decay)}为相应的指针类型。
+
+注意C++允许通过引用来返回带有大小信息的数组，结构化绑定可以应用于返回这种数组的函数：
+\begin{lstlisting}
+    auto getArr() -> int(&)[2];     // getArr()返回一个原生int数组的引用
+    ...
+    auto [x, y] = getArr();     // x和y是返回的数组中的int元素的拷贝
+\end{lstlisting}
+你也可以对\texttt{std::array}使用结构化绑定，这是通过下一节要讲述的tuple-like API来实现的。
+
+\subsubsection{\texttt{std::pair}, \texttt{std::tuple}和\texttt{std::array}}
+结构化绑定的机制是可拓展的，你可以为任何类型添加对绑定的支持。
+标准库中就为\texttt{std::pair<>}、\texttt{std::tuple<>}、
+\texttt{std::array<>}添加了支持。
+
+\subsubsection*{\texttt{std::array}}
+例如，下面的代码为\texttt{getArray()}返回的\texttt{std::array<>}中的四个元素绑定了
+新的变量名\texttt{a}，\texttt{b}，\texttt{c}，\texttt{d}：
+\begin{lstlisting}
+    std::array<int, 4> getArray();
+    ...
+    auto [a, b, c, d] = getArray(); // a,b,c,d是返回值的拷贝中的四个元素的别名
+\end{lstlisting}
+这里\texttt{a}，\texttt{b}，\texttt{c}，\texttt{d}被绑定到\texttt{getArray()}返回的
+\texttt{std::array}的元素上。
+
+使用非临时变量的\texttt{non-const}引用进行绑定，还可以进行修改操作。例如：
+\begin{lstlisting}
+    std::array<int, 4> stdarr { 1, 2, 3, 4 };
+    ...
+    auto& [a, b, c, d] = stdarr;
+    a += 10;    // OK:修改了stdarr[0]
+
+    const auto& [e, f, g, h] = stdarr;
+    e += 10;    // ERROR:引用指向常量对象
+
+    auto&& [i, j, k, l] = stdarr;
+    i += 10;    // OK:修改了stdarr[0]
+
+    auto [m, n, o, p] = stdarr;
+    m += 10;    // OK:但是修改的是stdarr[0]的拷贝
+\end{lstlisting}
+然而像往常一样，我们不能用临时对象(prvalue)初始化一个 \texttt{non-const}引用：
+\begin{lstlisting}
+    auto& [a, b, c, d] = getArray();    // ERROR
+\end{lstlisting}
+
+\subsubsection*{\texttt{std::tuple}}
+下面的代码将\texttt{a}，\texttt{b}，\texttt{c}初始化为\texttt{getTuple()}返回的
+\texttt{std::tuple<>}的拷贝的三个元素的别名：
+\begin{lstlisting}
+    std::tuple<char, float, std::string> getTuple();
+    ...
+    auto [a, b, c] = getTuple();    // a,b,c的类型和值与返回的tuple中相应的成员相同
+\end{lstlisting}
+其中\texttt{a}的类型是\texttt{char}，\texttt{b}的类型是\texttt{float}，
+\texttt{c}的类型是\texttt{std::string}。
+
+\subsubsection*{\texttt{std::pair}}
+作为另一个例子，考虑如下对关联/无序容器的\texttt{insert()}成员的返回值进行处理的代码：
+\begin{lstlisting}
+    std::map<std::string, int> coll;
+    auto ret = coll.insert({"new", 42});
+    if (!ret.second) {
+        // 如果插入失败，使用ret.first处理错误
+        ...
+    }
+\end{lstlisting}
+通过使用结构化绑定，而不是使用\texttt{std::pair<>}的\texttt{first}和
+\texttt{second}成员，代码的可读性大大增强：
+\begin{lstlisting}
+    auto [pos, ok] = coll.insert({"new", 42});
+    if (!ok) {
+        // 如果插入失败，用pos处理错误
+        ...
+    }
+\end{lstlisting}
+注意在这种场景中，C++17中提供了一种使用\hyperref[ch2]{带初始化的\texttt{if}语句}
+来进行改进的方法。
+
+\subsubsection*{为\texttt{pair}和\texttt{tuple}的结构化绑定赋予新值}
+在声明了一个结构化绑定之后，你通常不能一起修改所有绑定的变量。
+因为结构化绑定只能一起声明但不能一起使用。然而你可以使用\texttt{std::tie()}
+把值一起赋给所有变量。例如：
+\begin{lstlisting}
+    std::tuple<char, float, std::string> getTuple();
+    ...
+    auto [a, b, c] = getTuple();    // a,b,c的类型和值与返回的tuple相同
+    ...
+    std::tie(a, b, c) = getTuple(); // a,b,c的值变为新返回的tuple的值
+\end{lstlisting}
+这种方法可以被用来处理返回多个值的循环，例如\hyperref[ch24.1.2]{在循环中使用搜索器}：
+\begin{lstlisting}
+    std::boyer_moore_searcher bmsearch{sub.begin(), sub.end()};
+    for (auto [beg, end] = bmsearch(text.begin(), text.end());
+         beg != text.end();
+         std::tie(beg, end) = bmsearch(end, text.end())) {
+        ...
+    }
+\end{lstlisting}
+
+\subsection{为结构化绑定提供Tuple-Like API}
+你可以通过\emph{tuple-like API}为任何类型添加对结构化绑定的支持，
+就像标准库中为\texttt{std::pair<>}、\texttt{std::tuple}、\texttt{std::array<>}做的一样：
+
+\subsubsection*{支持只读结构化绑定}
+下面的例子演示了怎么为一个类型\texttt{Customer}添加结构化绑定支持，
+类的定义如下：
+\begin{lstlisting}[frame=single, title=lang/customer1.hpp]
+    #include <string>
+    #include <utility>  // for std::move()
+
+    class Customer {
+      private:
+        std::string first;
+        std::string last;
+        long val;
+      public:
+        Customer (std::string f, std::string l, long v)
+            : first{std::move(f)}, last{std::move(l)}, val{v} {
+        }
+        std::string getFirst() const {
+            return first;
+        }
+        std::string getLast() const {
+            return last;
+        }
+        long getValue() const {
+            return val;
+        }
+    };
+\end{lstlisting}
+我们可以用如下代码添加tuple-like API：
+\begin{lstlisting}[frame=single, title=lang/structbind1.hpp]
+    #include "customer1.hpp"
+    #include <utility>  // for tuple-like API
+
+    // 为类Customer提供tulpe-like API：
+    template<>
+    struct std::tuple_size<Customer> {
+        static constexpr int value = 3; // 有三个属性
+    };
+
+    template<>
+    struct std::tuple_element<2, Customer> {
+        using type = long;  // 最后一个属性的类型是long
+    };
+    template<std::size_t Idx>
+    struct std::tuple_element<Idx, Customer> {
+        using type = std::string;   // 其他的属性都是string
+    };
+
+    // 定义特化的getter：
+    template<std::size_t> auto get(const Customer& c);
+    template<> auto get<0>(const Customer& c) { return c.getFirst(); }
+    template<> auto get<1>(const Customer& c) { return c.getLast(); }
+    template<> auto get<2>(const Customer& c) { return c.getValue(); }
+\end{lstlisting}
+这里，我们为顾客的三个属性定义了tuple-like API，并映射到三个getter：
+\begin{itemize}[leftmargin=*]
+    \item 顾客的姓是\texttt{std::string}类型
+    \item 顾客的名是\texttt{std::string}类型
+    \item 顾客的消费金额是\texttt{long}类型
+\end{itemize}
+属性的数量被定义为\texttt{std::tuple\_size}模板函数对类\texttt{Customer}的特化版本：
+\begin{lstlisting}
+    template<>
+    struct std::tuple_size<Customer> {
+        static constexpr int value = 3; // 我们有3个属性
+    };
+\end{lstlisting}
+属性的类型被定义为\texttt{std::tuple\_element}的特化版本：
+\begin{lstlisting}
+    template<>
+    struct std::tuple_element<2, Customer> {
+        using type = long;  // 最后一个属性是long类型
+    };
+    template<std::size_t Idx>
+    struct std::tuple_element<Idx, Customer> {
+        using type = std::string;   // 其他的属性是string
+    };
+\end{lstlisting}
+第三个属性是\texttt{long}，被定义为\texttt{Idx}为2时的完全特化版本。
+其他的属性类型都是\texttt{std::string}，被定义为部分特化版本（优先级比全特化版本低）。
+这里的类型就是结构化绑定时\texttt{decltype}返回的类型。
+
+最后在和类\texttt{Customer}相同的命名空间定义了模板函数\texttt{get<>()}的
+重载版本作为getter\footnote{C++17标准也允许把\texttt{get<>()}函数定义为成员函数，
+但这可能只是一个疏忽，因此不应该这么用}：
+\begin{lstlisting}
+    template<std::size_t> auto get(const Customer& c);
+    template<> auto get<0>(const Customer& c) { return c.getFirst(); }
+    template<> auto get<1>(const Customer& c) { return c.getLast(); }
+    template<> auto get<2>(const Customer& c) { return c.getValue(); }
+\end{lstlisting}
+在这种情况下，我们有一个主函数模板的声明和针对所有情况的全特化版本。
+
+注意函数模板的全特化版本必须使用和声明时相同的类型（包括返回值类型都必须完全相同）。
+这是因为我们只是提供特化版本的实现，而不是新的声明。下面的代码将不能通过编译：
+\begin{lstlisting}
+    template<std::size_t> auto get(const Customer& c);
+    template<> std::string get<0>(const Customer& c) { return c.getFirst(); }
+    template<> std::string get<1>(const Customer& c) { return c.getLast(); }
+    template<> long get<2>(const Customer& c) { return c.getValue(); }
+\end{lstlisting}
+通过使用新的\hyperref[ch10]{编译期\texttt{if}语句特性}，我们可以把\texttt{get<>()}函数的实现
+合并到一个函数里：
+\begin{lstlisting}
+    template<std::size_t I> auto get(const Customer& c) {
+        static_assert(I < 3);
+        if constexpr (I == 0) {
+            return c.getFirst();
+        }
+        else if constexpr (I == 1) {
+            return c.getLast();
+        }
+        else {  // I == 2
+            return c.getValue();
+        }
+    }
+\end{lstlisting}
+有了这个API，我们就可以为类型\texttt{Customer}使用结构化绑定：
+\begin{lstlisting}[frame=single, title=lang/structbind1.cpp]
+    #include "structbind1.hpp"
+    #include <iostream>
+
+    int main()
+    {
+        Customer c{"Tim", "Starr", 42};
+
+        auto [f, l, v] = c;
+
+        std::cout << "f/l/v:    " << f << ' '
+                  << l << ' ' << v << '\n';
+        // 修改结构化绑定的变量
+        std::string s{std::move(f)};
+        l = "Waters";
+        v += 10;
+        std::cout << "f/l/v:    " << f << ' '
+                  << l << ' ' << v << '\n';
+        std::cout << "c:        " << c.getFirst() << ' '
+                  << c.getLast() << ' ' << c.getValue() << '\n';
+        std::cout << "s:        " << s << '\n';
+    }
+\end{lstlisting}
+如下初始化之后：
+\begin{lstlisting}
+    auto [f, l, v] = c;
+\end{lstlisting}
+像之前的例子一样，\texttt{Customer c}被拷贝到一个匿名实体。
+当结构化绑定离开作用域时匿名实体也被销毁。
+
+另外，对于每一个绑定\texttt{f}、\texttt{l}、\texttt{v}，
+它们对应的\texttt{get<>()}函数都会被调用。
+因为定义的\texttt{get<>}函数返回类型是\texttt{auto}，所以这3个getter会返回成员的拷贝，
+这意味着结构化绑定的变量的地址不同于\texttt{c}中成员的地址。
+因此，修改\texttt{c}的值并不会影响绑定变量（反之亦然）。
+
+使用结构化绑定等同于使用\texttt{get<>()}函数的返回值，因此：
+\begin{lstlisting}
+    std::cout << "f/l/v:    " << f << ' '
+              << l << ' ' << v << '\n';
+\end{lstlisting}
+只是简单的输出变量的值（并不会再次调用getter函数）。另外
+\begin{lstlisting}
+    std::string s{std::move(f)};
+    l = "Waters";
+    v += 10;
+    std::cout << "f/l/v:    " << f << ' '
+              << l << ' ' << v << '\n';
+\end{lstlisting}
+这段代码修改了绑定变量的值。因此，这段程序总是有如下输出：
+\begin{lstlisting}
+    f/l/v:    Tim Starr 42
+    f/l/v:     Waters 52
+    c:        Tim Starr 42
+    s:        Tim
+\end{lstlisting}
+第二行的输出依赖于被move的\texttt{string}的值，一般情况下是空值，但也有可能是其他有效的值。
+
+你也可以在迭代一个元素类型是\texttt{Customer}的\texttt{vector}时使用结构化绑定：
+\begin{lstlisting}
+    std::vector<Customer> coll;
+    ...
+    for (const auto& [first, last, val] : coll) {
+        std::cout << first << ' ' << last
+                  << ": " << val << '\n';
+    }
+\end{lstlisting}
+在这个循环中，因为使用了\texttt{const auto\&}所以不会有\texttt{Customer}被拷贝。
+然而，结构化绑定时会调用\texttt{get<>()}函数返回姓和名的拷贝。
+之后，循环体内的输出语句中再次使用了结构化绑定，不需要再次调用getter。
+最后在每一次迭代结束的时候，拷贝的\texttt{string}会被销毁。
+
+注意对绑定变量使用\texttt{decltype}会推导出变量自身的类型，
+不会受到匿名实体的类型修饰符的影响。也就是说这里\texttt{decltype(first)}的类型是
+\texttt{const std::string}而不是引用。
+
+\subsubsection*{支持可写结构化绑定}
+实现tuple-like API时可以时候用返回\texttt{non-const}引用。这样结构化绑定就变得可写。
+设想类\texttt{Customer}提供了读写成员的API\footnote{这个类的设计比较失败，
+因为通过成员函数可以直接访问私有成员。然而用来演示怎么支持可写结构化绑定已经足够了}：
+\begin{lstlisting}[frame=single, title=lang/customer2.hpp]
+    #include <string>
+    #include <utility>  // for std::move()
+
+    class Customer {
+      private:
+        std::string first;
+        std::string last;
+        long val;
+      public:
+        Customer (std::string f, std::string l, long v)
+            : first{std::move(f))}, last{std::move(l)}, val{v} {
+        }
+        const std::string& firstname() const {
+            return first;
+        }
+        std::string& firstname() {
+            return first;
+        }
+        const std::string& lastname() const {
+            return last;
+        }
+        long value() const {
+            return val;
+        }
+        long& value() {
+            return val;
+        }
+    };
+\end{lstlisting}
+
+为了支持读写，我们需要为常量和非常量引用定义重载的getter：
+\begin{lstlisting}[frame=single, title=lang/structbind2.hpp]
+    #include "customer2.hpp"
+    #include <utility>  // for tuple-like API
+
+    // 为类Customer提供tuple-like API
+    template<>
+    struct std::tuple_size<Customer> {
+        static constexpr int value = 3; // 有3个属性
+    };
+
+    template<>
+    struct std::tuple_element<2, Customer> {
+        using type = long;  // 最后一个属性是long类型
+    }
+    template<std::size_t Idx>
+    struct std::tuple_element<Idx, Customer> {
+        using type = std::string;   // 其他的属性是string
+    }
+
+    // 定义特化的getter：
+    template<std::size_t I> decltype(auto) get(Customer& c) {
+        static_assert(I < 3);
+        if constexpr (I == 0) {
+            return c.firstname();
+        }
+        else if constexpr (I == 1) {
+            return c.lastname();
+        }
+        else {  // I == 2
+            return c.value();
+        }
+    }
+    template<std::size_t I> decltype(auto) get(const Customer& c) {
+        static_assert(I < 3);
+        if constexpr (I == 0) {
+            return c.firstname();
+        }
+        else if constexpr (I == 1) {
+            return c.lastname();
+        }
+        else {  // I == 2
+            return c.value();
+        }
+    }
+    template<std::size_t I> decltype(auto) get(Customer&& c) {
+        static_assert(I < 3);
+        if constexpr (I == 0) {
+            return std::move(c.firstname());
+        }
+        else if constexpr (I == 1) {
+            return std::move(c.lastname());
+        }
+        else {  // I == 2
+            return c.value();
+        }
+    }
+\end{lstlisting}
+注意你必须提供这3个版本的特化来分别处理常量对象、非常量对象、可移动对象
+\footnote{标准库中还为\texttt{const\&\&}实现了第4个版本的\texttt{get<>()}，
+这么做是有原因的（见\url{https://wg21.link/lwg2485)}），
+但如果只是想支持结构化绑定则不是必须的。}。
+为了实现返回引用，你应该使用\texttt{decltype(auto)}
+\footnote{\texttt{decltype(auto)}在C++14中引入，
+它可以根据表达式的值类别(\emph{value category})来推导（返回）类型。
+简单来说，将它设置为返回值类型之后引用会以引用返回，但临时值会以值返回。}。
+
+这里我们又一次使用了\hyperref[ch10]{编译期\texttt{if}语句特性}，
+这可以让我们的getter的实现变得更加简单。如果没有这个特性，我们必须写出所有的全特化版本，例如：
+\begin{lstlisting}
+    template<std::size_t> decltype(auto) get(const Customer& c);
+    template<std::size_t> decltype(auto) get(Customer& c);
+    template<std::size_t> decltype(auto) get(Customer&& c);
+    template<> decltype(auto) get<0>(const Customer& c) { return c.firstname(); }
+    template<> decltype(auto) get<0>(Customer& c) { return c.firstname(); }
+    template<> decltype(auto) get<0>(Customer&& c) { return c.firstname(); }
+    template<> decltype(auto) get<1>(const Customer& c) { return c.lastname(); }
+    template<> decltype(auto) get<1>(Customer& c) { return c.lastname(); }
+    ...
+\end{lstlisting}
+再次强调，主函数模板声明必须和全特化版本拥有完全相同的签名（包括返回值）。
+下面的代码不能通过编译：
+\begin{lstlisting}
+    template<std::size_t> decltype(auto) get(Customer& c);
+    template<> std::string& get<0>(Customer& c) { return c.firstname(); }
+    template<> std::string& get<1>(Customer& c) { return c.lastname(); }
+    template<> long& get<2>(Customer& c) { return c.value(); }
+\end{lstlisting}
+你现在可以对\texttt{Customer}类使用结构化绑定了，并且还能通过绑定修改成员的值：
+\begin{lstlisting}[frame=single, title=lang/structbind2.cpp]
+    #include "structbind2.hpp"
+    #include <iostream>
+
+    int main()
+    {
+        Customer c{"Tim", "Starr", 42};
+        auto [f, l, v] = c;
+        std::cout << "f/l/v:    " << f << ' '
+                  << l << ' ' << v << '\n';
+
+        // 通过引用修改结构化绑定
+        auto&& [f2, l2, v2] = c;
+        std::string s{std::move(f2)};
+        f2 = "Ringo";
+        v2 += 10;
+        std::cout << "f2/l2/v2: " << f2 << ' '
+                  << l2 << ' ' << v2 << '\n';
+        std::cout << "c:        " << c.firstname() << ' '
+                  << c.lastname() << ' ' << c.value() << '\n';
+        std::cout << "s:        " << s << '\n';
+    }
+\end{lstlisting}
+程序的输出如下：
+\begin{lstlisting}
+    f/l/v:    Tim Starr 42
+    f2/l2/v2: Ringo Starr 52
+    c:        Ringo Starr 52
+    s:        Tim
+\end{lstlisting}
+
+\subsection{后记}
+结构化绑定最早由Herb Sutter、Bjarne Stroustrup和Gabriel Dos Reis在
+\url{https://wg21.link/p0144r0}提出，当时提议使用花括号而不是方括号。
+最终被接受的正式提案由Jens Maurer在\url{https://wg21.link/p0217r3}上发表。

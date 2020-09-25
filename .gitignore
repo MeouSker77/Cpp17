@@ -1,2 +1,5 @@
 .*
 !.gitignore
+latex/out/*
+!latex/out/main.pdf
+

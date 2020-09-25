@@ -192,7 +192,7 @@ auto fo = std::for_each(v.begin(), v.end(),
                         CountCalls([](auto i) {
                             std::cout << "elems: " << i << '\n';
                         }));
-std::cout << "output with " << fo.count() << " calls\n";
+std::cout << "out with " << fo.count() << " calls\n";
 ```
 
 ### 8.1.3 没有部分类模板参数推导

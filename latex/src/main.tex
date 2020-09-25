@@ -1,0 +1,86 @@
+%! Author = wys
+%! Date = 2020/9/23
+
+% Preamble
+\documentclass[a4paper, 12pt, AutoFakeBold, AutoFakeSlant]{article}
+
+% Packages
+\usepackage{xeCJK}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage[colorlinks, linkcolor=black]{hyperref}
+\usepackage{xcolor}
+\usepackage[singlelinecheck=false, font={it}]{caption}
+\usepackage[numbered]{bookmark}
+
+\setCJKmainfont{宋体}
+\setCJKmonofont{宋体}
+\setmainfont{Times New Roman}
+\setmonofont{Noto Sans Mono}
+\linespread{1.25}
+\CJKsetecglue{\,}
+
+\lstset{
+basicstyle = \ttfamily\footnotesize,
+breakatwhitespace = false,
+breaklines = true,
+commentstyle = \color{gray}\itshape,
+extendedchars = false,
+keepspaces=true,
+keywordstyle=\color{blue}, % keyword style
+language = C++,            % the language of code
+otherkeywords={string},
+rulecolor=\color{black},
+showspaces=false,
+showstringspaces=false,
+showtabs=false,
+stringstyle=\color{magenta},        % string literal style
+tabsize=4,
+}
+
+% Document
+\begin{document}
+    \tableofcontents
+
+    \clearpage
+
+
+    \part{基本语言特性}\label{part1}
+    这一部分介绍了C++17中新的核心语言特性，但不包括那些专为泛型编程（即template）设计的特性。
+    这些新增的特性对于应用程序员的日常编程非常有用，因此每一个使用C++17的C++程序员都应该了解它们。
+
+    专为模板编程设计的新的核心语言特性在\autoref{part2}中介绍。
+
+    \include{ch1}
+    \include{ch2}
+
+
+    \part{模板特性}\label{part2}
+    这一部分介绍了C++17为泛型编程（即template）提供的新的语言特性。
+
+    我们首先从类模板参数推导开始，这一特性只影响模板的使用。之后的章节会介绍为编写泛型代码（函数模板，
+    类模板，泛型库等）的程序员提供的新特性。
+
+    \include{ch10}
+
+
+    \part{新的标准库组件}\label{part3}
+    这一部分介绍C++17中新的标准库组件。
+
+
+    \part{已有标准库的拓展和修改}\label{part4}
+    这一部分介绍C++17对已有标准库组件的拓展和修改
+
+    \include{ch24}
+
+
+    \part{专家的工具}\label{part5}
+    这一部分介绍了普通应用程序员通常不需要知道的新的语言特性和库。
+    它主要包括了为编写基础库和语言特性的程序员准备的用来解决特殊问题语言特性（例如修改了堆内存的管理方式）。
+
+
+    \part{一些通用的提示}\label{part6}
+    这一部分介绍了一些有关C++17的通用的提示，例如对C语言和废弃特性的兼容性更改。
+
+\end{document}
