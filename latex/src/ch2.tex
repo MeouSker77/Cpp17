@@ -1,1 +1,132 @@
 \section{带初始化的\texttt{if}和\texttt{switch}语句}\label{ch2}
+\texttt{if}和\texttt{switch}语句现在允许在条件表达式里添加一条初始化语句。
+例如，你可以写：
+\begin{lstlisting}
+    if (status s = check(); s != status::success) {
+        return s;
+    }
+\end{lstlisting}
+这里初始化语句：
+\begin{lstlisting}
+    status s = check();
+\end{lstlisting}
+初始化了\texttt{s}，\texttt{s}将在整个\texttt{if}语句中有效（包括\texttt{else}分支里）。
+
+\subsection{带初始化的\texttt{if}语句}
+在\texttt{if}语句的条件表达式里定义的变量将在整个\texttt{if}语句中生效，
+包括\emph{then}和\emph{else}部分。例如：
+\begin{lstlisting}
+    if (std::ofstream strm = getLogStrm(); coll.empty()) {
+        strm << "<no data>\n";
+    }
+    else {
+        for (const auto& elem : coll) {
+            strm << elem << '\n';
+        }
+    }
+    // strm不再有效
+\end{lstlisting}
+在整个\texttt{if}语句结束时\texttt{strm}的析构函数会被调用。
+另一个例子是关于锁的使用，假设我们要在并发的环境中执行一个依赖某些条件的任务：
+\begin{lstlisting}
+    if (std::lock_guard<std::mutex> lg{collMutex}; !coll.empty()) {
+        std::cout << coll.front() << '\n';
+    }
+\end{lstlisting}
+这个例子中，如果使用\nameref{ch9}，可以改写成如下代码：
+\begin{lstlisting}
+    if (std::lock_guard lg{collMutex}; !coll.empty()) {
+        std::cout << coll.front() << '\n';
+    }
+\end{lstlisting}
+上面的代码等价于：
+\begin{lstlisting}
+    {
+        std::lock_guard<std::mutex> lg{collMutex};
+        if (!coll.empty()) {
+            std::cout << coll.front() << '\n';
+        }
+    }
+\end{lstlisting}
+细微的区别在于前者中\texttt{lg}在\texttt{if}语句的作用域之内定义，
+和条件语句在相同的作用域。
+
+注意这个特性的效果和传统\texttt{for}循环里的初始化语句完全相同。
+上面的例子中为了让\texttt{lock\_guard}生效，必须在初始化语句里明确声明一个变量名,
+否则它就是一个临时变量，会在创建之后就立即销毁。因此，初始化一个没有变量名的临时
+\texttt{lock\_guard}是一个逻辑错误，因为当执行到条件语句时锁就已经被释放了：
+\begin{lstlisting}
+    if (std::lock_guard<std::mutex>{collMutex};     // 运行时ERROR
+        !coll.empty()) {                    // 锁已经被释放了
+        std::cout << coll.front() << '\n';  // 锁已经被释放了
+    }
+\end{lstlisting}
+原则上讲，使用简单的\texttt{\_}作为变量名就已经足够了：
+\begin{lstlisting}
+    if (std::lock_guard<std::mutex> _{collMutex};   // OK，但是...
+        !coll.empty()) {
+        std::cout << coll.front() << '\n';
+    }
+\end{lstlisting}
+你也可以同时声明多个变量，并且可以在声明时初始化：
+\begin{lstlisting}
+    if (auto x = qqq1(), y = qqq2(); x != y) {
+        std::cout << "return values " << x << " and " << y << "differ\n";
+    }
+\end{lstlisting}
+或者：
+\begin{lstlisting}
+    if (auto x{qqq1()}, y{qqq2()}; x != y) {
+        std::cout << "return values " << x << " and " << y << "differ\n";
+    }
+\end{lstlisting}
+作为另一个例子，考虑向\texttt{map}或者\texttt{unordered map}插入元素。
+你可以像下面这样检查是否成功：
+\begin{lstlisting}
+    std::map<std::string, int> coll;
+    ...
+    if (auto [pos, ok] = coll.insert({"new", 42}); !ok) {
+        // 如果插入失败，用pos处理错误
+        const auto& [key, val] = *pos;
+        std::cout << "already there: " << key << '\n';
+    }
+\end{lstlisting}
+这里，我们用了\nameref{ch1}来给返回的\texttt{pos}指向的值声明了新的名称，
+而不是使用\texttt{first}和\texttt{second}成员。在C++17之前，相应的处理代码必须像下面这样写：
+\begin{lstlisting}
+    auto ret = coll.insert({"new", 42});
+    if (!ret.second) {
+        // 如果插入失败，用ret.first处理错误
+        const auto& elem = *(ret.first);
+        std::cout << "already there: " << elem.first << '\n';
+    }
+\end{lstlisting}
+注意这个拓展也适用于\nameref{ch10}特性。
+
+\subsection{带初始化的\texttt{switch}语句}
+通过使用带初始化的\texttt{switch}语句，我们可以在控制流之前初始化一个对象/实体。
+例如，我们可以先声明一个\nameref{ch20.2.3}，然后再根据它的类别进行处理：
+\begin{lstlisting}
+    namespace fs = std::filesystem;
+    ...
+    switch (fs::path p{name}; status(p).type()) {
+        case fs::file_type::not_found:
+            std::cout << p << " not found\n";
+            break;
+        case fs::file_type::directory:
+            std::cout << p << ":\n";
+            for (const auto& e : std::filesystem::directory_iterator{p}) {
+                std::cout << "- " << e.path() << '\n';
+            }
+            break;
+        default:
+            std::cout << p << " exists\n";
+            break;
+    }
+\end{lstlisting}
+这里，初始化的路径\texttt{p}可以在整个\texttt{switch}语句中使用。
+
+\subsection{后记}
+带初始化语句的\texttt{if}和\texttt{switch}语句最早由Thomas Köppe
+在\url{https://wg21.link/p0305r0}中提出，一开始只是提到了扩展\texttt{if}语句。
+最终被接受的正式提案由Thomas Köpped发表于\url{https://wg21.link/p0305r1}。

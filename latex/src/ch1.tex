@@ -39,7 +39,7 @@
     }
 \end{lstlisting}
 这么做的好处是可以直接访问成员，
-另外通过把值绑定到能体现语义的变量名可以使代码的可读性更强\footnote{感谢Zachary Turner指出这一点}。
+另外通过把值绑定到能体现语义的变量名可以使代码的可读性更强。\footnote{感谢Zachary Turner指出这一点}
 
 下面的代码演示了使用结构化绑定带来的显著改进。
 在不使用结构化绑定的情况下遍历\texttt{std::map<>}的元素需要这么写：
@@ -203,8 +203,8 @@ move语义也遵循之前介绍的规则，如下声明：
     std::cout << "s:    " << s << '\n';     // 打印出"Jim"
 \end{lstlisting}
 像通常一样值被移动走的对象处于一个值未定义但却有效的状态。因此打印它们的值是没有问题的，
-但不要对打印出的值做任何假设\footnote{对于\texttt{string}来说，
-值被移动走之后一般是处于空字符串的状态，但并不保证这一点}。
+但不要对打印出的值做任何假设。\footnote{对于\texttt{string}来说，
+值被移动走之后一般是处于空字符串的状态，但并不保证这一点}
 
 上面的例子和直接用\texttt{ms}被移动走的值进行结构化绑定有些不同：
 \begin{lstlisting}
@@ -686,8 +686,8 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
         }
     }
 \end{lstlisting}
-注意你必须提供这3个版本的特化来分别处理常量对象、非常量对象、可移动对象
-\footnote{标准库中还为\texttt{const\&\&}实现了第4个版本的\texttt{get<>()}，
+注意你必须提供这3个版本的特化来分别处理常量对象、非常量对象、可移动对象，
+\footnote{标准库中还为\texttt{const\&\&}实现了第4个版本的\texttt{get<>()}
 这么做是有原因的（见\url{https://wg21.link/lwg2485)}），
 但如果只是想支持结构化绑定则不是必须的。}。
 为了实现返回引用，你应该使用\texttt{decltype(auto)}
@@ -751,4 +751,4 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
 \subsection{后记}
 结构化绑定最早由Herb Sutter、Bjarne Stroustrup和Gabriel Dos Reis在
 \url{https://wg21.link/p0144r0}提出，当时提议使用花括号而不是方括号。
-最终被接受的正式提案由Jens Maurer在\url{https://wg21.link/p0217r3}上发表。
+最终被接受的正式提案由Jens Maurer发表于\url{https://wg21.link/p0217r3}。

@@ -39,6 +39,8 @@ stringstyle=\color{magenta},        % string literal style
 tabsize=4,
 }
 
+%\includeonly{ch3}
+
 % Document
 \begin{document}
     \tableofcontents
@@ -54,6 +56,7 @@ tabsize=4,
 
     \include{ch1}
     \include{ch2}
+    \include{ch3}
 
 
     \part{模板特性}\label{part2}
@@ -62,11 +65,14 @@ tabsize=4,
     我们首先从类模板参数推导开始，这一特性只影响模板的使用。之后的章节会介绍为编写泛型代码（函数模板，
     类模板，泛型库等）的程序员提供的新特性。
 
+    \include{ch9}
     \include{ch10}
 
 
     \part{新的标准库组件}\label{part3}
     这一部分介绍C++17中新的标准库组件。
+
+    \include{ch20}
 
 
     \part{已有标准库的拓展和修改}\label{part4}
@@ -79,7 +85,8 @@ tabsize=4,
     这一部分介绍了普通应用程序员通常不需要知道的新的语言特性和库。
     它主要包括了为编写基础库和语言特性的程序员准备的用来解决特殊问题语言特性（例如修改了堆内存的管理方式）。
 
-
+    \include{ch30}
+    
     \part{一些通用的提示}\label{part6}
     这一部分介绍了一些有关C++17的通用的提示，例如对C语言和废弃特性的兼容性更改。
 
