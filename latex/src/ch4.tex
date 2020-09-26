@@ -1,0 +1,221 @@
+\section{聚合体扩展}\label{ch4}
+C++有很多初始化对象的方法。其中之一叫做\emph{聚合体初始化}(aggregate initialization)，
+这是聚合体\footnote{聚合体指数组或者C风格的简单类，简单类要求没有用户定义的构造函数、
+没有私有或保护的非静态数据成员、没有虚函数，此外在C++17之前，还要求没有继承}专有的一种初始化方法。
+从C语言引入的初始化方式是用花括号括起来的一组值来初始化类：
+\begin{lstlisting}
+    struct Data {
+        std::string name;
+        double value;
+    };
+
+    Data x = {"test1", 6.778};
+\end{lstlisting}
+自从C++11起，你可以忽略等号：
+\begin{lstlisting}
+    Data x{"test1", 6.778};
+\end{lstlisting}
+自从C++17起，聚合体可以拥有基类。也就是说像下面这种从其他类派生出的子类也可以使用这种初始化方法：
+\begin{lstlisting}
+    struct MoreData : Data {
+        bool done;
+    }
+
+    MoreData y{{"test1", 6.778}, false};
+\end{lstlisting}
+如你所见，聚合体初始化时可以用一个子聚合体初始化来初始化类中来自基类的成员。
+
+另外，你甚至可以省略子聚合体初始化的花括号：
+\begin{lstlisting}
+    MoreData y{"test1", 6.778, false};
+\end{lstlisting}
+这样写将遵循嵌套聚合体初始化时的通用规则，你传递的实参被用来初始化哪一个成员取决于它们的顺序。
+
+\subsection{扩展聚合体初始化的动机}
+如果没有这个特性，那么所有的派生类都不能使用聚合体初始化，这意味着你要像下面这样定义构造函数：
+\begin{lstlisting}
+    struct Cpp14Data : Data {
+        bool done;
+        Cpp14Data (const std::string& s, double d, bool b)
+            : Data{s, d}, done{b} {
+        }
+    };
+
+    Cpp14Data y{"test1", 6.778, false};
+\end{lstlisting}
+现在我们不再需要定义任何构造函数就可以做到这一点。
+我们可以直接使用嵌套花括号的语法来实现初始化，
+如果给出了内层初始化需要的所有值就可以省略内层的花括号：
+\begin{lstlisting}
+    MoreData x{{"test1", 6.778}, false};    // 自从C++17起OK
+    MoreData y{"test1", 6.778, false};  // OK
+\end{lstlisting}
+注意因为现在派生类也可以是聚合体，所以其他的一些初始化方法也可以使用：
+\begin{lstlisting}
+    MoreData u;     // OOPS：value/done未初始化
+    MoreData z{};   // OK: value/done初始化为0/false
+\end{lstlisting}
+如果觉得这样很危险，可以使用成员初始值：
+\begin{lstlisting}
+    struct Data {
+        std::string name;
+        double value{0.0};
+    };
+
+    struct Cpp14Data : Data {
+        bool done{false};
+    };
+\end{lstlisting}
+或者，提供一个默认构造函数。
+
+\subsection{使用聚合体扩展}
+聚合体初始化的一个典型应用场景是对一个派生自C风格结构体并且添加了新成员的类进行初始化。例如：
+\begin{lstlisting}
+    struct Data {
+        const char* name;
+        double value;
+    };
+
+    struct CppData : Data {
+        bool critical;
+        void print() const {
+            std::cout << '[' << name << ',' << value << "]\n";
+        }
+    };
+
+    CppData y{{"test1", 6.778}, false};
+    y.print();
+\end{lstlisting}
+这里，内层花括号里的参数被传递给基类\texttt{Data}。
+
+注意你可以跳过初始化某些值。在这种情况下，跳过的成员将会进行默认初始化，例如：
+\begin{lstlisting}
+    CppData x1{};           // 所有成员默认初始化为0值
+    CppData x2{{"msg"}}     // 和{{"msg", 0.0}, false}等价
+    CppData x3{{}, true};   // 和{{nullptr, 0.0}, true}等价
+    CppData x4;             // 成员的值未定义
+\end{lstlisting}
+注意使用空花括号和不使用花括号完全不同：
+\begin{itemize}[leftmargin=*]
+    \item \texttt{x1}的定义会把所有成员默认初始化为0值，
+    因此字符指针\texttt{name}被初始化为\texttt{nullptr}，
+    \texttt{double}类型的\texttt{value}初始化为\texttt{0.0}，
+    \texttt{bool}类型的\texttt{flag}初始化为\texttt{false}。
+    \item \texttt{x4}的定义没有初始化任何成员。所有成员的值都是未定义的。
+\end{itemize}
+你也可以从非聚合体派生出聚合体。例如：
+\begin{lstlisting}
+    struct MyString : std::string {
+        void print() const {
+            if (empty()) {
+                std::cout << "<undefined>\n";
+            }
+            else {
+                std::cout << c_str() << '\n';
+            }
+        }
+    };
+
+    MyString x{{"hello"}};
+    MyString y{"world"};
+\end{lstlisting}
+注意这不是通常的具有多态性的\texttt{public}继承，因为\texttt{std::string}没有虚成员函数，
+你需要避免混淆这两种类型。
+
+你甚至可以从多个基类和聚合体中派生出聚合体：
+\begin{lstlisting}
+    template<typename T>
+    struct D : std::string, std::complex<T>
+    {
+        std::string data;
+    };
+\end{lstlisting}
+你可以像下面这样使用：
+\begin{lstlisting}
+    D<float> s{{"hello"}, {4.5, 6.7}, "world"}; // 自从C++17起OK
+    D<float> t{"hello", {4.5, 6.7}, "world"};   // 自从C++17起OK
+    std::cout << s.data;    // 输出："world"
+    std::cout << static_cast<std::string>(s);   // 输出："hello"
+    std::cout << static_cast<std::complex<float>>(s);   //输出：(4.5,6.7)
+\end{lstlisting}
+内部嵌套的初值列表将按照继承时基类声明的顺序传递给基类。
+
+这个新的特性也可以帮助我们用很少的代码定义\hyperref[ch14.1]{重载的\texttt{lambda}}。
+
+\subsection{聚合体的定义}
+总的来说，在C++17中满足如下条件之一的对象被认为是\emph{聚合体}：
+\begin{itemize}[leftmargin=*]
+    \item 是一个数组
+    \item 或者是一个满足如下条件的\emph{类类型}(class, struct, union)：
+    \begin{itemize}[leftmargin=*]
+        \item 没有用户定义的和\texttt{explicit}的构造函数
+        \item 没有使用\texttt{using}声明继承的构造函数
+        \item 没有\texttt{private}和\texttt{protected}的非静态数据成员
+        \item 没有\texttt{virtual}函数
+        \item 没有\texttt{virtual, private, protected}的基类
+    \end{itemize}
+\end{itemize}
+然而，要想使用聚合体初始化来初始化聚合体，那么还需要满足如下额外的约束：
+\begin{itemize}[leftmargin=*]
+    \item 基类中没有\texttt{private}或者\texttt{protected}的数据成员
+    \item 没有\texttt{private}或者\texttt{protected}的构造函数
+\end{itemize}
+下一节就有一个因为不满足这些额外约束导致编译失败的例子。
+
+C++17引入了一个\hyperref[ch21.2.1]{新的类型trait \texttt{is\_aggregate<>}}
+来测试一个类型是否是聚合体：
+\begin{lstlisting}
+    template<typename T>
+    struct D : std::string, std::complex<T> {
+        std::string data;
+    };
+    D<float> s{{"hello"}, {4.5, 6.7}, "world"}; // 自从C++17起OK
+    std::cout << std::is_aggregate<decltype(s)>::value; // 输出：1(true)
+\end{lstlisting}
+
+\subsection{向后的不兼容性}
+注意下面的例子不能再通过编译：
+\begin{lstlisting}[frame=single, title=lang/aggr14.cpp]
+    struct Derived;
+
+    struct Base {
+        friend struct Derived;
+      private:
+        Base() {
+        }
+    };
+
+    struct Derived : Base {
+    };
+
+    int main()
+    {
+        Derived d1{};   // 自从C++17起ERROR
+        Derived d2;     // 仍然OK（但可能不会初始化）
+    }
+\end{lstlisting}
+在C++17之前，\texttt{Derived}不是聚合体。因此
+\begin{lstlisting}
+    Derived d1{};
+\end{lstlisting}
+会调用\texttt{Derived}隐式定义的默认构造函数，这个构造函数会调用基类\texttt{Base}的构造函数。
+尽管基类的默认构造函数是\texttt{private}的，但在派生类的构造函数里调用它也是有效的，
+因为派生类被声明为友元类。
+
+自从C++17起，例子中的\texttt{Derived}是一个聚合体，所以它没有隐式的默认构造函数
+（构造函数没有使用\texttt{using}声明继承）。因此，\texttt{d1}的初始化将是一个聚合体初始化，
+如下表达式：
+\begin{lstlisting}
+    std::is_aggregate<Derived>::value
+\end{lstlisting}
+将返回\texttt{true}。
+
+然而，因为基类有一个\texttt{private}的构造函数（见上一节）所以不能使用花括号来初始化。
+这和派生类是否是基类的友元无关。
+
+\subsection{后记}
+聚合体初始化扩展由Oleg Smolsky在\url{https://wg21.link/n4404}中第一次提到。
+最终被接受的正式提案由Oleg Smolsky发表于\url{https://wg21.link/p0017r1}。
+
+类型trait \texttt{std::is\_aggregate<>}作为美国国家机构对C++17标准的一个注释引入
+（见\url{https://wg21.link/lwg2911}）。
