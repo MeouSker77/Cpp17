@@ -9,10 +9,13 @@
 \usepackage{indentfirst}
 \usepackage{listings}
 \usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{amsmath}
 \usepackage[colorlinks, linkcolor=black]{hyperref}
 \usepackage{xcolor}
-\usepackage[singlelinecheck=false, font={it}]{caption}
+\usepackage[font={it}]{caption}
 \usepackage[numbered]{bookmark}
+\usepackage{graphicx}
 
 \setCJKmainfont{宋体}
 \setCJKmonofont{宋体}
@@ -20,6 +23,7 @@
 \setmonofont{Noto Sans Mono}
 \linespread{1.25}
 \CJKsetecglue{\,}
+\numberwithin{figure}{section}
 
 \lstset{
 basicstyle = \ttfamily\footnotesize,
@@ -39,13 +43,13 @@ stringstyle=\color{magenta},        % string literal style
 tabsize=4,
 }
 
-%\includeonly{ch4}
+%\includeonly{ch5}
 
 % Document
 \begin{document}
     \tableofcontents
-
     \clearpage
+    \setcounter{page}{1}
 
 
     \part{基本语言特性}\label{part1}
@@ -58,6 +62,8 @@ tabsize=4,
     \include{ch2}
     \include{ch3}
     \include{ch4}
+    \include{ch5}
+
 
     \part{模板特性}\label{part2}
     这一部分介绍了C++17为泛型编程（即template）提供的新的语言特性。
@@ -69,11 +75,13 @@ tabsize=4,
     \include{ch10}
     \include{ch14}
 
+
     \part{新的标准库组件}\label{part3}
     这一部分介绍C++17中新的标准库组件。
 
     \include{ch20}
     \include{ch21}
+
 
     \part{已有标准库的拓展和修改}\label{part4}
     这一部分介绍C++17对已有标准库组件的拓展和修改
@@ -86,7 +94,8 @@ tabsize=4,
     它主要包括了为编写基础库和语言特性的程序员准备的用来解决特殊问题语言特性（例如修改了堆内存的管理方式）。
 
     \include{ch30}
-    
+
+
     \part{一些通用的提示}\label{part6}
     这一部分介绍了一些有关C++17的通用的提示，例如对C语言和废弃特性的兼容性更改。
 
