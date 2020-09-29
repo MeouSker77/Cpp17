@@ -1,0 +1,209 @@
+\section{新属性和属性特性}\label{ch7}
+自从C++11起，就可以指明\emph{属性}(attribute)（允许或者禁用某些警告的注解）。
+C++17引入了新的属性，另外现在属性也可以在其他一些地方使用，也许能带来一些便利。
+
+\subsection{\texttt{[[nodiscard]]}属性}
+新属性\texttt{[[nodiscard]]}可以鼓励编译器在某个函数的返回值未被使用时给出警告
+（这并不意味着编译器一定要给出警告）。
+\texttt{[[nodiscard]]}通常应该用于防止某些因为返回值未被使用导致的不当行为。
+这些不当行为可能是（译者注：请配合下边的例子理解这些不当行为）：
+\begin{itemize}[leftmargin=*]
+    \item \textbf{内存泄露}，例如返回值中含有动态分配的内存，但并未使用。
+    \item \textbf{未知的或出乎意料的行为}，例如因为没有使用返回值而导致了一些奇怪的行为。
+    \item \textbf{不必要的开销}，例如因为返回值没被使用而进行了一些无意义的行为。
+\end{itemize}
+这里有一些该属性发挥所用的例子：
+\begin{itemize}[leftmargin=*]
+    \item 申请资源但自身并不释放，而是将资源返回等待其他函数释放的函数应该被标记为
+    \texttt{[[nodiscard]]}。一个典型的例子是申请内存的函数，
+    例如\texttt{malloc()}函数或者分配器的\texttt{allocate()}成员函数。
+
+    然而，注意有些函数\emph{可能}会返回一个无需再处理的值。例如，程序员可能会用0字节调用C函数
+    \texttt{realloc()}来释放内存，这种情况下的返回值无需之后调用\texttt{free()}函数释放。
+    因此，如果对\texttt{realloc()}标记\texttt{[[nodiscard]]}将会适得其反。
+    \item 一个因为没有使用返回值而导致函数行为和预期不同的很好的例子是\texttt{std::async()}
+    （C++11引入）。\texttt{std::async()}会在后台异步地执行一个任务并返回一个可以用来等待
+    任务执行结束的句柄（也可以通过它获取返回值或者异常）。然而，如果返回值没有被使用的话该调用
+    将变成同步的调用，因为在启动任务的语句结束之后未被使用的返回值的析构函数会立即执行，而析构
+    函数会阻塞等待任务运行结束。因此，不使用返回值导致的结果与\texttt{std::async()}的目的
+    完全矛盾。将\texttt{std::async()}标记为\texttt{[[nodiscard]]}可以让编译器给出警告。
+    \item 另一个例子是成员函数\texttt{empty()}，它的作用是检查一个对象（容器/字符串）是否
+    没有元素。程序员经常误用该函数来“清空“容器：
+    \begin{lstlisting}
+        cont.empty();
+    \end{lstlisting}
+    这种对\texttt{empty()}的误用并没有使用返回值，所以\texttt{[[nodiscard]]}可以检查出这种误用：
+    \begin{lstlisting}
+    class MyContainer {
+        ...
+      public:
+        [[nodiscard]] bool empty() const noexcept;
+        ...
+    };
+    \end{lstlisting}
+    这里的属性标记可以帮助检查这种逻辑错误。
+\end{itemize}
+如果因为某些原因你不想使用一个被标记为\texttt{[[nodiscard]]}的函数的返回值，
+你可以把返回值转换为\texttt{void}：
+\begin{lstlisting}
+    (void)coll.empty(); // 禁止[[nodiscard]]警告
+\end{lstlisting}
+注意如果成员函数被覆盖或者隐藏时基类中标记的属性不会被继承：
+\begin{lstlisting}
+    struct B {
+        [[nodiscard]] int* foo();
+    };
+
+    struct D : B {
+        int* foo();
+    };
+
+    B b;
+    b.foo();        // 警告
+    (void)b.foo();  // 没有警告
+
+    D d;
+    d.foo();        // 没有警告
+\end{lstlisting}
+因此你需要给派生类里相应的成员函数再次标记\texttt{[[nodiscard]]}
+（除非有某些原因导致你不想在派生类里确保返回值必须被使用）。
+
+你可以把属性标记在函数前的所有修饰符之前，也可以标记在函数名之后：
+\begin{lstlisting}
+    class C {
+        ...
+        [[nodiscard]] friend bool operator== (const C&, const C&);
+        friend bool operator!= [[nodiscard]] (const C&, const C&);
+    };
+\end{lstlisting}
+把属性放在\texttt{friend}和\texttt{bool}之间或者\texttt{bool}和\texttt{operator==}
+之间是错误的。
+
+尽管这个特性从C++17起引入，但它还没有在标准库中使用。因为这个提案出现的太晚了，所以最应该
+需要它的\texttt{std::async()}也还没有使用它。不过这里讨论的所有例子，将在下一次C++标准
+中实现（见C++20中通过的\url{https://wg21.link/p0600r1}提案）。
+
+为了保证代码的可移植性，你应该使用\texttt{[[nodiscard]]}而不是一些不可移植的方案
+（例如gcc和clang的\texttt{[[gnu:warn\_unused\_result]]}或者Visual C++的
+\texttt{\_Check\_return\_}）。
+
+当\hyperref[ch30.2.2]{定义\texttt{new()}运算符}时，
+你应该用\texttt{[[nodiscard]]}对该函数进行标记，
+例如\hyperref[ch30.4]{定义一个追踪所有\texttt{new}调用的头文件}。
+
+\subsection{\texttt{[[maybe\_unused]]}属性}
+新的属性\texttt{[[maybe\_unused]]}可以避免编译器在某个变量未被使用时发出警告。
+新的属性可以应用于类的声明、使用\texttt{typedef}或者\texttt{using}定义的类型、
+一个变量、一个非静态数据成员、一个函数、一个枚举类型、一个枚举值等场景。
+
+例如其中一个作用是定义一个可能不会使用的参数：
+\begin{lstlisting}
+    void foo(int val, [[maybe_unused]] std::string msg)
+    {
+    #ifdef DEBUG
+        log(msg);
+    #endif
+        ...
+    }
+\end{lstlisting}
+另一个例子是定义一个可能不会使用的成员：
+\begin{lstlisting}
+    class MyStruct {
+        char c;
+        int i;
+        [[maybe_unused]] char makeLargerSize[100];
+        ...
+    };
+\end{lstlisting}
+注意你不能在一条语句上应用\texttt{[[maybe\_unused]]}。
+也就是说，你不能直接用\texttt{[[maybe\_unused]]}来抵消\texttt{[[nodiscard]]}的作用：
+\footnote{感谢Roland Bock指出这一点}
+\begin{lstlisting}
+    [[nodiscard]] void* foo();
+    int main()
+    {
+        foo();  // 警告：返回值没有使用
+        [[maybe_unused]] foo(); // 错误：maybe_unused不允许出现在此
+        [[maybe_unused]] auto x = foo(); // OK
+    }
+\end{lstlisting}
+
+\subsection{\texttt{[[fallthrough]]}属性}
+新的属性\texttt{[[fallthrough]]}可以避免编译器在\texttt{switch}语句中某一个标签
+缺少\texttt{break}语句时发出警告。例如：
+\begin{lstlisting}
+    void commentPlace(int place)
+    {
+        switch (place) {
+            case 1:
+                std::cout << "very ";
+                [[fallthrough]];
+            case 2:
+                std::cout << "well\n";
+                break;
+            default:
+                std::cout << "OK\n";
+                break;
+        }
+    }
+\end{lstlisting}
+这个例子中参数为1时将输出：
+\begin{lstlisting}
+    very well
+\end{lstlisting}
+\texttt{case 1}和\texttt{case 2}中的语句都会被执行。
+注意这个属性必须被用作单独的语句，还要有分号结尾。
+另外在\texttt{switch}语句的最后一个分支不能使用它。
+
+\subsection{通用的属性扩展}
+自从C++17起下列有关属性的通用特性变得可用：
+\begin{enumerate}[leftmargin=*]
+    \item 属性现在可以用来标记命名空间。例如，你可以像下面这样弃用一个命名空间：
+    \begin{lstlisting}
+    namespace [[deprecated]] DraftAPI {
+        ...
+    }
+    \end{lstlisting}
+    这也可以应用于内联的和匿名的命名空间。
+    \item 属性现在可以标记枚举子（枚举类型的值）。
+    例如你可以像下面这样引入一个新的枚举值作为某个已有枚举值（并且现在已经被废弃）的替代：
+    \begin{lstlisting}
+    enum class City { Berlin = 0,
+        NewYork = 1,
+        Mumbai = 2,
+        Bombay [[deprecated]] = Mumbai,
+        ... };
+    \end{lstlisting}
+    这里\texttt{Mumbai}和\texttt{Bombay}代表同一个城市的数字码，但使用\texttt{Bombay}
+    已经被标记为废弃的。注意对于枚举值，属性被放置在标识符\emph{之后}。
+    \item 用户自定义的属性一般应该定义在自定义的命名空间中。现在可以使用\texttt{using}前缀
+    来避免为每一个属性重复输入命名空间。也就是说，如下代码：
+    \begin{lstlisting}
+    [[MyLib::WebService, MyLib::RestService, MyLib::doc("html")]] void foo();
+    \end{lstlisting}
+    可以被替换为
+    \begin{lstlisting}
+    [[using MyLib: WebService, RestService, doc("html")]] void foo();
+    \end{lstlisting}
+    注意在使用了\texttt{using}前缀时重复命名空间将导致错误：
+    \begin{lstlisting}
+    [[using MyLib: MyLib::doc("html")]] void foo(); // ERROR
+    \end{lstlisting}
+\end{enumerate}
+
+\subsection{后记}
+三个新属性由Andrew Tomazos在\url{https://wg21.link/p0068r0}中首次提出。
+\texttt{[[nodiscard]]}属性最终被接受的提案由Andrew Tomazos发表于
+\url{https://wg21.link/p0189r1}。
+\texttt{[[maybe\_unused]]}属性最终被接受的提案由Andrew Tomazos发表于
+\url{https://wg21.link/p0212r1}。
+\texttt{[[fallthrough]]}属性最终被接受的提案由Andrew Tomazos发表于
+\url{https://wg21.link/p0188r1}.
+
+允许为命名空间和枚举值标记属性的特性由Richard Smith在\url{https://wg21.link/n4196}
+中首次提出。该特性最终被接受的提案由Richard Smith发表于\url{https://wg21.link/n4266}。
+
+属性的\texttt{using}前缀由J. Daniel Garcia、Luis M. Sanchez、
+Massimo Torquati、Marco Danelutto和Peter Sommerlad在\url{https://wg21.link/p0028r0}
+中首次提出。最终被接受的提案由J. Daniel Garcia和Daveed Vandevoorde发表于
+\url{https://wg21.link/P0028R4}。
