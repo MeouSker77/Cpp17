@@ -1,0 +1,390 @@
+\section{其他语言特性}\label{ch8}
+在C++17中还有一些微小的核心语言特性的变更，将在这一章中介绍。
+
+\subsection{嵌套命名空间}
+自从2003年第一次提出，到现在C++标准委员会终于同意了以如下方式定义嵌套的命名空间：
+\begin{lstlisting}
+    namespace A::B::C {
+        ...
+    }
+\end{lstlisting}
+等价于：
+\begin{lstlisting}
+    namespace A {
+        namespace B {
+            namespace C {
+                ...
+            }
+        }
+    }
+\end{lstlisting}
+注意目前还没有对嵌套内联命名空间的支持。
+这是因为\texttt{inline}是作用于最内层还是整个命名空间还有歧义。（两种情况都很有用）
+
+\subsection{有定义的表达式求值顺序}
+许多C++书籍里的代码如果按照直觉来看似乎是正确的，但严格上讲它们有可能导致未定义的行为。
+一个简单的例子是在字符串中替换一个字串：
+\begin{lstlisting}
+    std::string s ="I heard it even works if you don't believe";
+    s.replace(0, 8, "").replace(s.find("even", 4, "sometimes")
+                       .replace(s.find("you don't"), 9, "I");
+\end{lstlisting}
+通常的假设是前8个字符被空串替换，“even”被“sometimes”替换，“you don't”被“I”替换，
+因此结果是：
+\begin{lstlisting}[keywordstyle=\color{black}]
+    it sometimes works if I believe
+\end{lstlisting}
+然而在C++17之前最后的结果实际上并没有任何保证。因为查找子串位置的\texttt{find()}
+函数可能在需要它们的返回值之前的任意时刻调用，而不是像直觉中的那样从左向右按顺序执行表达式。
+事实上，所有的\texttt{find()}调用可能在执行第一次替换之前就全部执行，因此结果变为：
+
+\begin{lstlisting}
+    it even worsometimesf youIlieve
+\end{lstlisting}
+其他的结果也是有可能的：
+\begin{lstlisting}
+    it sometimes workIdon’t believe
+    it even worsometiIdon’t believe
+\end{lstlisting}
+作为另一个例子，考虑使用输出运算符打印几个相互依赖的值：
+\begin{lstlisting}
+    std::cout << f() << g() << h();
+\end{lstlisting}
+通常的假设是依次调用\texttt{f()}、\texttt{g()}、\texttt{h()}函数。
+然而这个假设实际上是错误的。\texttt{f()}、\texttt{g()}、\texttt{h()}有可能以任意顺序调用，
+当这三个函数的调用顺序会影响返回值的时候可能就会出现奇怪的结果。
+
+作为一个具体的例子，直到C++17之前，下面代码的行为都是未定义的：
+\begin{lstlisting}
+    i = 0;
+    std::cout << ++i << ' ' << --i << '\n';
+\end{lstlisting}
+在C++17之前，它\emph{\textbf{可能}}会输出\texttt{1 0}，但也可能输出\texttt{0 -1}
+或者\texttt{0 0}，这和\texttt{i}是\texttt{int}还是用户自定义类型无关（不过对于基本类型，
+编译器一般会在这种情况下给出警告）。
+
+为了解决这种未定义的问题，C++17标准重新定义了\emph{一些}运算符的的求值顺序，
+因此这些运算符现在有了固定的求值顺序：
+\begin{itemize}[leftmargin=*]
+    \item 对于运算
+    \begin{lstlisting}
+    e1 [ e2 ]
+    e1 . e2
+    e1 .* e2
+    e1 ->* e2
+    e1 << e2
+    e1 >> e2
+    \end{lstlisting}
+    \emph{e1}现在保证一定会在\emph{e2}之前求值，因此求值顺序是从左向右。
+    然而，注意同一个函数调用中的不同参数的计算顺序仍然是未定义的。也就是说：
+    \begin{lstlisting}
+    e1.f(a1, a2, a3);
+    \end{lstlisting}
+    中的\texttt{e1.f}保证会在\texttt{a1}、\texttt{a2}、\texttt{a3}之前求值。
+    但\texttt{a1}、\texttt{a2}、\texttt{a3}的求值顺序仍是未定义的。
+    \item 所有的赋值运算
+    \begin{lstlisting}
+    e2 = e1
+    e2 += e1
+    e2 *= e1
+    ...
+    \end{lstlisting}
+    中右侧的\texttt{e1}现在保证一定会在左侧的\texttt{e2}之前求值。
+    \item 最后，类似于如下的\texttt{new}表达式
+    \begin{lstlisting}
+        new Type(e)
+    \end{lstlisting}
+    中保证内存分配的操作在对\texttt{e}求值之前发生。
+    新的对象的初始化操作保证在第一次使用该对象之前完成。
+\end{itemize}
+所有这些保证适用于所有基本类型和自定义类型。
+
+因此，自从C++17起
+\begin{lstlisting}
+    std::string s ="I heard it even works if you don't believe";
+    s.replace(0, 8, "").replace(s.find("even"), 4, "always")
+        .replace(s.find("don't believe"), 13, "use C++17");
+\end{lstlisting}
+保证将会把\texttt{s}的值修改为：
+\begin{lstlisting}[keywordstyle=\color{black}]
+    it always works if you use C++17
+\end{lstlisting}
+因为现在每个\texttt{find()}之前的替换操作现在都保证会在\texttt{find()}调用之前完成。
+
+另一个例子，如下语句：
+\begin{lstlisting}
+    i = 0;
+    std::cout << ++i << ' ' << --i << '\n';
+\end{lstlisting}
+对于任意类型的\texttt{i}都保证输出是\texttt{1 0}。
+
+然而，其他大多数运算符的运算顺序仍然是未知的。例如：
+\begin{lstlisting}
+    i = i++ + i;    // 仍然是未定义的行为
+\end{lstlisting}
+这里，最右侧的\texttt{i}可能在\texttt{i}自增之前求值也可能在自增之后求值。
+
+新的表达式求值顺序的另一个应用是在参数之前\hyperref[ch11.2.1]{插入空格的函数}。
+
+\paragraph{向后的不兼容性}
+新的有定义的求值顺序可能会影响现有程序的输出。例如，考虑如下程序：
+\begin{lstlisting}[frame=single, title=lang/evalexcept.cpp]
+    #include <iostream>
+    #include <vector>
+
+    void print10elems(const std::vector<int>& v) {
+        for (int i = 0; i < 10; ++i) {
+            std::cout << "value: " << v.at(i) << '\n';
+        }
+    }
+
+    int main()
+    {
+        try {
+            std::vector<int> vec{7, 14, 21, 28};
+            print10elems(vec);
+        }
+        catch (const std::exception& e) {   // 处理标准异常
+            std::cerr << "EXCEPTION: " << e.what() << '\n';
+        }
+        catch (...) {   // 处理任何其他异常
+            std::cerr << "EXCEPTION of unknown type\n";
+        }
+    }
+\end{lstlisting}
+因为这个程序中的\texttt{vector<>}只有4个元素，因此在\texttt{print10elems()}的循环中
+使用无效的索引调用\texttt{at()}时将会抛出异常：
+在C++17之前，输出可能是：
+\begin{lstlisting}
+    value: 7
+    value: 14
+    value: 21
+    value: 28
+    EXCEPTION: ...
+\end{lstlisting}
+因为\texttt{at()}允许在输出\texttt{value:}之前调用，
+所以当索引错误时可以跳过开头的\texttt{value:}输出。
+\footnote{较旧版本的GCC或者Visual C++的行为就是这样的。}
+
+自从C++17以后，输出保证是：
+\begin{lstlisting}
+    value: 7
+    value: 14
+    value: 21
+    value: 28
+    value: EXCEPTION: ...
+\end{lstlisting}
+因为现在\texttt{value:}的输出保证在\texttt{at()}调用之前。
+
+\subsection{更宽松的用整型初始化枚举值的规则}
+对于一个有固定基础类型的枚举类型变量，自从C++17开始可以用一个整型值直接进行列表初始化。
+这可以用于带有明确类型的无作用域枚举和所有有作用域的枚举，因为它们都有默认的基础类型：
+\begin{lstlisting}
+    // 带有明确基础类型的无作用域枚举类型
+    enum MyInt : char { };
+    MyInt i1{42};       // 自从C++17起OK（C++17以前ERROR）
+    MyInt i2 = 42;      // 仍然ERROR
+    MyInt i3(42);       // 仍然ERROR
+    MyInt i4 = {42};    // 仍然ERROR
+
+    // 带有默认基础类型的有作用域枚举
+    enmu class Weekday { mon, tue, wed, thu, fri, sat, sun };
+    Weekday s1{0};      // 自从C++17起OK（C++17以前ERROR）
+    Weekday s2 = 0;     // 仍然ERROR
+    Weekday s3(0);      // 仍然ERROR
+    Weekday s4 = {0};   // 仍然ERROR
+\end{lstlisting}
+如果\texttt{Weekday}有明确的基础类型的话结果完全相同：
+\begin{lstlisting}
+    // 带有明确基础类型的有作用域枚举
+    enum class Weekday : char { mon, tue, wed, thu, fri, sat, sun };
+    Weekday s1{0};      // 自从C++17起OK（C++17以前ERROR）
+    Weekday s2 = 0;     // 仍然ERROR
+    Weekday s3(0);      // 仍然ERROR
+    Weekday s4 = {0};   // 仍然ERROR
+\end{lstlisting}
+对于\emph{没有}明确基础类型的无作用域枚举类型（没有\texttt{class}的\texttt{enum}），
+你仍然不能使用列表初始化：
+\begin{lstlisting}
+    enum Flag { bit1=1, bit2=2, bit3=4 };
+    Flag f1{0};     // 仍然ERROR
+\end{lstlisting}
+注意列表初始化不允许窄化，所以你不能传递一个浮点数：
+\begin{lstlisting}
+    enum MyInt : char { };
+    MyInt i5{42.2}; // 仍然ERROR
+\end{lstlisting}
+一个定义新的整数类型的技巧是简单的定义一个以某个已有整数类型作为基础类型的枚举类型，
+就像上面例子中的\texttt{MyInt}一样。
+这个特性的动机之一就是为了支持这个技巧，如果没有这个特性，在不进行转换的情况下将无法初始化新的对象。
+
+事实上自从C++17起标准库提供的\nameref{ch18}就直接使用了这个特性。
+
+\subsection{修正了\texttt{auto}类型的列表初始化}
+自从在C++11中引入了花括号\emph{统一}初始化之后，
+每当使用\texttt{auto}代替明确类型进行列表初始化时就会出现一些意料之外的不一致的结果：
+\begin{lstlisting}
+    int x{42};       // 初始化一个int
+    int y{1, 2, 3};  // ERROR
+    auto a{42};      // 初始化一个std::initializer_list<int>
+    auto b{1, 2, 3}; // OK:初始化一个std::initializer_list<int>
+\end{lstlisting}
+这些\emph{直接}使用列表初始化（没有使用=）时的不一致行为现在已经被修复了。
+因此如下代码的行为变成了：
+\begin{lstlisting}
+    int x{42};       // 初始化一个int
+    int y{1, 2, 3};  // ERROR
+    auto a{42};      // 现在初始化一个int
+    auto b{1, 2, 3}; // 现在ERROR
+\end{lstlisting}
+注意这是一个\textbf{破坏性的更改(breaking change)}，因为它可能导致很多代码的行为在
+无声无息中发生改变。因此，支持了这个变更的编译器现在即使在C++11模式下也会启用这个变更。
+对于主流编译器，接受这个变更的版本分别是Visual Studio 2015，g++5，clang3.8。
+
+注意当使用\texttt{auto}进行\emph{拷贝}列表初始化（使用了=）时仍然是初始化一个
+\texttt{std::initializer\_list<>}：
+\begin{lstlisting}
+    auto c = {42};  // 仍然初始化一个std::initializer_list<int>
+    auto d = {1, 2, 3};   // 仍然OK：初始化一个std::initializer_list<int>
+\end{lstlisting}
+因此，现在直接初始化（没有=）和拷贝初始化（有=）之间又有了显著的不同：
+\begin{lstlisting}
+    auto a{42};     // 现在初始化一个int
+    auto c = {42};  // 仍然初始化一个std::initializer_list<int>
+\end{lstlisting}
+这也是更推荐使用直接列表初始化（没有=的花括号初始化）的原因之一。
+
+\subsection{十六进制浮点数字面量}
+C++17允许指定十六进制浮点数字面量（有些编译器甚至在C++17之前就已经支持）。
+当需要一个精确的浮点数表示时这个特性非常有用（如果直接用十进制的浮点数字面量不保证
+存储的实际精确值是多少）。
+
+例如：
+\begin{lstlisting}
+    #include <iostream>
+    #include <iomanip>
+
+    int main()
+    {
+        // 初始化浮点数
+        std::initializer_list<double> values {
+            0x1p4,          // 16
+            0xA,            // 10
+            0xAp2,          // 40
+            5e0,            // 5
+            0x1.4p+2,       // 5
+            1e5,            // 100000
+            0x1.86Ap+16,    // 100000
+            0xC.68p+2,      // 49.625
+        };
+
+        // 分别以十进制和十六进制打印出值：
+        for (double d : values) {
+            std::cout << "dec: " << std::setw(6)
+                      << std::defaultfloat << d << "  hex: "
+                      << std::hexfloat << d << '\n';
+        }
+    }
+\end{lstlisting}
+程序通过使用已有的和新增的十六进制浮点记号定义了不同的浮点数值。
+新的记号是一个以2为基数的科学记数法记号：
+\begin{itemize}[leftmargin=*]
+    \item 有效数字/尾数用十六进制书写
+    \item 指数部分用十进制书写，表示乘以2的n次幂
+\end{itemize}
+例如\texttt{0xAp2}的值为40（$10\times2^2$）。这个值也可以被写作\texttt{0x1.4p+5}，
+也就是$1.25\times32$（0.4是十六进制的分数，等于十进制的0.25，$2^5=32$）。
+
+程序的输出如下：
+\begin{lstlisting}
+    dec:     16  hex: 0x1p+4
+    dec:     10  hex: 0x1.4p+3
+    dec:     40  hex: 0x1.4p+5
+    dec:      5  hex: 0x1.4p+2
+    dec:      5  hex: 0x1.4p+2
+    dec: 100000  hex: 0x1.86ap+16
+    dec: 100000  hex: 0x1.86ap+16
+    dec: 49.625  hex: 0x1.8dp+5
+\end{lstlisting}
+就像上例展示的一样，十六进制浮点数的记号很早就存在了，
+因为输出流使用的\texttt{std::hexfloat}操作符自从C++11起就已经存在了。
+
+\subsection{UTF-8字符字面量}
+自从C++11起，C++就已经支持以\texttt{u8}为前缀的UTF-8字符串字面量。
+然而，这个前缀不能用于字符字面量。C++17修复了这个问题，所以现在可以这么写：
+\begin{lstlisting}
+    auto c = u8'6'; // UTF-8编码的字符6
+\end{lstlisting}
+在C++17中，\texttt{u8'6'}的类型是\texttt{char}，在C++20中可能会变为\texttt{char8\_t}，
+因此这里使用\texttt{auto}会更好一些。
+
+通过使用该前缀现在可以保证字符值是UTF-8编码。你可以使用所有的7位的US-ASCII字符，
+这些字符的UTF-8表示和US-ASCII表示完全相同。
+也就是说，\texttt{u8'6'}也是有效的以7位US-ASCII表示的字符'6'
+（也是有效的ISO Latin-1、ISO-8859-15、基本Windows字符集中的字符）。
+\footnote{ISO Latin-1的正式命名为ISO-8859-1，而为了包含欧元符号€引入的字符集
+ISO-8859-15也被命名为ISO Latin-9。}
+通常情况下你的源码字符被解释为US-ASCII或者UTF-8的结果是一样的，所以这个前缀并不是必须的。
+\texttt{c}的值永远是\texttt{54}（十六进制\texttt{36}）。
+
+这里给出一些背景知识来说明这个前缀的必要性：对于源码中的字符和字符串字面量，
+C++标准化了你可以使用的字符而不是这些字符的值。这些值取决于\emph{源码字符值}。
+当编译器为源码生成可执行程序时它使用\emph{运行字符集}。源码字符集几乎总是7位的
+US-ASCII编码，而运行字符集通常是相同的。这意味着在任何C++程序中，所有相同的字符和字符串字面量
+（不管有没有\texttt{u8}前缀）总是有相同的值。
+
+然而，在一些特别罕见的场景中并不是这样的。例如，在使用EBCDIC字符集的旧的IBM机器上，字符'6'
+的值将是246（十六进制为F6）。在一个使用EBCDIC字符集的程序中上面的字符\texttt{c}的值将是
+246而不是54，如果在UTF-8编码的平台上运行这个程序可能会打印出字符ö，这个字符在ISO/IEC 8859-x
+编码中的值为246.在这种情况下，这个前缀就是必须的。
+
+注意\texttt{u8}只能用于单个字符，并且该字符的UTF-8编码必须只占一个字节。一个如下的初始化：
+\begin{lstlisting}
+    char c = u8'ö';
+\end{lstlisting}
+是不允许的，因为德语的曲音字符ö的UTF-8编码是两个字节的序列，分别是195和182（十六进制为C3 B6）。
+
+因此，字符和字符串字面量现在接受如下前缀：
+\begin{itemize}[leftmargin=*]
+    \item u8用于单字节US-ASCII和UTF-8编码
+    \item u用于两字节的UTF-16编码
+    \item U用于四字节的UTF-32编码
+    \item L用于没有指定编码，可能是两个或者四个字节的宽字符集
+\end{itemize}
+
+\subsection{异常声明作为类型的一部分}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
