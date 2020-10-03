@@ -1,19 +1,19 @@
 \section{带初始化的\texttt{if}和\texttt{switch}语句}\label{ch2}
 \texttt{if}和\texttt{switch}语句现在允许在条件表达式里添加一条初始化语句。
-例如，你可以写：
+例如，你可以写出如下代码：
 \begin{lstlisting}
     if (status s = check(); s != status::success) {
         return s;
     }
 \end{lstlisting}
-这里初始化语句：
+其中的初始化语句是：
 \begin{lstlisting}
     status s = check();
 \end{lstlisting}
-初始化了\texttt{s}，\texttt{s}将在整个\texttt{if}语句中有效（包括\texttt{else}分支里）。
+它初始化了\texttt{s}，\texttt{s}将在整个\texttt{if}语句中有效（包括\texttt{else}分支里）。
 
 \subsection{带初始化的\texttt{if}语句}
-在\texttt{if}语句的条件表达式里定义的变量将在整个\texttt{if}语句中生效，
+在\texttt{if}语句的条件表达式里定义的变量将在整个\texttt{if}语句中有效，
 包括\emph{then}和\emph{else}部分。例如：
 \begin{lstlisting}
     if (std::ofstream strm = getLogStrm(); coll.empty()) {
@@ -80,7 +80,7 @@
         std::cout << "return values " << x << " and " << y << "differ\n";
     }
 \end{lstlisting}
-作为另一个例子，考虑向\texttt{map}或者\texttt{unordered map}插入元素。
+另一个例子则是向\texttt{map}或者\texttt{unordered map}插入元素。
 你可以像下面这样检查是否成功：
 \begin{lstlisting}
     std::map<std::string, int> coll;
