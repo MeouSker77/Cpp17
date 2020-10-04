@@ -245,7 +245,7 @@ C风格数组和类似元组(tuple-like)的对象：
 \end{itemize}
 如果结构体和类提供了tuple-like API，那么将会使用这些API进行绑定，而不是直接绑定数据成员。
 
-无论如何，结构化绑定中声明的变量名的数量都必须和元素或数据成员的数量相同。
+在任何情况下，结构化绑定中声明的变量名的数量都必须和元素或数据成员的数量相同。
 你不能跳过某个元素，也不能重复使用变量名。然而，你可以使用非常短的名称例如\texttt{'\_'}
 （有的程序员喜欢这个名字，有的讨厌它，但注意全局命名空间不允许使用它），
 但这个名字在同一个作用域只能使用一次：
@@ -404,28 +404,28 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
 下面的例子演示了怎么为一个类型\texttt{Customer}添加结构化绑定支持，
 类的定义如下：
 \begin{lstlisting}[frame=single, title=lang/customer1.hpp]
-#include <string>
-#include <utility>  // for std::move()
+    #include <string>
+    #include <utility>  // for std::move()
 
-class Customer {
-  private:
-    std::string first;
-    std::string last;
-    long val;
-  public:
-    Customer (std::string f, std::string l, long v)
-        : first{std::move(f)}, last{std::move(l)}, val{v} {
-    }
-    std::string getFirst() const {
-        return first;
-    }
-    std::string getLast() const {
-        return last;
-    }
-    long getValue() const {
-        return val;
-    }
-};
+    class Customer {
+      private:
+        std::string first;
+        std::string last;
+        long val;
+      public:
+        Customer (std::string f, std::string l, long v)
+            : first{std::move(f)}, last{std::move(l)}, val{v} {
+        }
+        std::string getFirst() const {
+            return first;
+        }
+        std::string getLast() const {
+            return last;
+        }
+        long getValue() const {
+            return val;
+        }
+    };
 \end{lstlisting}
 我们可以用如下代码添加tuple-like API：
 \begin{lstlisting}[frame=single, title=lang/structbind1.hpp]
@@ -481,7 +481,7 @@ class Customer {
 其他的属性类型都是\texttt{std::string}，被定义为部分特化版本（优先级比全特化版本低）。
 这里的类型就是结构化绑定时\texttt{decltype}返回的类型。
 
-最后，在和类\texttt{Customer}相同的命名空间中，定义了模板函数\texttt{get<>()}的
+最后，在和类\texttt{Customer}同级的命名空间中定义了函数\texttt{get<>()}的
 重载版本作为getter\footnote{C++17标准也允许把\texttt{get<>()}函数定义为成员函数，
 但这可能只是一个疏忽，因此不应该这么用}：
 \begin{lstlisting}
@@ -524,7 +524,6 @@ class Customer {
     int main()
     {
         Customer c{"Tim", "Starr", 42};
-
         auto [f, l, v] = c;
 
         std::cout << "f/l/v:    " << f << ' '
