@@ -1,1 +1,485 @@
 \section{编译期\texttt{if}语句}\label{ch10}
+通过使用语法\texttt{if constexpr(...)}，编译器可以计算编译期的条件表达式来在编译期决定使用
+一个\texttt{if}语句的\emph{then}的部分还是\emph{else}的部分。其余部分的代码将会被丢弃，这意味着
+它们甚至不会被生成。然而这并不意味着被丢弃的部分完全被忽略，
+这些部分中的代码也会像没使用的模板一样进行语法检查。
+
+例如：
+\begin{lstlisting}[frame=single, title=tmpl/ifcomptime.hpp]
+    #include <string>
+
+    template <typename T>
+    std::string asString(T x)
+    {
+        if constexpr(std::is_same_v<T, std::string>) {
+            return x;   // 如果T不能自动转换为string该语句将无效
+        }
+        else if constexpr(std::is_arithmetic_v<T>) {
+            return std::to_string(x); // 如果T不是数字类型该语句将无效
+        }
+        else {
+            return std::string(x);  // 如果不能转换为string该语句将无效
+        }
+    }
+\end{lstlisting}
+通过使用\texttt{if constexpr}我们在编译期就可以决定我们是简单返回传入的字符串、
+对传入的数字调用\texttt{to\_string()}还是使用构造函数来把传入的参数转换为
+\texttt{std::string}。无效的调用将被\emph{丢弃}，因此下面的代码能够通过编译
+（如果使用运行时\texttt{if}语句则不能通过编译）：
+\begin{lstlisting}[frame=single, title=tmpl/ifcomptime.cpp]
+    #include "ifcomptime.hpp"
+    #include <iostream>
+
+    int main()
+    {
+        std::cout << asString(42) << '\n';
+        std::cout << asString(std::string("hello")) << '\n';
+        std::cout << asString("hello") << '\n';
+    }
+\end{lstlisting}
+
+\subsection{编译期\texttt{if}语句的动机}
+如果我们在上面的例子中使用运行时\texttt{if}，下面的代码将永远不能通过编译：
+\begin{lstlisting}[frame=single, title=tmpl/ifruntime.hpp]
+    #include <string>
+
+    template <typename T>
+    std::string asString(T x)
+    {
+        if (std::is_same_v<T, std::string>) {
+            return x;   // 如果不能自动转换为string会导致ERROR
+        }
+        else if (std::is_numeric_v<T>) {
+            return std::to_string(x); // 如果不是数字将导致ERROR
+        }
+        else {
+            return std::string(x);  // 如果不能转换为string将导致ERROR
+        }
+    }
+\end{lstlisting}
+这是因为模板在实例化时整个模板会作为一个整体进行编译。
+然而\texttt{if}语句的条件表达式的检查是运行时特性。
+即使在编译期就能确定条件表达式的值一定是\texttt{false}，\emph{then}的部分也必须能通过编译。
+因此，当传递一个\texttt{std::string}或者字符串字面量时，会因为\texttt{std::to\_string()}无效
+而导致编译失败。此外，当传递一个数字值时，将会因为第一个和第三个返回语句无效而导致编译失败。
+
+使用编译期\texttt{if}语句时，\emph{then}部分和\emph{else}部分中不可能被用到的部分将成为
+\emph{丢弃的语句}：
+\begin{itemize}[leftmargin=*]
+    \item 当传递一个\texttt{std::string}时，第一个\texttt{if}语句的\emph{else}部分将被丢弃。
+    \item 当传递一个数字时，第一个\texttt{if}语句的\emph{then}部分和最后的\emph{else}部分将被丢弃。
+    \item 当传递一个字符串字面量（类型为\texttt{const char*}）时，第一和第二个\texttt{if}语句
+    的\emph{then}部分将被丢弃。
+\end{itemize}
+因此，在每一个实例化中，无效的分支都会在编译时被丢弃，所以代码能成功编译。
+
+注意被丢弃的语句并不是被忽略了。即使是被忽略的语句也必须符合正确的语法，
+并且所有和模板参数无关的调用也必须正确。
+事实上，模板翻译的第一个阶段（定义期间）将会检查语法和所有与模板无关的名称是否有效。
+所有的\texttt{static\_asserts}也必须有效，即使所在的分支没有被编译。
+
+例如：
+\begin{lstlisting}
+    template<typename T>
+    void foo(T t)
+    {
+        if constexpr(std::is_integral_v<T>) {
+            if (t > 0) {
+                foo(t-1);   // OK
+            }
+        }
+        else {
+            undeclared(t); // 如果未被声明且未被丢弃将导致错误
+            undeclared();  // 如果未声明将导致错误（即使被丢弃也一样）
+            static_assert(false, "no integral"); // 总是会进行断言（即使被丢弃也一样）
+        }
+    }
+\end{lstlisting}
+对于一个符合标准的编译器来说，上面的例子\emph{永远}不能通过编译的原因有两个：
+\begin{itemize}[leftmargin=*]
+    \item 即使\texttt{T}是一个整数类型，如下调用：
+    \begin{lstlisting}
+    undeclared(); // 如果未声明将导致错误（即使被丢弃也一样）
+    \end{lstlisting}
+    如果该函数未定义时即使处于被丢弃也会导致错误，因为这个调用并不依赖于模板参数。
+    \item 如下断言：
+    \begin{lstlisting}
+    static_assert(false, "no integral"); // 总是会进行断言（即使被丢弃也一样）
+    \end{lstlisting}
+    即使被丢弃也总是会断言失败，因为它也不依赖于模板参数。
+    一个如下的编译期条件的静态断言将正常生效：
+    \begin{lstlisting}
+    static_assert(!std::is_integral_v<T>, "no integral");
+    \end{lstlisting}
+\end{itemize}
+注意有一些编译器（例如Visual C++ 2013和2015）并没有正确实现模板翻译的两个阶段。
+它们把第一个阶段（定义期间）的大部分工作推迟到了第二个阶段（实例化期间），
+因此有些无效的函数调用甚至一些错误的语法都可能通过编译。
+\footnote{Visual C++正在一步步的修复这个错误的行为，然而可能需要指定编译选项例如
+\texttt{/permissive-，因为这个修复可能会破坏现有的代码。}}
+
+\subsection{使用编译期\texttt{if}语句}
+原则上讲，只要条件表达式是编译期的表达式你就可以像使用运行期\texttt{if}一样使用编译期\texttt{if}。
+你也可以混合使用编译期和运行期的\texttt{if}：
+\begin{lstlisting}
+    if constexpr (std::is_integral_v<std::remove_reference_t<T>>) {
+        if (val > 10) {
+            if constexpr (std::numeric_limits<char>::is_signed) {
+                ...
+            }
+            else {
+                ...
+            }
+        }
+        else {
+            ...
+        }
+    }
+    else {
+        ...
+    }
+\end{lstlisting}
+注意你不能在函数体之外使用\texttt{if constexpr}。
+因此，你不能使用它来替换预处理器的条件编译。
+
+\subsection{编译期\texttt{if}的注意事项}
+使用编译期\texttt{if}时可能会导致一些并不明显的后果。这将在接下来的小节中讨论。
+\footnote{感谢Graham Haynes、Paul Reilly和Barry Revzin
+提醒了我编译期\texttt{if}对这些方面的影响。}
+
+\subsubsection*{编译期\texttt{if}影响返回值类型}
+编译期\texttt{if}可能会影响函数的返回值类型。例如，下面的代码总能通过编译，
+但返回值的类型可能会不同：
+\begin{lstlisting}
+    auto foo()
+    {
+        if constexpr (sizeof(int) > 4) {
+            return 42;
+        }
+        else [
+            return 42u;
+        }
+    }
+\end{lstlisting}
+这里，因为我们使用了\texttt{auto}，返回值的类型将依赖于返回语句，
+而执行哪条返回语句又依赖于\texttt{int}的字节数：
+\begin{itemize}[leftmargin=*]
+    \item 如果大于4字节，返回\texttt{42}的返回语句将会生效，因此返回值类型是\texttt{int}。
+    \item 否则，返回\texttt{42u}的返回语句将生效，因此返回值类型是\texttt{unsigned int}。
+\end{itemize}
+通过这个方法，\texttt{if constexpr}可以返回完全不同的类型。
+例如，如果我们不写\emph{else}部分，返回值将会是\texttt{int}或者\texttt{void}：
+\begin{lstlisting}
+    auto foo()  // 返回值类型可能是int或者void
+    {
+        if constexpr (sizeof(int) > 4) {
+            return 42;
+        }
+    }
+\end{lstlisting}
+注意这里如果使用运行期\texttt{if}那么代码将永远不能通过编译，
+因为推导返回值类型时会考虑到所有可能的返回值类型，因此推导会有歧义。
+
+\subsubsection*{即使在\emph{then}部分返回也要考虑\emph{else}部分}
+运行期\texttt{if}有一个模式不能应用于编译期\texttt{if}：
+如果代码在\emph{then}和\emph{else}部分都会返回，
+那么在运行期\texttt{if}中你可以跳过\texttt{else}部分。
+也就是说，
+\begin{lstlisting}
+    if (...) {
+        return a;
+    }
+    else {
+        return b;
+    }
+\end{lstlisting}
+可以写成：
+\begin{lstlisting}
+    if (...) {
+        return a;
+    }
+    return b;
+\end{lstlisting}
+但这个模式不能应用于编译期\texttt{if}，因为在第二种写法里，
+返回值类型将同时依赖于两个返回语句而不是依赖其中一个，这会导致行为发生改变。
+例如，如果按照上面的示例修改代码，那么\emph{也许能也许不能}通过编译：
+\begin{lstlisting}
+    auto foo()
+    {
+        if constexpr (sizeof(int) > 4) {
+            return 42;
+        }
+        return 42u;
+    }
+\end{lstlisting}
+如果条件表达式为true（\texttt{int}大于4字节），编译器将会推导出两个不同的返回值类型，
+这会导致错误。否则，将只会有一条有效的返回语句，因此代码能通过编译。
+
+\subsubsection*{编译期短路求值}
+考虑如下代码：
+\begin{lstlisting}
+    template<typename T>
+    constexpr auto foo(const T& val)
+    {
+        if constexpr(std::is_integral<T>::value) {
+            if constexpr (T{} < 10) {
+                return val * 2;
+            }
+        }
+        return val;
+    }
+\end{lstlisting}
+这里我们使用了两个编译期条件来决定是直接返回传入的值还是返回传入值的两倍。
+
+下面的代码都能编译：
+\begin{lstlisting}
+    constexpr auto x1 = foo(42);    // 返回84
+    constexpr auto x2 = foo("hi");  // OK，返回"hi"
+\end{lstlisting}
+运行时\texttt{if}的条件表达式会进行短路求值（当\texttt{\&\&}左侧为\texttt{false}时停止求值，
+当\texttt{||}左侧为\texttt{true}时停止求值）。
+这可能会导致你希望编译期\texttt{if}也会短路求值：
+\begin{lstlisting}
+    template<typename T>
+    constexpr auto bar(const T& val)
+    {
+        if constexpr (std::is_integral<T>::value && T{} < 10) {
+            return val * 2;
+        }
+        return val;
+    }
+\end{lstlisting}
+然而，编译期\texttt{if}的条件表达式总是作为整体实例化并且必须整体有效，
+这意味着如果传递一个不能进行\texttt{<10}运算的类型将不能通过编译：
+\begin{lstlisting}
+    constexpr auto x2 = bar("hi");  // 编译期ERROR
+\end{lstlisting}
+因此，编译期\texttt{if}在实例化时并不短路求值。
+如果后边的条件的有效性依赖于前边的条件，那你需要把条件进行嵌套。
+例如，你必须写成如下形式：
+\begin{lstlisting}
+    if constexpr (std::is_same_v<MyType, T>) {
+        if constepxr (T::i == 42) {
+            ...
+        }
+    }
+\end{lstlisting}
+而不是写成：
+\begin{lstlisting}
+    if constexpr (std::is_same_v<MyType, T> && T::i == 42) {
+        ...
+    }
+\end{lstlisting}
+
+\subsubsection{其他编译期\texttt{if}的示例}
+\subsubsection*{完美返回泛型值}
+编译期\texttt{if}的一个引用就是完美转发返回值，并在返回之前对返回值进行一些处理。
+因为\texttt{decltype(auto)}不能推导为\texttt{void}（因为\texttt{void}是不完全的类型），
+所以你必须像下面这么写：
+\begin{lstlisting}[frame=single, title=tmpl/perfectreturn.hpp]
+    #include <function>     // for std::forward()
+    #include <type_traits>  // for std::is_same<> and std::invoke_result<>
+
+    template<typename Callable, typename... Args>
+    decltype(auto) call(Callable op, Args&.. args)
+    {
+        if constexpr(std::is_void_v<
+            std::invoke_result_t<Callable, Args...>>) {
+            // 返回值类型是void：
+            op(std::forward<Args>(args)...);
+            ... // 在返回前进行一些处理
+            return;
+        }
+        else {
+            // 返回值类型不是void:
+            decltype(auto) ret{op(std::forward<Args>(args)...)};
+            ... // 在返回前用ret进行一些处理
+            return ret;
+        }
+    }
+\end{lstlisting}
+函数的返回值类型可以推导为\texttt{void}，
+但\texttt{ret}的声明不能推导为\texttt{void}，
+因此必须把\texttt{op}返回\texttt{void}的情况单独处理。
+
+\subsubsection*{使用编译期\texttt{if}进行类型分发}
+编译期\texttt{if}的一个典型应用是类型分发。在C++17之前，
+你必须为每一个想处理的类型重载一个单独的函数。现在，有了编译期\texttt{if}，
+你可以把所有的逻辑放在一个函数里。
+
+例如，如下的重载版本的\texttt{std::advance()}算法：
+\begin{lstlisting}
+    template<typename Iterator, typename Distance>
+    void advance(Iterator& pos, Distance n) {
+        using cat = std::iterator_traits<Iterator>::iterator_category;
+        advanceImpl(pos, n, cat{}); // 根据迭代器类型进行分发
+    }
+
+    template<typename Iterator, typename Distance>
+    void advanceImpl(Iterator& pos, Distance n,
+                    std::random_access_iterator_tag) {
+        pos += n;
+    }
+
+    template<typename Iterator, typename Distance>
+    void advanceImpl(Iterator& pos, Distance n,
+                    std::bidirectional_iterator_tag) {
+        if (n >= 0) {
+            while (n--) {
+                ++pos;
+            }
+        }
+        else {
+            while (n++) {
+                --pos;
+            }
+        }
+    }
+
+    template<typename Iterator, typename Distance>
+    void advanceImpl(Iterator& pos, Distance n,
+                    std::input_iterator_tag) {
+        while (n--) {
+            ++pos;
+        }
+    }
+\end{lstlisting}
+现在可以把所有实现都放在同一个函数中：
+\begin{lstlisting}
+    template<typename Iterator, typename Distance>
+    void advance(Iterator& pos, Distance n) {
+        using cat = std::iterator_traits<Iterator>::iterator_category;
+        if constexpr (std::is_convertible_v<cat,
+                      std::random_access_iterator_tag>) {
+            pos += n;
+        }
+        else if constexpr (std::is_convertible_v<cat,
+                           std::bidirectional_access_iterator_tag>) {
+            if (n >= 0) {
+                while (n--) {
+                    ++pos;
+                }
+            }
+            else {
+                while (n++) {
+                    --pos;
+                }
+            }
+        }
+        else {  // input_iterator_tag
+            while (n--) {
+                ++pos;
+            }
+        }
+    }
+\end{lstlisting}
+这里我们就像是有了一个编译期\texttt{switch}，每一个\texttt{if constexpr}语句就像是一个
+case。然而，注意例子中的两种实现还是有一处不同的：
+\footnote{感谢Graham Haynes和Barry Revzin指出这一点。}
+\begin{itemize}[leftmargin=*]
+    \item 重载函数的版本遵循\textbf{最佳匹配}语义。
+    \item 编译期\texttt{if}的版本遵循\textbf{最先匹配}语义。
+\end{itemize}
+另一个类型分发的例子是\hyperref[编译期if实现get<>]{使用编译期\texttt{if}实现\texttt{get<>}重载}
+来实现结构化绑定接口。
+
+第三个例子是在用作\hyperref[ch16.3.3.2]{\texttt{std::variant<>}遍历器}
+的泛型lambda中处理不同的类型。
+
+\subsection{带初始化的编译期\texttt{if}语句}
+注意编译期\texttt{if}语句也可以使用新的\hyperref[ch2]{带初始化}的形式。
+例如，如果有一个\texttt{constexpr}函数\texttt{foo()}，你可以这样写：
+\begin{lstlisting}
+    template<typename T>
+    void bar(const T x)
+    {
+        if constexpr (auto obj = foo(x); std::is_same_v<decltype(obj), T>) {
+            std::cout << "foo(x) yields same type\n";
+            ...
+        }
+        else {
+            std::cout << "foo(x) yields different type\n";
+        }
+    }
+\end{lstlisting}
+如果有一个接受参数类型的\texttt{constexpr}函数\texttt{foo()}，
+你就可以根据\texttt{foo(x)}是否返回与\texttt{x}相同的类型来进行不同的处理。
+
+如果要根据\texttt{foo(x)}返回的值来进行判定，那么可以写：
+\begin{lstlisting}
+    constexpr auto c = ...;
+    if constexpr (constexpr auto obj = foo(c); obj == 0) {
+        std::cout << "foo() == 0\n";
+        ...
+    }
+\end{lstlisting}
+注意如果想在条件语句中使用\texttt{obj}的值，
+那么\texttt{obj}必须要声明为\texttt{constexpr}。
+
+\subsection{在模板之外使用编译期\texttt{if}}
+\texttt{if constexpr}可以在任何函数中使用，而并非仅限于模板。
+只要条件表达式是编译期的，并且可以转换成\texttt{bool}类型。
+然而，在普通函数里使用时\emph{then}和\emph{else}部分的所有语句都必须有效，
+即使有可能被丢弃。
+
+例如，下面的代码不能通过编译，因为\texttt{undeclared()}的调用必须是有效的，
+即使\texttt{char}是有符号数导致\emph{else}部分被丢弃也一样：
+\begin{lstlisting}
+    #include <limits>
+
+    template<typename T>
+    void foo(T t);
+
+    int main()
+    {
+        if constexpr(std::numeric_limits<char>::is_signed) {
+            foo(42);    // OK
+        }
+        else {
+            undeclared(42); // 未声明时总是ERROR（即使被丢弃）
+        }
+    }
+\end{lstlisting}
+
+下面的代码也永远不能通过编译，因为总有一个静态断言会失败：
+\begin{lstlisting}
+    if constexpr(std::numeric_limits<char>::is_signed) {
+        static_assert(std::numeric_limits<char>::is_signed);
+    }
+    else {
+        static_assert(!std::numeric_limits<char>::is_signed);
+    }
+\end{lstlisting}
+在泛型代码之外使用编译期\texttt{if}的唯一好处是被丢弃的部分不会成为最终程序的一部分，
+这将减小生成的可执行程序的大小。例如，在如下程序中：
+\begin{lstlisting}
+    #include <limits>
+    #include <string>
+    #include <array>
+
+    int main()
+    {
+        if (!std::numeric_limits<char>::is_signed) {
+            static std::array<std::string, 1000> arr1;
+            ...
+        }
+        else {
+            static std::array<std::string, 1000> arr2;
+            ...
+        }
+    }
+\end{lstlisting}
+要么\texttt{arr1}要么\texttt{arr2}会成为最终可执行程序的一部分，
+但不可能两者都是。
+\footnote{即使不使用\texttt{constexpr}也可能实现相同的效果，
+因为编译器可以优化掉永远不会被使用的代码。然而，如果使用了\texttt{constexpr}，
+那么这一行为将得到保证。}
+
+\subsection{后记}
+编译期\texttt{if}语句最初的灵感来自于Walter Bright、Herb Sutter、Andrei Alexandrescu
+发表的\url{https://wg21.link/n3329}以及
+Ville Voutilainen在\url{https://wg21.link/n4461}中提出的\texttt{static if}特性。
+
+在\url{https://wg21.link/p0128r0}中，Ville Voutilainen提出了这个特性并命名为
+\texttt{constexpr\_if}（本章的特性由此得名）。
+最终被接受的提案由Jens Maurer发表于\url{https://wg21.link/p0292r2}。

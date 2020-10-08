@@ -21,7 +21,7 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
     然而，注意有些函数\emph{可能}会返回一个无需再处理的值。例如，程序员可能会用0字节调用C函数
     \texttt{realloc()}来释放内存，这种情况下的返回值无需之后调用\texttt{free()}函数释放。
     因此，如果对\texttt{realloc()}标记\texttt{[[nodiscard]]}将会适得其反。
-    \item 一个因为没有使用返回值而导致函数行为和预期不同的很好的例子是\texttt{std::async()}
+    \item 有时如果没有使用返回值将导致函数行为和预期不同，一个很好的例子是\texttt{std::async()}
     （C++11引入）。\texttt{std::async()}会在后台异步地执行一个任务并返回一个可以用来等待
     任务执行结束的句柄（也可以通过它获取返回值或者异常）。然而，如果返回值没有被使用的话该调用
     将变成同步的调用，因为在启动任务的语句结束之后未被使用的返回值的析构函数会立即执行，而析构
@@ -30,7 +30,7 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
     \item 另一个例子是成员函数\texttt{empty()}，它的作用是检查一个对象（容器/字符串）是否
     没有元素。程序员经常误用该函数来“清空“容器：
     \begin{lstlisting}
-        cont.empty();
+    cont.empty();
     \end{lstlisting}
     这种对\texttt{empty()}的误用并没有使用返回值，所以\texttt{[[nodiscard]]}可以检查出这种误用：
     \begin{lstlisting}
@@ -193,17 +193,20 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
 
 \subsection{后记}
 三个新属性由Andrew Tomazos在\url{https://wg21.link/p0068r0}中首次提出。
-\texttt{[[nodiscard]]}属性最终被接受的提案由Andrew Tomazos发表于
+
+\texttt{[[nodiscard]]}最终被接受的提案由Andrew Tomazos发表于
 \url{https://wg21.link/p0189r1}。
-\texttt{[[maybe\_unused]]}属性最终被接受的提案由Andrew Tomazos发表于
+
+\texttt{[[maybe\_unused]]}最终被接受的提案由Andrew Tomazos发表于
 \url{https://wg21.link/p0212r1}。
-\texttt{[[fallthrough]]}属性最终被接受的提案由Andrew Tomazos发表于
-\url{https://wg21.link/p0188r1}.
+
+\texttt{[[fallthrough]]}最终被接受的提案由Andrew Tomazos发表于
+\url{https://wg21.link/p0188r1}。
 
 允许为命名空间和枚举值标记属性的特性由Richard Smith在\url{https://wg21.link/n4196}
 中首次提出。该特性最终被接受的提案由Richard Smith发表于\url{https://wg21.link/n4266}。
 
 属性的\texttt{using}前缀由J. Daniel Garcia、Luis M. Sanchez、
-Massimo Torquati、Marco Danelutto和Peter Sommerlad在\url{https://wg21.link/p0028r0}
+Massimo Torquati、Marco Danelutto、Peter Sommerlad在\url{https://wg21.link/p0028r0}
 中首次提出。最终被接受的提案由J. Daniel Garcia和Daveed Vandevoorde发表于
 \url{https://wg21.link/P0028R4}。

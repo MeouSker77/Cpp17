@@ -170,7 +170,7 @@ C++17引入了一个\hyperref[ch21.2.1]{新的类型trait \texttt{is\_aggregate<
         std::string data;
     };
     D<float> s{{"hello"}, {4.5, 6.7}, "world"}; // 自从C++17起OK
-    std::cout << std::is_aggregate<decltype(s)>::value; // 输出：1(true)
+    std::cout << std::is_aggregate<decltype(s)>::value; // 输出1(true)
 \end{lstlisting}
 
 \subsection{向后的不兼容性}

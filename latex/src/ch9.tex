@@ -142,8 +142,8 @@
     }
 
     std::vector<int> v{1, 2, 3};
-    auto x1 = make_vector(v, v);    // vector<vector<int>>
-    auto x2 = make_vector(v);       // vector<int>还是vector<vector<int>>?
+    auto x1 = make_vector(v, v); // vector<vector<int>>
+    auto x2 = make_vector(v);    // vector<int>还是vector<vector<int>>?
 \end{lstlisting}
 目前不同的编译器会有不同的行为，这个问题还在讨论之中。
 
@@ -183,10 +183,10 @@
 \texttt{>}。这样，我们可以统计出排序准则被调用的次数：
 \begin{lstlisting}
     std::sort(v.begin(), v.end(),   // 排序区间
-                std::ref(sc));  // 排序准则
+                std::ref(sc));      // 排序准则
     std::cout << "sorted with " << sc.count() << " calls\n";
 \end{lstlisting}
-这里，包装过后的lambda被用作排序准则。注意必须要传递引用，否则\texttt{std::sort()}将会
+这里包装过后的lambda被用作排序准则。注意这里必须要传递引用，否则\texttt{std::sort()}将会
 获取\texttt{sc}的拷贝作为参数，计数时只会修改该拷贝内的计数器。
 
 然而，我们可以直接把包转后的lambda传递给\texttt{std::for\_each()}，
@@ -214,9 +214,7 @@
 \end{lstlisting}
 如果计数器是原子的，你也可以使用\hyperref[ch22]{并行算法}:
 \begin{lstlisting}
-    std::sort(std::execution::par,
-                v.begin(), v.end(),
-                std::ref(sc));
+    std::sort(std::execution::par, v.begin(), v.end(), std::ref(sc));
 \end{lstlisting}
 
 \subsubsection{没有类模板部分参数推导}
@@ -235,8 +233,8 @@
 
     // 推导所有参数
     C c1(22, 44.3, "hi");   // OK：T1是int，T2是double，T3是const char*
-    C c2(22, 44.3);     // OK：T1是int，T2和3是double
-    C c3("hi", "guy");  // OK：T1、T2、T3都是const char*
+    C c2(22, 44.3);         // OK：T1是int，T2和3是double
+    C c3("hi", "guy");      // OK：T1、T2、T3都是const char*
 
     // 推导部分参数
     C<string> c4("hi", "my");   // ERROR：只有T1显式指明
@@ -291,7 +289,8 @@
 而不需要写：
 \begin{lstlisting}
     std::pair<typename std::vector<int>::iterator,
-              typename std::vector<int>::iterator> p(v.begin(), v.end());
+              typename std::vector<int>::iterator>
+        p(v.begin(), v.end());
 \end{lstlisting}
 现在这种场景已经不再需要\texttt{std::make\_pair()}了，我们可以简单的写为：
 \begin{lstlisting}
@@ -304,23 +303,22 @@
 
 然而，从另一个角度来看\texttt{std::make\_pair()}也是一个很好的例子，
 它演示了有时便捷函数的作用不仅仅是推导模板参数。
-事实上，\texttt{std::make\_pair()}会使传入的参数退化
+事实上\texttt{std::make\_pair()}会使传入的参数退化
 （在C++03中以值传递，自从C++11起使用特征）。
-这样会导致字符串字面量的类型（字符数组）会被推导为\texttt{const char*}：
+这样会导致字符串字面量的类型（字符数组）被推导为\texttt{const char*}：
 \begin{lstlisting}
     auto q = std::make_pair("hi", "world"); // 推导为指针的pair
 \end{lstlisting}
 这个例子中，\texttt{q}的类型为\texttt{std::pair<const char*, const char*>}。
 
-使用类模板参数推导会让事情变得更加复杂。
-请看下面这个类似于\texttt{std::pair}的简单的类的声明：
+使用类模板参数推导可能会让事情变得更加复杂。
+考虑如下这个类似于\texttt{std::pair}的简单的类的声明：
 \begin{lstlisting}
     template<typename T1, typename T2>
     struct Pair1 {
         T1 first;
         T2 second;
-        Pair1(const T1& x, const T2& y) :
-            first{x}, second{y} { }
+        Pair1(const T1& x, const T2& y) : first{x}, second{y} { }
     };
 \end{lstlisting}
 这里元素以引用传入，根据语言规则，当以引用传递参数时模板参数的类型不会退化。
@@ -348,8 +346,7 @@
     struct Pair2 {
         T1 first;
         T2 second;
-        Pair2(T1 x, T2 y) :
-            first{x}, second{y} { }
+        Pair2(T1 x, T2 y) : first{x}, second{y} { }
     };
 \end{lstlisting}
 如果我们像下面这样创建新对象：
@@ -374,8 +371,7 @@
     struct Pair3 {
         T1 first;
         T2 second;
-        Pair3(const T1& x, const T2& y) :
-            first{x}, second{y} { }
+        Pair3(const T1& x, const T2& y) : first{x}, second{y} { }
     };
 
     // 为构造函数定义的推导指引
@@ -457,7 +453,7 @@ C++标准库中为pair和tuple提供了相应的推导指引。
 这里我们创建了一个没有相应构造函数的推导指引。推导指引被用来推导参数\texttt{T}，
 然后结构体的模板参数就相当于已经被指明了。
 
-因此，下面的初始化代码都是正确的，并且会把模板参数\texttt{T}推导为\texttt{std::string}：
+因此，下面所有初始化代码都是正确的，并且都会把模板参数\texttt{T}推导为\texttt{std::string}：
 \begin{lstlisting}
     S s1{"hello"};      // OK，等同于S<std::string> s1{"hello"};
     S s2 = {"hello"};   // OK，等同于S<std::string> s2 = {"hello"};
@@ -631,7 +627,7 @@ C++17标准在标准库中引入了很多推导指引。
 
 \subsubsection*{从迭代器推导}
 为了能够从表示范围的两个迭代器推导出元素的类型，
-容器类例如\texttt{std::vector<>}都有类似于如下的推导指引：
+所有的容器类例如\texttt{std::vector<>}都有类似于如下的推导指引：
 \begin{lstlisting}
     // 使std::vector<>能根据初始的迭代器推导出元素类型
     namespace std {
@@ -715,7 +711,7 @@ C++17标准在标准库中引入了很多推导指引。
 （\texttt{map}、\texttt{multimap}、\texttt{unordered\_map}、\texttt{unordered\_multimap}）
 定义推导指引来展示。
 
-这些容器的元素类型是
+这些容器里元素的类型是
 \texttt{std::pair<const }\emph{keytype}\texttt{, }\emph{valuetype}\texttt{>}。
 这里\texttt{const}是必需的，因为元素的位置取决于key的值，这意味着如果能修改key的值的话
 会导致容器内部陷入不一致的状态。
@@ -761,9 +757,9 @@ C++17标准在标准库中引入了很多推导指引。
     ...
     std::map m1{elem1, elem2};  // 原来的C++17推导指引会ERROR
 \end{lstlisting}
-因为\texttt{elem1}和\texttt{elem2}被推导为\texttt{std::pair<int, int>}，
-但推导指引需要pair中的第一个元素是\texttt{const}的类型，所以不能成功匹配。
-因此，你仍然要像如下代码这么写：
+这是因为\texttt{elem1}和\texttt{elem2}被推导为\texttt{std::pair<int, int>}，
+而推导指引需要pair中的第一个元素是\texttt{const}的类型，所以不能成功匹配。
+因此，你仍然要像下面这么写：
 \begin{lstlisting}
     std::map<int, int> m1{elem1, elem2};  // OK
 \end{lstlisting}
@@ -843,7 +839,7 @@ C++17标准在标准库中引入了很多推导指引。
 \end{lstlisting}
 
 \subsection{后记}
-类模板参数推导由Michael Spertus于2007年在\url{https://wg21.link/n2332}中首次提出。
+类模板参数推导特性由Michael Spertus于2007年在\url{https://wg21.link/n2332}中首次提出。
 2013年Michael Spertus和David Vandevoorde在\url{https://wg21.link/n3602}中再次提出。
 最终被接受的提案由Michael Spertus、Faisal Vali和Richard Smith发表于
 \url{https://wg21.link/p0091r3}，之后Michael Spertus、Faisal Vali和Richard Smith
@@ -852,6 +848,6 @@ Jason Merrill在\url{https://wg21.link/p0620r0}中、
 Michael Spertus和Jason Merrill在\url{https://wg21.link/p702r1}（作为C++17的缺陷）中
 提出修改。
 
-标准库中对类模板参数推导的支持由Michael Spertus、Walter E.Brown、Stephan T.Lavavej
-在\url{https://wg21.link/p0433r2}和\url{https://wg21.link/p0739r0}
-（作为C++17的缺陷）中添加。
+标准库中对类模板参数推导特性的支持由Michael Spertus、Walter E.Brown、Stephan T.Lavavej
+在\url{https://wg21.link/p0433r2}和\\
+\url{https://wg21.link/p0739r0}（作为C++17的缺陷）中添加。

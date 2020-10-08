@@ -1,15 +1,15 @@
 \section{内联变量}\label{ch3}
 出于可移植性和易于整合的目的，提供包含类库声明的头文件是很重要的。
-然而，在C++17之前，只有当这个库既不提供也不需要全局对象的时候才可以直接在头文件定义。
+然而，在C++17之前，只有当这个库既不提供也不需要全局对象的时候才可以直接在头文件中定义。
 
 自从C++17开始，你可以在头文件中以\texttt{inline}的方式\emph{定义}全局变量/对象：
 \begin{lstlisting}
     class MyClass {
-        inline static std::string msg{"OK"}:    // OK（自C++17起）
+        inline static std::string msg{"OK"}; // OK（自C++17起）
         ...
     };
 
-    inline MyClass myGlobalObj  // 即使被多个CPP文件包含也OK
+    inline MyClass myGlobalObj;  // 即使被多个CPP文件包含也OK
 \end{lstlisting}
 只要一个翻译单元内没有重复的定义即可。此例中的定义即使被多个翻译单元使用，
 也会指向同一个对象。
@@ -179,7 +179,7 @@
 如果不需要\texttt{D::n}的定义的话只有上面的声明就够了，
 例如当\texttt{D::n}以值传递时：
 \begin{lstlisting}
-    std::cout << D::n;  // OK(ostream::operator<<(int)只需要获取D::n的值
+    std::cout << D::n; // OK，ostream::operator<<(int)只需要D::n的值
 \end{lstlisting}
 如果\texttt{D::n}以引用传递到一个非内联函数，并且该函数调用没有被优化掉的话，
 该调用将会导致错误。例如：
@@ -215,85 +215,85 @@
 \end{lstlisting}
 作为一个完整的例子，考虑如下头文件：
 \begin{lstlisting}[frame=single, title=lang/inlinethreadlocal.hpp]
-#include <string>
-#include <iostream>
+    #include <string>
+    #include <iostream>
 
-struct MyData {
-    inline static std::string gName = "global";     // 整个程序中只有一个
-    inline static thread_local std::string tName = "tls";   // 每个线程中只有一个
-    std::string lName = "local";    // 每一个实例有一个
-    ...
-    void print(const std::string& msg) const {
-        std::cout << msg << '\n';
-        std::cout << "- gName: " << gName << '\n';
-        std::cout << "- tName: " << tName << '\n';
-        std::cout << "- lName: " << lName << '\n';
-    }
-};
+    struct MyData {
+        inline static std::string gName = "global";     // 整个程序中只有一个
+        inline static thread_local std::string tName = "tls";   // 每个线程有一个
+        std::string lName = "local";    // 每个实例有一个
+        ...
+        void print(const std::string& msg) const {
+            std::cout << msg << '\n';
+            std::cout << "- gName: " << gName << '\n';
+            std::cout << "- tName: " << tName << '\n';
+            std::cout << "- lName: " << lName << '\n';
+        }
+    };
 
-inline thread_local MyData myThreadData;    // 每个线程一个对象
+    inline thread_local MyData myThreadData;    // 每个线程一个对象
 \end{lstlisting}
 你可以在包含\texttt{main()}的翻译单元内使用它：
 \begin{lstlisting}[frame=single, title=lang/inlinethreadlocal1.cpp]
-#include "inlinethreadlocal.hpp"
-#include <thread>
+    #include "inlinethreadlocal.hpp"
+    #include <thread>
 
-void foo();
+    void foo();
 
-int main()
-{
-    myThreadData.print("main() begin:");
+    int main()
+    {
+        myThreadData.print("main() begin:");
 
-    myThreadData.gName = "thraed1 name";
-    myThreadData.tName = "thread1 name";
-    myThreadData.lName = "thread1 name";
-    myThreadData.print("main() later:");
+        myThreadData.gName = "thraed1 name";
+        myThreadData.tName = "thread1 name";
+        myThreadData.lName = "thread1 name";
+        myThreadData.print("main() later:");
 
-    std::thread t(foo);
-    t.join();
-    myThreadData.print("main() end:");
-}
+        std::thread t(foo);
+        t.join();
+        myThreadData.print("main() end:");
+    }
 \end{lstlisting}
 你也可以在另一个定义了\texttt{foo()}函数的翻译单元内使用这个头文件，
 这个函数会在另一个线程中被调用：
 \begin{lstlisting}[frame=single, title=lang/inlinethreadlocal2.cpp]
-#include "inlinethreadlocal.hpp"
+    #include "inlinethreadlocal.hpp"
 
-void foo()
-{
-    myThreadData.print("foo() begin:");
+    void foo()
+    {
+        myThreadData.print("foo() begin:");
 
-    myThreadData.gName = "thread2 name";
-    myThreadData.tName = "thread2 name";
-    myThreadData.lName = "thread2 name";
-    myThreadData.print("foo() end:");
-}
+        myThreadData.gName = "thread2 name";
+        myThreadData.tName = "thread2 name";
+        myThreadData.lName = "thread2 name";
+        myThreadData.print("foo() end:");
+    }
 \end{lstlisting}
 程序的输出如下：
 \begin{lstlisting}
-main() begin:
-- gName: global
-- tName: tls
-- lName: local
-main() later:
-- gName: thread1 name
-- tName: thread1 name
-- lName: thread1 name
-foo() begin:
-- gName: thread1 name
-- tName: tls
-- lName: local
-foo() end:
-- gName: thread2 name
-- tName: thread2 name
-- lName: thread2 name
-main() end:
-- gName: thread2 name
-- tName: thread1 name
-- lName: thread1 name
+    main() begin:
+    - gName: global
+    - tName: tls
+    - lName: local
+    main() later:
+    - gName: thread1 name
+    - tName: thread1 name
+    - lName: thread1 name
+    foo() begin:
+    - gName: thread1 name
+    - tName: tls
+    - lName: local
+    foo() end:
+    - gName: thread2 name
+    - tName: thread2 name
+    - lName: thread2 name
+    main() end:
+    - gName: thread2 name
+    - tName: thread1 name
+    - lName: thread1 name
 \end{lstlisting}
 
 \subsection{后记}
-内联变量由David Krauss的\url{https://wg21.link/n4147}，
-由Hal Finkel和Richard Smith在\url{https://wg21.link/n4424}中第一次提出。
-最终被接受的正式提案由Hal Finkel和Richard Smith发表于\url{https://wg21.link/p0386r2}。
+内联变量的动机起源于David Krauss的\url{https://wg21.link/n4147}，
+之后由Hal Finkel和Richard Smith在\url{https://wg21.link/n4424}中第一次提出。
+最终被接受的提案由Hal Finkel和Richard Smith发表于\url{https://wg21.link/p0386r2}。

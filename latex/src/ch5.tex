@@ -6,7 +6,7 @@
     省略对该临时对象的拷贝。
     \item 从效果上讲，我们实际上是传递了一个\emph{未实质化 的对象}(unmaterialized object)。
 \end{itemize}
-我将会从技术上介绍这个特性，之后再介绍实际效果和术语\emph{materialization}。
+接下来首先从技术上介绍这个特性，之后再介绍实际效果和术语\emph{materialization}。
 
 \subsection{强制省略临时变量拷贝的动机}
 自从第一次标准开始，C++就允许在某些情况下\emph{省略}(elision)拷贝操作，
@@ -110,7 +110,8 @@
     int main()
     {
         int i = create<int>(42);
-        std::unique_ptr<int> up = create<std::unique_ptr<int>>(new int{42});
+        std::unique_ptr<int> up =
+            create<std::unique_ptr<int>>(new int{42});
         std::atomic<int> ai = create<std::atomic<int>>(42);
     }
 \end{lstlisting}
@@ -165,9 +166,11 @@ C++以前只有从C语言继承而来的\emph{左值}(lvalue)和\emph{右值}(rv
 和\emph{rvalue(右值)}（\emph{xvalue}和\emph{prvalue}的复合）。
 
 \begin{figure}[ht]
-    \includegraphics{../imgs/5.1.png}
-    \caption{从C++11起的值类型体系}
-    \label{f5.1}
+    \begin{center}
+        \includegraphics[scale=0.8]{../imgs/5.1.png}
+        \caption{从C++11起的值类型体系}
+        \label{f5.1}
+    \end{center}
 \end{figure}
 
 \emph{\textbf{lvalue(左值)}}的例子有：
@@ -209,9 +212,9 @@ C++以前只有从C语言继承而来的\emph{左值}(lvalue)和\emph{右值}(rv
     void f(const X&);   // 接受任何值类型
     void f(X&&);        // 只接受prvalue和xvalue，但是相比上边的版本是更好的匹配
 
-    f(v);   // 给第一个f()传递了一个可修改lvalue
-    f(c);   // 给第一个f()传递了不可修改的lvalue
-    f(X()); // 给第二个f()传递了一个prvalue
+    f(v);               // 给第一个f()传递了一个可修改lvalue
+    f(c);               // 给第一个f()传递了不可修改的lvalue
+    f(X());             // 给第二个f()传递了一个prvalue
     f(std::move(v));    // 给第二个f()传递了一个xvalue
 \end{lstlisting}
 值得强调的一点是严格来讲glvalue(广义左值)、prvalue(纯右值)、xvalue(到期值)是描述表达式的术语
@@ -229,9 +232,11 @@ C++以前只有从C语言继承而来的\emph{左值}(lvalue)和\emph{右值}(rv
 C++17再次明确了值类型体系，现在的值类型体系如\hyperref[f5.2]{图5.2}所示：
 
 \begin{figure}[ht]
-    \includegraphics{../imgs/5.2.png}
-    \caption{自从C++17起的值类型体系}
-    \label{f5.2}
+    \begin{center}
+        \includegraphics[scale=0.8]{../imgs/5.2.png}
+        \caption{自从C++17起的值类型体系}
+        \label{f5.2}
+    \end{center}
 \end{figure}
 
 理解值类型体系的关键是现在广义上来说，我们只有两种类型的表达式：
@@ -292,7 +297,7 @@ xvalue和prvalue，尽管后者现在会转换为一个xvalue。
     \end{lstlisting}
 \end{itemize}
 
-注意当用来初始化的表达式（此处是返回语句）是一个创建临时对象(prvalue)的表达式时
+注意当初始化表达式（此处是返回语句）是一个创建临时对象(prvalue)的表达式时
 \texttt{decltype(auto)}将会推导出值类型。因为我们在这些场景中都是以值返回一个prvalue，
 所以我们完全不需要任何拷贝/移动。
 

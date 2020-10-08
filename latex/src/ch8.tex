@@ -60,7 +60,7 @@
     std::cout << ++i << ' ' << --i << '\n';
 \end{lstlisting}
 在C++17之前，它\emph{\textbf{可能}}会输出\texttt{1 0}，但也可能输出\texttt{0 -1}
-或者\texttt{0 0}，这和\texttt{i}是\texttt{int}还是用户自定义类型无关（不过对于基本类型，
+或者\texttt{0 0}，这和变量\texttt{i}是\texttt{int}还是用户自定义类型无关（不过对于基本类型，
 编译器一般会在这种情况下给出警告）。
 
 为了解决这种未定义的问题，C++17标准重新定义了\emph{一些}运算符的的求值顺序，
@@ -126,7 +126,7 @@
 
 新的表达式求值顺序的另一个应用是在参数之前\hyperref[ch11.2.1]{插入空格的函数}。
 
-\paragraph{向后的不兼容性}
+\subsubsection*{向后的不兼容性}
 新的有定义的求值顺序可能会影响现有程序的输出。例如，考虑如下程序：
 \begin{lstlisting}[frame=single, title=lang/evalexcept.cpp]
     #include <iostream>
@@ -244,8 +244,8 @@
 注意当使用\texttt{auto}进行\emph{拷贝}列表初始化（使用了=）时仍然是初始化一个
 \texttt{std::initializer\_list<>}：
 \begin{lstlisting}
-    auto c = {42};  // 仍然初始化一个std::initializer_list<int>
-    auto d = {1, 2, 3};   // 仍然OK：初始化一个std::initializer_list<int>
+    auto c = {42};      // 仍然初始化一个std::initializer_list<int>
+    auto d = {1, 2, 3}; // 仍然OK：初始化一个std::initializer_list<int>
 \end{lstlisting}
 因此，现在直接初始化（没有=）和拷贝初始化（有=）之间又有了显著的不同：
 \begin{lstlisting}
@@ -397,12 +397,12 @@ US-ASCII编码，而运行字符集通常是相同的。这意味着在任何C++
 这段代码不能通过编译，即使没有\texttt{override}修饰符代码也不能编译，因为我们不能用
 更宽松的异常声明重载。
 
-\paragraph{使用传统的异常声明}
+\subsubsection*{使用传统的异常声明}
 当使用传统的\texttt{noexcept}声明时，函数的是否抛出异常取决于条件为true还是false：
 \begin{lstlisting}
     void f1();
     void f2() noexcept;
-    void f3() noexcept(sizeof(int)<4); // 和f1()或f2()的类型相同
+    void f3() noexcept(sizeof(int)<4);  // 和f1()或f2()的类型相同
     void f4() noexcept(sizeof(int)>=4); // 和f3()的类型不同
 \end{lstlisting}
 这里\texttt{f3()}的类型取决于条件的值：
@@ -428,9 +428,9 @@ US-ASCII编码，而运行字符集通常是相同的。这意味着在任何C++
     void f6() throw(std::bad_alloc); // ERROR：自从C++17起无效
 \end{lstlisting}
 
-\paragraph{对泛型库的影响}
+\subsubsection*{对泛型库的影响}
 将\texttt{noexcept}做为类型类型的一部分意味着会对泛型库产生一些影响。例如，下面的代码
-直到C++14是有效的但从C++17起不能再通过编译：
+直到C++14是有效的，但从C++17起不能再通过编译：
 \begin{lstlisting}[frame=single, title=lang/noexceptcalls.cpp]
     #include <iostream>
 
@@ -492,8 +492,9 @@ US-ASCII编码，而运行字符集通常是相同的。这意味着在任何C++
     struct is_function<Ret (Params...) const &> : std::true_type { };
     ...
 \end{lstlisting}
-在C++17之前该特征共共有24个部分特化版本，因为函数类型可以用\texttt{const}和\texttt{volatile}
-修饰符修饰，另外还可能有左值引用(\&)或右值引用(\&\&)修饰符，还需要重载可变参数列表的版本。
+在C++17之前该特征总共有24个部分特化版本：因为函数类型可以用\texttt{const}\\
+和\texttt{volatile}修饰符修饰，另外还可能有左值引用(\&)或右值引用(\&\&)修饰符，
+还需要重载可变参数列表的版本。
 
 现在在C++17中部分特化版本的数量变为了两倍，因为还需要为所有版本添加一个带\texttt{noexcept}
 修饰符的版本：
@@ -566,8 +567,8 @@ C++17扩展了预处理，增加了一个检查某个头文件是否可以被包
 \end{lstlisting}
 
 \subsection{后记}
-\hyperref[ch8.1]{嵌套命名空间定义}由Jon Jagger于2003年在
-\url{https://wg21.link/n1524}中首次提出。
+\hyperref[ch8.1]{嵌套命名空间定义}最早由Jon Jagger于2003年在
+\url{https://wg21.link/n1524}中提出。
 Robert Kawulak于2014年在\url{https://wg21.link/n4026}中提出了新的提案。
 最终被接受的提案由Robert Kawulak和Andrew Tomazos发表于\url{https://wg21.link/n4230}。
 
@@ -576,27 +577,30 @@ Robert Kawulak于2014年在\url{https://wg21.link/n4026}中提出了新的提案
 Herb Sutter和Jonathan Caves发表于\url{https://wg21.link/p0145r3}。
 
 \nameref{ch8.3}由Gabriel Dos Reis在\url{https://wg21.link/p0138r0}中首次提出。
-最终被接受的提案由Gabriel Dos Reis发表于\url{https://wg21.link/p0138r2}。
+最终被接受的提案由Gabriel Dos Reis发表于\\
+\url{https://wg21.link/p0138r2}。
 
 \nameref{ch8.4}由Ville Voutilainen在\url{https://wg21.link/n3681}和
 \url{https://wg21.link/3912}中首次提出。最终\texttt{auto}列表初始化的修正由
 James Dennett发表于\url{https://wg21.link/n3681}。
 
-\nameref{ch8.5}是由Thomas Köppe在\url{https://wg21.link/p0245r0}中首次提出。
+\nameref{ch8.5}最早由Thomas Köppe在\url{https://wg21.link/p0245r0}
+中首次提出。
 最终被接受的提案由Thomas Köppe发表于\url{https://wg21.link/p0245r1}。
 
-\nameref{ch8.6}由Richard Smith在\url{https://wg21.link/n4197}中首次提出。
+\nameref{ch8.6}是由Richard Smith在\url{https://wg21.link/n4197}中首次提出。
 最终被接受的提案由Richard Smith发表于\url{https://wg21.link/n4267}。
 
-\nameref{ch8.7}由Jens Maurer在\url{https://wg21.link/n4320}中首次提出。
+\nameref{ch8.7}由Jens Maurer在\url{https://wg21.link/n4320}\\
+中首次提出。
 最终被接受的提案由Jens Maurer发表于\url{https://wg21.link/p0012r1}。
 
 \nameref{ch8.8}的提案由Walter E. Brown发表于\url{https://wg21.link/n3928}。
 
 \hyperref[ch8.9]{预处理语句\texttt{\_\_has\_include()}}最早
-由Clark Nelson和Richard Smith作为\url{https://wg21.link/p0061r0}
-的部分内容提出。最终被接受的提案由Clark Nelson和Richard Smith发表于
-\url{https://wg21.link/p0061r1}。
+由Clark Nelson和Richard Smith作为\\
+\url{https://wg21.link/p0061r0}的部分内容提出。
+最终被接受的提案由Clark Nelson和Richard Smith发表于\url{https://wg21.link/p0061r1}。
 
 
 

@@ -29,10 +29,10 @@
 \end{lstlisting}
 你可以直接把返回的数据成员赋值给两个新的局部变量：
 \begin{lstlisting}
-    auto [id, val] = getStruct();   // id和val分别是返回结构体中的i和s成员
+    auto [id, val] = getStruct();  // id和val分别是返回结构体的i和s成员
 \end{lstlisting}
-这里，\texttt{id}和\texttt{val}分别是返回结构体中的\texttt{i}和\texttt{s}成员。
-它们的类型分别对应\texttt{int}和\texttt{std::string}，可以被当作两个不同的对象来使用：
+这个例子中，\texttt{id}和\texttt{val}分别是返回结构体中的\texttt{i}和\texttt{s}成员。
+它们的类型分别是\texttt{int}和\texttt{std::string}，可以被当作两个不同的对象来使用：
 \begin{lstlisting}
     if (id > 30) {
         std::cout << val;
@@ -48,7 +48,7 @@
         std::cout << elem.first << ": " << elem.second << '\n';
     }
 \end{lstlisting}
-元素的类型是键和值组成的\texttt{std::pair}类型，
+map的元素的类型是键和值组成的\texttt{std::pair}类型，
 \texttt{std::pair}的成员分别是\texttt{first}和\texttt{second}，
 上边的例子中必须使用成员的名字来访问键和值。通过使用结构化绑定，代码的可读性大大提升：
 \begin{lstlisting}
@@ -67,7 +67,7 @@
 \begin{lstlisting}
     auto [u, v] = ms;
 \end{lstlisting}
-其实等价于我们用\texttt{ms}初始化了一个新的实体\texttt{e}，
+等价于我们用\texttt{ms}初始化了一个新的实体\texttt{e}，
 并且让结构化绑定中的\texttt{u}和\texttt{v}变成了\texttt{e}的成员的别名，类似于如下定义：
 \begin{lstlisting}
     auto e = ms;
@@ -149,7 +149,7 @@
 \begin{lstlisting}
     const auto& [u, v] = ms;    // 引用，因此u/v指向ms.i/ms.s
 \end{lstlisting}
-无论是\texttt{u}还是\texttt{v}都不是引用， 只有匿名实体\texttt{e}是一个引用。
+\texttt{u}和\texttt{v}都不是引用，只有匿名实体\texttt{e}是一个引用。
 \texttt{u}和\texttt{v}分别是\texttt{ms}对应的成员的类型，
 只不过变成了\texttt{const}的。
 根据我们的推导，\texttt{decltype(u)}是\texttt{const int}，
@@ -197,7 +197,7 @@ move语义也遵循之前介绍的规则，如下声明：
 \end{lstlisting}
 然而，你可以对指向\texttt{ms.s}的\texttt{n}进行移动赋值：
 \begin{lstlisting}
-    std::string s = std::move(n);   // 把ms.s移动到s
+    std::string s = std::move(n);           // 把ms.s移动到s
     std::cout << "ms.s: " << ms.s << '\n';  // 打印出未定义的值
     std::cout << "n:    " << n << '\n';     // 打印出未定义的值
     std::cout << "s:    " << s << '\n';     // 打印出"Jim"
@@ -241,7 +241,7 @@ C风格数组和类似元组(tuple-like)的对象：
         \item 一个全局或成员函数\texttt{get<idx>()}要返回第\texttt{idx}个元素的值。
     \end{itemize}
     标准库类型\texttt{std::pair<>}、\texttt{std::tuple<>}、\texttt{std::array<>}
-    就是提供了这些API的示例。
+    就是提供了这些API的例子。
 \end{itemize}
 如果结构体和类提供了tuple-like API，那么将会使用这些API进行绑定，而不是直接绑定数据成员。
 
@@ -299,7 +299,7 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
 
 注意C++允许通过引用来返回带有大小信息的数组，结构化绑定可以应用于返回这种数组的函数：
 \begin{lstlisting}
-    auto getArr() -> int(&)[2];     // getArr()返回一个原生int数组的引用
+    auto getArr() -> int(&)[2]; // getArr()返回一个原生int数组的引用
     ...
     auto [x, y] = getArr();     // x和y是返回的数组中的int元素的拷贝
 \end{lstlisting}
@@ -501,6 +501,7 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
     template<> long get<2>(const Customer& c) { return c.getValue(); }
 \end{lstlisting}
 通过使用新的\hyperref[ch10]{编译期\texttt{if}语句特性}，我们可以把\texttt{get<>()}函数的实现
+\label{编译期if实现get<>}
 合并到一个函数里：
 \begin{lstlisting}
     template<std::size_t I> auto get(const Customer& c) {
@@ -533,8 +534,7 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
         std::string s{std::move(f)};
         l = "Waters";
         v += 10;
-        std::cout << "f/l/v:    " << f << ' '
-                  << l << ' ' << v << '\n';
+        std::cout << "f/l/v:    " << f << ' ' << l << ' ' << v << '\n';
         std::cout << "c:        " << c.getFirst() << ' '
                   << c.getLast() << ' ' << c.getValue() << '\n';
         std::cout << "s:        " << s << '\n';
@@ -555,16 +555,14 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
 
 使用结构化绑定等同于使用\texttt{get<>()}函数的返回值，因此：
 \begin{lstlisting}
-    std::cout << "f/l/v:    " << f << ' '
-              << l << ' ' << v << '\n';
+    std::cout << "f/l/v:    " << f << ' ' << l << ' ' << v << '\n';
 \end{lstlisting}
 只是简单的输出变量的值（并不会再次调用getter函数）。另外
 \begin{lstlisting}
     std::string s{std::move(f)};
     l = "Waters";
     v += 10;
-    std::cout << "f/l/v:    " << f << ' '
-              << l << ' ' << v << '\n';
+    std::cout << "f/l/v:    " << f << ' ' << l << ' ' << v << '\n';
 \end{lstlisting}
 这段代码修改了绑定变量的值。因此，这段程序总是有如下输出：
 \begin{lstlisting}
@@ -580,8 +578,7 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
     std::vector<Customer> coll;
     ...
     for (const auto& [first, last, val] : coll) {
-        std::cout << first << ' ' << last
-                  << ": " << val << '\n';
+        std::cout << first << ' ' << last << ": " << val << '\n';
     }
 \end{lstlisting}
 在这个循环中，因为使用了\texttt{const auto\&}所以不会有\texttt{Customer}被拷贝。
@@ -725,8 +722,7 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
     {
         Customer c{"Tim", "Starr", 42};
         auto [f, l, v] = c;
-        std::cout << "f/l/v:    " << f << ' '
-                  << l << ' ' << v << '\n';
+        std::cout << "f/l/v:    " << f << ' ' << l << ' ' << v << '\n';
 
         // 通过引用修改结构化绑定
         auto&& [f2, l2, v2] = c;
@@ -749,6 +745,6 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
 \end{lstlisting}
 
 \subsection{后记}
-结构化绑定最早由Herb Sutter、Bjarne Stroustrup和Gabriel Dos Reis在
+结构化绑定最早由Herb Sutter、Bjarne Stroustrup、Gabriel Dos Reis在
 \url{https://wg21.link/p0144r0}提出，当时提议使用花括号而不是方括号。
-最终被接受的正式提案由Jens Maurer发表于\url{https://wg21.link/p0217r3}。
+最终被接受的提案由Jens Maurer发表于\url{https://wg21.link/p0217r3}。

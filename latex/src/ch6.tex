@@ -14,7 +14,7 @@ C++17扩展了lambda表达式的应用场景：
 （例如，只有字面量，没有静态变量，没有虚函数，没有\texttt{try/catch}，
 没有\texttt{new/delete}的上下文）的lambda都可以被用于编译期。
 
-例如，你可以使用一个lambda表达式计算参数的平方，并将结果用作\texttt{std::array<>}的大小，
+例如，你可以使用一个lambda表达式计算参数的平方，并将计算结果用作\texttt{std::array<>}的大小，
 即使这是一个编译期的参数：
 \begin{lstlisting}
     auto squared = [](auto val) {   // 自从C++17起隐式constexpr
@@ -35,13 +35,13 @@ C++17扩展了lambda表达式的应用场景：
 \end{lstlisting}
 为了确定一个lambda是否能用于编译期，你可以将它声明为\texttt{constexpr}：
 \begin{lstlisting}
-    auto squared3 = [](auto val) constexpr {    // 自从C++17起OK
+    auto squared3 = [](auto val) constexpr {  // 自从C++17起OK
         return val*val;
     };
 \end{lstlisting}
 如果指明返回类型的话，看起来像下面这样：
 \begin{lstlisting}
-    auto squared3i = [](int val) constexpr -> int {    // 自从C++17起OK
+    auto squared3i = [](int val) constexpr -> int {  // 自从C++17起OK
         return val*val;
     };
 \end{lstlisting}
@@ -53,7 +53,7 @@ C++17扩展了lambda表达式的应用场景：
 \texttt{try/catch}、\texttt{new/delete}等。}
 \begin{lstlisting}
     auto squared4 = [](auto val) constexpr {
-        static int calls = 0;   // ERROR：在编译期上下文中使用了静态变量
+        static int calls = 0;  // ERROR：在编译期上下文中使用了静态变量
         ...
         return val*val;
     };
@@ -81,17 +81,18 @@ C++17扩展了lambda表达式的应用场景：
 那么生成的函数调用运算符将自动是\texttt{constexpr}。
 注意如下定义：
 \begin{lstlisting}
-    auto squared1 = [](auto val) constexpr {    // 编译期lambda调用
+    auto squared1 = [](auto val) constexpr {  // 编译期lambda调用
         return val*val;
     };
 \end{lstlisting}
 和如下定义：
 \begin{lstlisting}
-    constexpr auto squared2 = [](auto val) {    // 编译期初始化squared2
+    constexpr auto squared2 = [](auto val) {  // 编译期初始化squared2
         return val*val;
     };
 \end{lstlisting}
-是不同的。\\
+是不同的。
+
 第一个例子中如果（只有）lambda是\texttt{constexpr}那么它可以被用于编译期，
 但是\texttt{squared1}可能直到运行期才会被初始化，
 这意味着如果静态初始化顺序很重要那么可能导致问题。
@@ -135,7 +136,7 @@ C++17扩展了lambda表达式的应用场景：
         ...
     }
 \end{lstlisting}
-注意这里我们在编译期调用\texttt{case}标签里的\texttt{hashed}，
+注意，这里我们将在编译期调用\texttt{case}标签里的\texttt{hashed}，
 而在运行期间调用\texttt{switch}表达式里的\texttt{hashed}。
 
 如果我们使用编译期lambda初始化一个容器，那么编译器优化时很可能在编译期就计算出容器的初始值
@@ -145,7 +146,7 @@ C++17扩展了lambda表达式的应用场景：
                     hashed("wine"),
                     hashed(("water")};
 \end{lstlisting}
-你甚至可以在\texttt{hashed}里联合使用另一个\texttt{constexpr} lambda。
+你甚至可以在\texttt{hashed}函数里联合使用另一个\texttt{constexpr} lambda。
 设想我们把\texttt{hashed}里根据当前哈希值和下一个字符值更新哈希值的逻辑定义为一个参数：
 \begin{lstlisting}
     auto hashed = [](const char* str, auto combine) {
@@ -212,7 +213,8 @@ C++17扩展了lambda表达式的应用场景：
       public:
         ...
         void foo() {
-            auto l1 = [thisCopy=*this] { std::cout << thisCopy.name << '\n'; };
+            auto l1 = [thisCopy=*this]
+                { std::cout << thisCopy.name << '\n'; };
             ...
         }
     };
@@ -288,7 +290,7 @@ lambda里捕获了\texttt{*this}，因此传递进lambda的是一份拷贝。
 通过使用一个新的库工具，现在也可以\nameref{ch25.2.1}。
 
 \subsection{后记}
-\texttt{constexpr} lambda最早由Faisal Vali、Ville Voutilainen、Gabriel Dos Reis
+\texttt{constexpr} lambda最早由Faisal Vali、Ville Voutilainen和Gabriel Dos Reis
 在\url{https://wg21.link/n4487}中首次提出。
 最终被接受的正式提案由Faisal Vali、Jens Maurer、Richard Smith
 发表于\url{https://wg21.link/p0170r1}。
