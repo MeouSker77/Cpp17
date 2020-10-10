@@ -187,6 +187,7 @@ C++17允许我们这么写：
     (val + ... + args);         // 推荐的二元折叠表达式语法
 \end{lstlisting}
 有时候第一个操作数是特殊的，比如下面的例子：
+\label{输出任意个参数的print}
 \begin{lstlisting}
     template<typename... T>
     void print(const T&... args)
@@ -449,3 +450,5 @@ C++17允许我们这么写：
 最终被接受的提案由Andrew Sutton和Richard Smith发表于\url{https://wg21.link/n4295}。
 之后对运算符\texttt{*、+、\&、|}处理空参数包的支持由Thibaut Le Jehan在
 \url{https://wg21.link/p0036}中移除。
+
+\setcounter{footnote}{0}

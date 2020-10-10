@@ -1,5 +1,206 @@
 \section{占位符类型作为模板参数（例如\texttt{auto}}\label{ch13}
+自从C++17起，你可以使用占位符类型（\texttt{auto}和\texttt{decltype(auto)}）作为非类型模板参数的类型。
+这意味着我们可以写出泛型代码来处理不同类型的非类型模板参数。
 
-\subsection{使用\texttt{auto}作为模板参数}\label{ch13.1}
+\subsection{使用\texttt{auto}模板参数}\label{ch13.1}
+自从C++17起，你可以使用\texttt{auto}来声明非类型模板参数。例如：
+\begin{lstlisting}
+    template<auto N> class S {
+        ...
+    };
+\end{lstlisting}
+这允许我们为不同类型实例化非类型模板参数\texttt{N}：
+\begin{lstlisting}
+    S<42> s1;   // OK：S中N的类型是int
+    S<'a'> s2;  // OK：S中N的类型是char
+\end{lstlisting}
+然而，你不能使用这个特性来实例化一些不允许作为模板参数的类型：
+\begin{lstlisting}
+    S<2.5> s3;  // ERROR：模板参数的类型不能是double
+\end{lstlisting}
+我们甚至还可以用指明类型的版本作为部分特化版的模板：
+\begin{lstlisting}
+    template<int N> class S<N> {
+        ...
+    };
+\end{lstlisting}
+甚至还支持\nameref{ch9}。例如：
+\begin{lstlisting}
+    template<typename T, auto N>
+    class A {
+      public:
+        A(const std::array<T, N>&) {
+        }
+        A(T(&)[N]) {
+        }
+        ...
+    };
+\end{lstlisting}
+这个类可以推导出\texttt{T}的类型、\texttt{N}的类型、\texttt{N}的值：
+\begin{lstlisting}
+    A a2{"hello"};  // OK，推导为A<const char, 6>，N的类型是std::size_t
+
+    std::array<double, 10> sa1;
+    A a1{sa1};      // OK，推导为A<double, 10>，N的类型是std::size_t
+\end{lstlisting}
+你也可以修饰\texttt{auto}，例如，可以确保参数类型必须是个指针：
+\begin{lstlisting}
+    template<const auto* P> struct S;
+\end{lstlisting}
+另外，通过使用可变参数模板，你可以使用多个不同类型的模板参数来实例化模板：
+\begin{lstlisting}
+    template<auto... VS> class HeteroValueList {
+    };
+\end{lstlisting}
+也可以用多个相同类型的参数：
+\begin{lstlisting}
+    template<auto V1, decltype(V1)... VS> class HomoValueList {
+    };
+\end{lstlisting}
+例如：
+\begin{lstlisting}
+    HeteroValueList<1, 2, 3> vals1;         // OK
+    HeteroValueList<1, 'a', true> vals2;    // OK
+    HomoValueList<1, 2, 3> vals3;           // OK
+    HomoValueList<1, 'a', true> vals4;      // ERROR
+\end{lstlisting}
 
 \subsubsection{字符和字符串模板参数}\label{ch13.1.1}
+这个特性的一个应用就是你可以定义一个既可能是字符也可能是字符串的模板参数。
+例如，我们可以像下面这样改进\hyperref[输出任意个参数的print]{用折叠表达式输出任意数量参数}的方式：
+\inputcodefile{tmpl/printauto.hpp}
+将默认的参数分隔符\texttt{Sep}设置为空格，我们可以实现和之前的效果：
+\begin{lstlisting}
+    template<auto Sep = ' ', typename First, typename... Args>
+    void print (const First& firstarg, const Args&... args) {
+        ...
+    }
+\end{lstlisting}
+我们仍然可以像之前一样调用：
+\begin{lstlisting}
+    std::string s{"world"};
+    print(7.5, "hello", s};      // 打印出：7.5 hello world
+\end{lstlisting}
+然而，通过把分隔符\texttt{Sep}参数化，我们也可以显示指明另一个字符作为分隔符：
+\begin{lstlisting}
+    print<'-'>(7.5, "hello", s); // 打印出：7.5-hello-world
+\end{lstlisting}
+甚至，因为使用了\texttt{auto}，我们甚至可以传递被声明为无链接的字符串字面量作为分隔符：
+\begin{lstlisting}
+    static const char sep[] = ", ";
+    print<sep>(7.5, "hello", s); // 打印出：7.5, hello, world
+\end{lstlisting}
+另外，我们也可以传递任何其他可以用作模板参数的类型：
+\begin{lstlisting}
+    print<-11>(7.5, "hello", s); // 打印出：7.5-11hello-11world
+\end{lstlisting}
+
+\subsubsection{定义元编程常量}
+\texttt{auto}模板参数特性的另一个应用是可以让我们更轻易的定义编译期常量。
+\footnote{感谢Bryce Adelstein Lelbach提供这些例子。}
+原本的下列代码：
+\begin{lstlisting}
+    template<typename T, T v>
+    struct constant
+    {
+        static constexpr T value = v;
+    };
+
+    using i = constant<int, 42>;
+    using c = constant<char, 'x'>;
+    using b = constant<bool, true>;
+\end{lstlisting}
+现在可以简单的实现为：
+\begin{lstlisting}
+    template<auto v>
+    struct constant
+    {
+        static constexpr auto value = v;
+    };
+
+    using i = constant<42>;
+    using c = constant<'x'>;
+    using b = constant<true>;
+\end{lstlisting}
+同样，原本的下列代码：
+\begin{lstlisting}
+    template<typename T, T... Elements>
+    struct sequence {
+    };
+
+    using indexes = sequence<int, 0, 3, 4>;
+\end{lstlisting}
+现在可以简单的实现为：
+\begin{lstlisting}
+    template<auto... Elements>
+    struct sequence {
+    };
+
+    using indexes = sequence<0, 3, 4>;
+\end{lstlisting}
+你现在甚至可以定义一个持有若干不同类型的值的编译期对象（类似于一个简单的tuple）：
+\begin{lstlisting}
+    using tuple = sequence<0, 'h', true>;
+\end{lstlisting}
+
+\subsection{使用\texttt{auto}作为变量模板的参数}
+你也可以使用\texttt{auto}作为模板参数来实现\emph{变量模板(variable templates)}。
+\footnote{不要混淆了\emph{变量模板(variable templates)}和\emph{可变参数模板(variadic templates)}，
+前者是模板化的变量，后者是有任意数量参数的模板。}
+例如，下面的声明定义了一个变量模板\texttt{arr}，元素的类型和数量作为参数：
+\begin{lstlisting}
+    template<typename T, auto N> std::array<T, N> arr;
+\end{lstlisting}
+在每一个翻译单元中，所有对\texttt{arr<int, 10>}的引用将指向同一个全局对象。
+而\texttt{arr<long, 10>}和\texttt{arr<int, 10u>}将指向其他对象
+（每一个都可以在所有翻译单元中使用）。
+
+作为一个完整的例子，考虑如下的头文件：
+\inputcodefile{tmpl/vartmplauto.hpp}
+这里，我们可以在一个翻译单元内修改两个变量模板的不同实例：
+\inputcodefile{tmpl/vartmplauto1.cpp}
+另一个翻译单元内可以打印这两个变量模板：
+\inputcodefile{tmpl/vartmplauto2.cpp}
+程序的输出将是：
+\footnote{g++7有一个bug显示它的两个变量模板实质上是同一对象，这个bug在g++8里修复了。}
+\begin{lstlisting}
+    arr<int, 5>:  17 0 0 42 0
+    arr<int, 5u>: 0 11 0 33 0
+\end{lstlisting}
+用同样的方式你可以声明一个任意类型的常量变量模板，类型可以通过初始值推导出来：
+\begin{lstlisting}
+    template<auto N> constexpr auto val = N; // 自从C++17起OK
+\end{lstlisting}
+之后可以像下面这样使用：
+\begin{lstlisting}
+    auto v1 = val<5>;       // v1 == 5，v1的类型为int
+    auto v2 = val<true>;    // v2 == true，v2的类型为bool
+    auto v3 = val<'a'>;     // v3 == 'a'，v3的类型为char
+\end{lstlisting}
+这里阐述了发生了什么：
+\begin{lstlisting}
+    std::is_same_v<decltype(val<5>), int>       // 返回false
+    std::is_same_v<decltype(val<5>), const int> // 返回true
+    std::is_same_v<decltype(v1), int>   // 返回true（因为auto会退化）
+\end{lstlisting}
+
+\subsection{使用\texttt{decltype(auto)}模板参数}
+你现在也可以使用另一个占位类型\texttt{decltype(auto)}（C++14引入）作为模板参数。
+注意，这个占位类型的推导有非常特殊的规则。根据\texttt{decltype}的规则，如果使用
+\texttt{decltype(auto)}来推导\emph{表达式(expressions)}而不是变量名，
+那么推导的结果将依赖于表达式的\hyperref[ch5.3.1]{值类型}：
+\begin{itemize}[leftmargin=*]
+    \item prvalue（例如临时变量）推导出\emph{type}
+    \item lvalue（例如有名字的对象）推导出\emph{type\&}
+    \item xvalue（例如\texttt{std::move()}的对象）推导出\emph{type\&\&}
+\end{itemize}
+这意味着你很容易就会把模板参数推导为引用，这可能导致一些令人惊奇的效果。
+
+例如：
+\inputcodefile{tmpl/decltypeauto.cpp}
+
+\subsection{后记}
+非类型模板参数的占位符类型最早由James Touton和Michael Spertus作为
+\url{https://wg21.link/n4469}的一部分提出。
+最终被接受的提案由James Touton和Michael Spertus发表于
+\url{https://wg21.link/p0127r2}。
