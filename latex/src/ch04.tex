@@ -175,25 +175,7 @@ C++17引入了一个\hyperref[ch21.2.1]{新的类型trait \texttt{is\_aggregate<
 
 \subsection{向后的不兼容性}
 注意下面的例子不能再通过编译：
-\begin{lstlisting}[frame=single, title=lang/aggr14.cpp]
-    struct Derived;
-
-    struct Base {
-        friend struct Derived;
-      private:
-        Base() {
-        }
-    };
-
-    struct Derived : Base {
-    };
-
-    int main()
-    {
-        Derived d1{};   // 自从C++17起ERROR
-        Derived d2;     // 仍然OK（但可能不会初始化）
-    }
-\end{lstlisting}
+\inputcodefile{lang/aggr14.cpp}
 在C++17之前，\texttt{Derived}不是聚合体。因此
 \begin{lstlisting}
     Derived d1{};

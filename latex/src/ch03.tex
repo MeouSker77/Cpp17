@@ -214,61 +214,12 @@
     inline thread_local std::vector<std::string> cache; // 每个线程都有一份cache
 \end{lstlisting}
 作为一个完整的例子，考虑如下头文件：
-\begin{lstlisting}[frame=single, title=lang/inlinethreadlocal.hpp]
-    #include <string>
-    #include <iostream>
-
-    struct MyData {
-        inline static std::string gName = "global";     // 整个程序中只有一个
-        inline static thread_local std::string tName = "tls";   // 每个线程有一个
-        std::string lName = "local";    // 每个实例有一个
-        ...
-        void print(const std::string& msg) const {
-            std::cout << msg << '\n';
-            std::cout << "- gName: " << gName << '\n';
-            std::cout << "- tName: " << tName << '\n';
-            std::cout << "- lName: " << lName << '\n';
-        }
-    };
-
-    inline thread_local MyData myThreadData;    // 每个线程一个对象
-\end{lstlisting}
+\inputcodefile{lang/inlinethreadlocal.hpp}
 你可以在包含\texttt{main()}的翻译单元内使用它：
-\begin{lstlisting}[frame=single, title=lang/inlinethreadlocal1.cpp]
-    #include "inlinethreadlocal.hpp"
-    #include <thread>
-
-    void foo();
-
-    int main()
-    {
-        myThreadData.print("main() begin:");
-
-        myThreadData.gName = "thraed1 name";
-        myThreadData.tName = "thread1 name";
-        myThreadData.lName = "thread1 name";
-        myThreadData.print("main() later:");
-
-        std::thread t(foo);
-        t.join();
-        myThreadData.print("main() end:");
-    }
-\end{lstlisting}
+\inputcodefile{lang/inlinethreadlocal1.cpp}
 你也可以在另一个定义了\texttt{foo()}函数的翻译单元内使用这个头文件，
 这个函数会在另一个线程中被调用：
-\begin{lstlisting}[frame=single, title=lang/inlinethreadlocal2.cpp]
-    #include "inlinethreadlocal.hpp"
-
-    void foo()
-    {
-        myThreadData.print("foo() begin:");
-
-        myThreadData.gName = "thread2 name";
-        myThreadData.tName = "thread2 name";
-        myThreadData.lName = "thread2 name";
-        myThreadData.print("foo() end:");
-    }
-\end{lstlisting}
+\inputcodefile{lang/inlinethreadlocal2.cpp}
 程序的输出如下：
 \begin{lstlisting}
     main() begin:

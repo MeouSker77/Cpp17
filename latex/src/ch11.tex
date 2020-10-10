@@ -210,7 +210,7 @@ C++17允许我们这么写：
 为了用空格分隔传入的参数，
 你需要一个帮助函数来确保除了第一个参数之外的剩余参数输出前都先输出一个空格。
 例如，使用如下的模板\texttt{spaceBefore()}可以做到这一点：
-\inputcodefile{addspace.hpp}
+\inputcodefile{tmpl/addspace.hpp}
 这里，折叠表达式
 \begin{lstlisting}
     (std::cout << ... << spaceBefore(args))
@@ -373,7 +373,7 @@ C++17允许我们这么写：
 
 \subsubsection*{折叠基类的函数调用}
 折叠表达式可以在更复杂的场景中使用。例如，你可以折叠逗号表达式来调用可变数量基类的成员函数：
-\inputcodefile{foldcalls.cpp}
+\inputcodefile{tmpl/foldcalls.cpp}
 这里
 \begin{lstlisting}
     template<typename... Bases>
@@ -399,13 +399,13 @@ C++17允许我们这么写：
 \subsubsection*{折叠路径遍历}
 你也可以使用折叠表达式通过运算符\texttt{->*}遍历一个二叉树中的路径。
 考虑下面的递归数据结构：
-\inputcodefile{foldtraverse.hpp}
+\inputcodefile{tmpl/foldtraverse.hpp}
 这里，
 \begin{lstlisting}
     (np ->* ... ->* paths)
 \end{lstlisting}
 使用了折叠表达式以\texttt{np}为起点遍历可变长度的路径，可以像下面这样使用这个函数：
-\inputcodefile{foldtraverse.cpp}
+\inputcodefile{tmpl/foldtraverse.cpp}
 当调用
 \begin{lstlisting}
     Node::traverse(root, Node::left, Node::right);
@@ -422,7 +422,7 @@ C++17允许我们这么写：
 \subsubsection{使用折叠表达式处理类型}
 通过使用类型特征，我们也可以使用折叠表达式来处理模板参数包（任意数量的模板类型参数）。
 例如，你可以使用折叠表达式来判断一些类型是否相同：
-\inputcodefile{ishomogeneous.hpp}
+\inputcodefile{tmpl/ishomogeneous.hpp}
 类型特征\texttt{IsHomogeneous<>}可以像下面这样使用：
 \begin{lstlisting}
     IsHomogeneous<int, MyType, decltype(42)>::value

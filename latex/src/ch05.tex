@@ -91,30 +91,9 @@
 
 另一个益处是可以定义一个\emph{总是}可以工作的工厂函数因为现在它甚至可以返回不允许拷贝或移动的对象。
 例如，考虑如下泛型工厂函数：
-\begin{lstlisting}[frame=single, title=lang/factory.hpp]
-    #include <utility>
-
-    template <typename T, typename... Args>
-    T create(Args&&... args)
-    {
-        ...
-        return T{std::forward<Args>(args)...};
-    }
-\end{lstlisting}
+\inputcodefile{lang/factory.hpp}
 这个工厂函数现在甚至可以用于\texttt{std::atomic<>}这种既没有拷贝又没有移动构造函数的类型：
-\begin{lstlisting}[frame=single, title=lang/factory.cpp]
-    #include "factory.hpp"
-    #include <memory>
-    #include <atomic>
-
-    int main()
-    {
-        int i = create<int>(42);
-        std::unique_ptr<int> up =
-            create<std::unique_ptr<int>>(new int{42});
-        std::atomic<int> ai = create<std::atomic<int>>(42);
-    }
-\end{lstlisting}
+\inputcodefile{lang/factory.cpp}
 另一个效果就是对于移动构造函数被显式删除的类，现在也可以返回临时对象来初始化新的对象：
 \begin{lstlisting}
     class CopyOnly {
@@ -167,7 +146,7 @@ C++以前只有从C语言继承而来的\emph{左值}(lvalue)和\emph{右值}(rv
 
 \begin{figure}[ht]
     \begin{center}
-        \includegraphics[scale=0.8]{../imgs/5.1.png}
+        \includegraphics[scale=0.8]{../imgs/05.1.png}
         \caption{从C++11起的值类型体系}
         \label{f5.1}
     \end{center}
@@ -233,7 +212,7 @@ C++17再次明确了值类型体系，现在的值类型体系如\hyperref[f5.2]
 
 \begin{figure}[ht]
     \begin{center}
-        \includegraphics[scale=0.8]{../imgs/5.2.png}
+        \includegraphics[scale=0.8]{../imgs/05.2.png}
         \caption{自从C++17起的值类型体系}
         \label{f5.2}
     \end{center}

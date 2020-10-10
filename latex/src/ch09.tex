@@ -150,28 +150,7 @@
 \subsubsection{推导lambda的类型}
 通过使用类模板参数推导，我们可以用lambda的类型（确切的说是lambda生成的\emph{闭包}的类型）
 作为模板参数来实例化类模板。例如我们可以提供一个泛型类，对一个任意回调函数进行包装并统计调用次数：
-\begin{lstlisting}[frame=single, title=tmpl/classarglambda.hpp]
-    #include <utility>  // for std::forward()
-
-    template<typename CB>
-    class CountCalls
-    {
-      private:
-        CB callback;    // 要调用的回调函数
-        long calls = 0; // 调用的次数
-      public:
-        CountCalls(CB cb) : callback(cb) {
-        }
-        template<typename... Args>
-        decltype(auto) operator() (Args&&... args) {
-            ++calls;
-            return callback(std::forward<Args>(args)...);
-        }
-        long count() const {
-            return calls;
-        }
-    };
-\end{lstlisting}
+\inputcodefile{tmpl/classarglambda.hpp}
 这里构造函数获取一个回调函数并进行包装，这样在初始化时会把参数的类型推导为\texttt{CB}。
 例如，我们可以使用一个lambda作为参数来初始化一个对象：
 \begin{lstlisting}

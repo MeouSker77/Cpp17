@@ -403,56 +403,9 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
 \subsubsection*{支持只读结构化绑定}
 下面的例子演示了怎么为一个类型\texttt{Customer}添加结构化绑定支持，
 类的定义如下：
-\begin{lstlisting}[frame=single, title=lang/customer1.hpp]
-    #include <string>
-    #include <utility>  // for std::move()
-
-    class Customer {
-      private:
-        std::string first;
-        std::string last;
-        long val;
-      public:
-        Customer (std::string f, std::string l, long v)
-            : first{std::move(f)}, last{std::move(l)}, val{v} {
-        }
-        std::string getFirst() const {
-            return first;
-        }
-        std::string getLast() const {
-            return last;
-        }
-        long getValue() const {
-            return val;
-        }
-    };
-\end{lstlisting}
+\inputcodefile{lang/customer1.hpp}
 我们可以用如下代码添加tuple-like API：
-\begin{lstlisting}[frame=single, title=lang/structbind1.hpp]
-    #include "customer1.hpp"
-    #include <utility>  // for tuple-like API
-
-    // 为类Customer提供tulpe-like API：
-    template<>
-    struct std::tuple_size<Customer> {
-        static constexpr int value = 3; // 有三个属性
-    };
-
-    template<>
-    struct std::tuple_element<2, Customer> {
-        using type = long;  // 最后一个属性的类型是long
-    };
-    template<std::size_t Idx>
-    struct std::tuple_element<Idx, Customer> {
-        using type = std::string;   // 其他的属性都是string
-    };
-
-    // 定义特化的getter：
-    template<std::size_t> auto get(const Customer& c);
-    template<> auto get<0>(const Customer& c) { return c.getFirst(); }
-    template<> auto get<1>(const Customer& c) { return c.getLast(); }
-    template<> auto get<2>(const Customer& c) { return c.getValue(); }
-\end{lstlisting}
+\inputcodefile{lang/structbind1.hpp}
 这里，我们为顾客的三个属性定义了tuple-like API，并映射到三个getter：
 \begin{itemize}[leftmargin=*]
     \item 顾客的名（first name）是\texttt{std::string}类型
@@ -518,28 +471,7 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
     }
 \end{lstlisting}
 有了这个API，我们就可以为类型\texttt{Customer}使用结构化绑定：
-\begin{lstlisting}[frame=single, title=lang/structbind1.cpp]
-    #include "structbind1.hpp"
-    #include <iostream>
-
-    int main()
-    {
-        Customer c{"Tim", "Starr", 42};
-        auto [f, l, v] = c;
-
-        std::cout << "f/l/v:    " << f << ' '
-                  << l << ' ' << v << '\n';
-
-        // 修改结构化绑定的变量
-        std::string s{std::move(f)};
-        l = "Waters";
-        v += 10;
-        std::cout << "f/l/v:    " << f << ' ' << l << ' ' << v << '\n';
-        std::cout << "c:        " << c.getFirst() << ' '
-                  << c.getLast() << ' ' << c.getValue() << '\n';
-        std::cout << "s:        " << s << '\n';
-    }
-\end{lstlisting}
+\inputcodefile{lang/structbind1.cpp}
 如下初始化之后：
 \begin{lstlisting}
     auto [f, l, v] = c;
@@ -594,95 +526,9 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
 实现tuple-like API时可以时候用返回\texttt{non-const}引用。这样结构化绑定就变得可写。
 设想类\texttt{Customer}提供了读写成员的API\footnote{这个类的设计比较失败，
 因为通过成员函数可以直接访问私有成员。然而用来演示怎么支持可写结构化绑定已经足够了}：
-\begin{lstlisting}[frame=single, title=lang/customer2.hpp]
-    #include <string>
-    #include <utility>  // for std::move()
-
-    class Customer {
-      private:
-        std::string first;
-        std::string last;
-        long val;
-      public:
-        Customer (std::string f, std::string l, long v)
-            : first{std::move(f))}, last{std::move(l)}, val{v} {
-        }
-        const std::string& firstname() const {
-            return first;
-        }
-        std::string& firstname() {
-            return first;
-        }
-        const std::string& lastname() const {
-            return last;
-        }
-        long value() const {
-            return val;
-        }
-        long& value() {
-            return val;
-        }
-    };
-\end{lstlisting}
-
+\inputcodefile{lang/customer2.hpp}
 为了支持读写，我们需要为常量和非常量引用定义重载的getter：
-\begin{lstlisting}[frame=single, title=lang/structbind2.hpp]
-    #include "customer2.hpp"
-    #include <utility>  // for tuple-like API
-
-    // 为类Customer提供tuple-like API
-    template<>
-    struct std::tuple_size<Customer> {
-        static constexpr int value = 3; // 有3个属性
-    };
-
-    template<>
-    struct std::tuple_element<2, Customer> {
-        using type = long;  // 最后一个属性是long类型
-    }
-    template<std::size_t Idx>
-    struct std::tuple_element<Idx, Customer> {
-        using type = std::string;   // 其他的属性是string
-    }
-
-    // 定义特化的getter：
-    template<std::size_t I> decltype(auto) get(Customer& c) {
-        static_assert(I < 3);
-        if constexpr (I == 0) {
-            return c.firstname();
-        }
-        else if constexpr (I == 1) {
-            return c.lastname();
-        }
-        else {  // I == 2
-            return c.value();
-        }
-    }
-    template<std::size_t I> decltype(auto) get(const Customer& c) {
-        static_assert(I < 3);
-        if constexpr (I == 0) {
-            return c.firstname();
-        }
-        else if constexpr (I == 1) {
-            return c.lastname();
-        }
-        else {  // I == 2
-            return c.value();
-        }
-    }
-    template<std::size_t I> decltype(auto) get(Customer&& c) {
-        static_assert(I < 3);
-        if constexpr (I == 0) {
-            return std::move(c.firstname());
-        }
-        else if constexpr (I == 1) {
-            return std::move(c.lastname());
-        }
-        else {  // I == 2
-            return c.value();
-        }
-    }
-\end{lstlisting}
+\inputcodefile{lang/structbind2.hpp}
 注意你必须提供这3个版本的特化来分别处理常量对象、非常量对象、可移动对象，
 \footnote{标准库中还为\texttt{const\&\&}实现了第4个版本的\texttt{get<>()}
 这么做是有原因的（见\url{https://wg21.link/lwg2485)}），
@@ -714,28 +560,7 @@ C++17为一些标准库结构体（例如\texttt{insert\_return\_type}）定义�
     template<> long& get<2>(Customer& c) { return c.value(); }
 \end{lstlisting}
 你现在可以对\texttt{Customer}类使用结构化绑定了，并且还能通过绑定修改成员的值：
-\begin{lstlisting}[frame=single, title=lang/structbind2.cpp]
-    #include "structbind2.hpp"
-    #include <iostream>
-
-    int main()
-    {
-        Customer c{"Tim", "Starr", 42};
-        auto [f, l, v] = c;
-        std::cout << "f/l/v:    " << f << ' ' << l << ' ' << v << '\n';
-
-        // 通过引用修改结构化绑定
-        auto&& [f2, l2, v2] = c;
-        std::string s{std::move(f2)};
-        f2 = "Ringo";
-        v2 += 10;
-        std::cout << "f2/l2/v2: " << f2 << ' '
-                  << l2 << ' ' << v2 << '\n';
-        std::cout << "c:        " << c.firstname() << ' '
-                  << c.lastname() << ' ' << c.value() << '\n';
-        std::cout << "s:        " << s << '\n';
-    }
-\end{lstlisting}
+\inputcodefile{lang/structbind2.cpp}
 程序的输出如下：
 \begin{lstlisting}
     f/l/v:    Tim Starr 42

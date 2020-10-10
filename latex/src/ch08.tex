@@ -128,30 +128,7 @@
 
 \subsubsection*{向后的不兼容性}
 新的有定义的求值顺序可能会影响现有程序的输出。例如，考虑如下程序：
-\begin{lstlisting}[frame=single, title=lang/evalexcept.cpp]
-    #include <iostream>
-    #include <vector>
-
-    void print10elems(const std::vector<int>& v) {
-        for (int i = 0; i < 10; ++i) {
-            std::cout << "value: " << v.at(i) << '\n';
-        }
-    }
-
-    int main()
-    {
-        try {
-            std::vector<int> vec{7, 14, 21, 28};
-            print10elems(vec);
-        }
-        catch (const std::exception& e) {   // 处理标准异常
-            std::cerr << "EXCEPTION: " << e.what() << '\n';
-        }
-        catch (...) {   // 处理任何其他异常
-            std::cerr << "EXCEPTION of unknown type\n";
-        }
-    }
-\end{lstlisting}
+\inputcodefile{lang/evalexcept.cpp}
 因为这个程序中的\texttt{vector<>}只有4个元素，因此在\texttt{print10elems()}的循环中
 使用无效的索引调用\texttt{at()}时将会抛出异常：
 在C++17之前，输出可能是：
@@ -431,28 +408,7 @@ US-ASCII编码，而运行字符集通常是相同的。这意味着在任何C++
 \subsubsection*{对泛型库的影响}
 将\texttt{noexcept}做为类型类型的一部分意味着会对泛型库产生一些影响。例如，下面的代码
 直到C++14是有效的，但从C++17起不能再通过编译：
-\begin{lstlisting}[frame=single, title=lang/noexceptcalls.cpp]
-    #include <iostream>
-
-    template<typename T>
-    void call(T op1, T op2)
-    {
-        op1();
-        op2();
-    }
-
-    void f1() {
-        std::cout << "f1()\n";
-    }
-    void f2() noexcept {
-        std::cout << "f2()\n";
-    }
-
-    int main()
-    {
-        call(f1, f2);   // 自从C++17起ERROR
-    }
-\end{lstlisting}
+\inputcodefile{lang/noexceptcalls.cpp}
 问题在于自从C++17起\texttt{f1()}和\texttt{f2()}的类型不再相同，
 因此在实例化模板函数\texttt{call()时}编译器无法推导出类型\texttt{T}，
 

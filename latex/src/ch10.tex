@@ -5,58 +5,16 @@
 这些部分中的代码也会像没使用的模板一样进行语法检查。
 
 例如：
-\begin{lstlisting}[frame=single, title=tmpl/ifcomptime.hpp]
-    #include <string>
-
-    template <typename T>
-    std::string asString(T x)
-    {
-        if constexpr(std::is_same_v<T, std::string>) {
-            return x;   // 如果T不能自动转换为string该语句将无效
-        }
-        else if constexpr(std::is_arithmetic_v<T>) {
-            return std::to_string(x); // 如果T不是数字类型该语句将无效
-        }
-        else {
-            return std::string(x);  // 如果不能转换为string该语句将无效
-        }
-    }
-\end{lstlisting}
+\inputcodefile{tmpl/ifcomptime.hpp}
 通过使用\texttt{if constexpr}我们在编译期就可以决定我们是简单返回传入的字符串、
 对传入的数字调用\texttt{to\_string()}还是使用构造函数来把传入的参数转换为
 \texttt{std::string}。无效的调用将被\emph{丢弃}，因此下面的代码能够通过编译
 （如果使用运行时\texttt{if}语句则不能通过编译）：
-\begin{lstlisting}[frame=single, title=tmpl/ifcomptime.cpp]
-    #include "ifcomptime.hpp"
-    #include <iostream>
-
-    int main()
-    {
-        std::cout << asString(42) << '\n';
-        std::cout << asString(std::string("hello")) << '\n';
-        std::cout << asString("hello") << '\n';
-    }
-\end{lstlisting}
+\inputcodefile{tmpl/ifcomptime.cpp}
 
 \subsection{编译期\texttt{if}语句的动机}
 如果我们在上面的例子中使用运行时\texttt{if}，下面的代码将永远不能通过编译：
-\begin{lstlisting}[frame=single, title=tmpl/ifruntime.hpp]
-    #include <string>
-
-    template <typename T>
-    std::string asString(T x)
-    {
-        if (std::is_same_v<T, std::string>) {
-            return x;   // 如果不能自动转换为string会导致ERROR
-        }
-        else if (std::is_numeric_v<T>) {
-            return std::to_string(x); // 如果不是数字将导致ERROR
-        }
-        else {
-            return std::string(x);  // 如果不能转换为string将导致ERROR
-        }
-    }
-\end{lstlisting}
+\inputcodefile{tmpl/ifruntime.hpp}
 这是因为模板在实例化时整个模板会作为一个整体进行编译。
 然而\texttt{if}语句的条件表达式的检查是运行时特性。
 即使在编译期就能确定条件表达式的值一定是\texttt{false}，\emph{then}的部分也必须能通过编译。
@@ -276,28 +234,7 @@
 编译期\texttt{if}的一个引用就是完美转发返回值，并在返回之前对返回值进行一些处理。
 因为\texttt{decltype(auto)}不能推导为\texttt{void}（因为\texttt{void}是不完全的类型），
 所以你必须像下面这么写：
-\begin{lstlisting}[frame=single, title=tmpl/perfectreturn.hpp]
-    #include <function>     // for std::forward()
-    #include <type_traits>  // for std::is_same<> and std::invoke_result<>
-
-    template<typename Callable, typename... Args>
-    decltype(auto) call(Callable op, Args&.. args)
-    {
-        if constexpr(std::is_void_v<
-            std::invoke_result_t<Callable, Args...>>) {
-            // 返回值类型是void：
-            op(std::forward<Args>(args)...);
-            ... // 在返回前进行一些处理
-            return;
-        }
-        else {
-            // 返回值类型不是void:
-            decltype(auto) ret{op(std::forward<Args>(args)...)};
-            ... // 在返回前用ret进行一些处理
-            return ret;
-        }
-    }
-\end{lstlisting}
+\inputcodefile{tmpl/perfectreturn.hpp}
 函数的返回值类型可以推导为\texttt{void}，
 但\texttt{ret}的声明不能推导为\texttt{void}，
 因此必须把\texttt{op}返回\texttt{void}的情况单独处理。
