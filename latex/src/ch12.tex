@@ -1,0 +1,55 @@
+\section{处理字符串字面量模板参数}\label{ch12}
+一直以来，不同版本的C++标准一直在放宽模板参数的标准，C++17也是如此。
+另外现在非类型模板参数的实参不需要再定义在使用处的外层作用域。
+
+\subsection{在模板中使用字符串}
+非类型模板参数只能是常量整数值（包括枚举）、对象/函数/成员的指针、对象或函数的左值引用、
+\texttt{std::nullptr\_t}（\texttt{nullptr}的类型）。
+
+对于指针，在C++17之前需要外部或者内部链接。然而，自从C++17起，可以使用无链接的指针。
+然而，你仍然不能直接使用字符串字面量。例如：
+\begin{lstlisting}
+    template<const char* str>
+    class Message {
+        ...
+    };
+
+    extern const char hello[] = "Hello World!"; // 外部链接
+    const char hello11[] = "Hello World!";      // 内部链接
+
+    void foo()
+    {
+        Message<hello> msg;     // OK（所有C++标准）
+        Message<hello11> msg11; // OK（自从C++11起）
+
+        static const char hello17[] = "Hello World!";   // 无链接
+        Message<hello17> msg17; // OK（自从C++17起）
+
+        Message<"hi"> msgError; // ERROR
+    }
+\end{lstlisting}
+也就是说自从C++17起你仍然需要至少两行才能把字符串字面量传给一个模板参数。
+然而，你现在可以把第一行写在和实例化代码相同的作用域内。
+
+这个特性还解决了一个不行的约束：自从C++11起可以把一个指针作为模板实参：
+\begin{lstlisting}
+    template<int* p> struct A {
+    };
+    
+    int num;
+    A<&num> a;  // OK（自从C++11起）
+\end{lstlisting}
+但不能用一个返回指针的编译期函数作为模板实参，然而现在可以了：
+\begin{lstlisting}
+    int num;
+    ...
+    constexpr int* pNum() {
+        return &num;
+    }
+    A<pNum()> b;    // C++17之前ERROR，现在OK
+\end{lstlisting}
+
+\subsection{后记}
+允许编译期常量求值结果作为非类型模板实参由Richard Smith在\url{https://wg21.link/n4198}中首次提出。
+最终被接受的提案由Richard Smith发表于\url{https://wg21.link/n4268}。
+
