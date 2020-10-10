@@ -11,7 +11,7 @@
 \usepackage{enumitem}
 \usepackage{graphicx}
 \usepackage{amsmath}
-\usepackage[colorlinks, linkcolor=black]{hyperref}
+\usepackage[colorlinks, linkcolor=black, breaklinks=true]{hyperref}
 \usepackage{xcolor}
 \usepackage[font={it}]{caption}
 \usepackage[numbered]{bookmark}
@@ -26,23 +26,25 @@
 
 \lstset{
 basicstyle = \ttfamily\footnotesize,
-breakatwhitespace = false,
 breaklines = true,
+keywordstyle=\color{blue},
+language = [11]C++,
+stringstyle=\color{magenta},
 commentstyle = \color{gray}\itshape,
-extendedchars = false,
-keepspaces=true,
-keywordstyle=\color{blue}, % keyword style
-language = C++,            % the language of code
-otherkeywords={string},
-rulecolor=\color{black},
-showspaces=false,
-showstringspaces=false,
-showtabs=false,
-stringstyle=\color{magenta},        % string literal style
 tabsize=4,
+frameround=tttt,
+rulecolor=\color{lightgray},
 }
 
-%\includeonly{ch10}
+%\includeonly{ch11}
+
+\newcommand\inputcodefile[1]{
+\lstinputlisting[
+frame = single,
+xleftmargin = 10pt,
+title = tmpl/#1,
+]{../tmpl/#1}
+}
 
 % Document
 \begin{document}
@@ -85,7 +87,6 @@ tabsize=4,
     \include{ch16}
     \include{ch18}
     \include{ch20}
-
 
 
     \part{已有标准库的拓展和修改}\label{part4}

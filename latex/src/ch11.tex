@@ -1,4 +1,451 @@
 \section{折叠表达式}\label{ch11}
+自从C++17起，有一个新的特性可以计算对参数包中的\emph{所有}参数应用一个二元运算符的结果。
+
+例如，下面的函数将会返回所有参数的总和：
+\begin{lstlisting}
+    template<typename... T>
+    auto foldSum (T... args) {
+        return (... + args);    //((arg1 + arg2) + arg3)...
+    }
+\end{lstlisting}
+注意返回语句中的括号是折叠表达式的一部分，不能被省略。
+
+如下调用：
+\begin{lstlisting}
+    foldSum(47, 11, val, -1);
+\end{lstlisting}
+会把模板实例化为：
+\begin{lstlisting}
+    return 47 + 11 + val + -1;
+\end{lstlisting}
+如下调用：
+\begin{lstlisting}
+    foldsum(std::string("hello"), "world", "!");
+\end{lstlisting}
+会把模板实例化为：
+\begin{lstlisting}
+    return std::string("hello") + "world" + "!";
+\end{lstlisting}
+注意折叠表达式里参数的位置很重要（可能看起来还有些反直觉）。如下写法：
+\begin{lstlisting}
+    (... + args)
+\end{lstlisting}
+会展开为：
+\begin{lstlisting}
+    ((arg1 + arg2) + arg3) ...
+\end{lstlisting}
+这意味着折叠表达式会以后递增式重复展开。你也可以写：
+\begin{lstlisting}
+    (args + ...)
+\end{lstlisting}
+这样就会前递增式展开，因此结果会变为：
+\begin{lstlisting}
+    (arg1 + (arg2 + arg3)) ...
+\end{lstlisting}
+
 \subsection{折叠表达式的动机}
-\subsection{使用折叠表达式}
+折叠表达式的出现让我们不必再用递归实例化模板的方式来处理参数包。
+在C++17之前，你必须实现为：
+\begin{lstlisting}
+    template<typename T>
+    auto foldSumRec (T arg) {
+        return arg;
+    }
+    template<typename T1, typename... Ts>
+    auto foldSumRec (T1 arg1, Ts... otherArgs) {
+        return arg1 + foldSumRec(otherArgs...);
+    }
+\end{lstlisting}
+这样的实现不仅写起来麻烦，对C++编译器来说也很难处理。使用如下写法：
+\begin{lstlisting}
+    template<typename... T>
+    auto foldSum (T... args) {
+        return (... + args);    // arg1 + arg2 + arg3
+    }
+\end{lstlisting}
+能显著的减少程序员和编译器的工作量。
+
+\subsection{使用折叠表达式}\label{ch11.2}
+给定一个参数\emph{args}和一个操作符\emph{op}，C++17允许我们这么写：
+\begin{itemize}[leftmargin=*]
+    \item \emph{\textbf{一元左折叠}}\\
+    ( \ldots \, \emph{\textbf{op} args} )\\
+    将会展开为：\emph{((arg1 \textbf{op} arg2) \textbf{op} arg3) \textbf{op} \ldots}
+    \item \emph{\textbf{一元右折叠}}\\
+    ( \emph{args \textbf{op}} \ldots \,)\\
+    将会展开为：\emph{arg1 \textbf{op} (arg2 \textbf{op} \ldots \, (argN-1 \textbf{op} argN))}
+\end{itemize}
+括号是必须的，然而，括号和省略号(\ldots)之间并不需要用空格分隔。
+
+左折叠和右折叠的不同比想象中更大。例如，当你使用\textbf{+}时可能会产生不同的效果。
+使用左折叠时：
+\begin{lstlisting}
+    template<typename... T>
+    auto foldSumL(T... args) {
+        return (... + args);    // ((arg1 + arg2) + arg3)...
+    }
+\end{lstlisting}
+如下调用
+\begin{lstlisting}
+    foldSumL(1, 2, 3);
+\end{lstlisting}
+会求值为
+\begin{lstlisting}
+    ((1 + 2) + 3)
+\end{lstlisting}
+这意味着下面的例子能够通过编译：
+\begin{lstlisting}
+    std::cout << foldSumL(std::string("hello"), "world", "!")
+              << '\n';  // OK
+\end{lstlisting}
+记住对字符串而言只有两侧至少有一个是\texttt{std::string}时才能使用\texttt{+}。
+使用作折叠式，会首先计算
+\begin{lstlisting}
+    std::string("hello") + "world"
+\end{lstlisting}
+这将返回一个\texttt{std::string}，因此再加上字符串字面量\texttt{"!"}是有效的。
+
+然而，如下调用
+\begin{lstlisting}
+    std::cout << foldSumL("hello", "world", std::string("!"))
+              << '\n';  // ERROR
+\end{lstlisting}
+将不能通过编译，因为它会求值为
+\begin{lstlisting}
+    ("hello" + "world") + std::string("!");
+\end{lstlisting}
+然而把两个字符串字面量相加是错误的。
+
+然而如果我们把实现修改为：
+\begin{lstlisting}
+    template<typename... T>
+    auto foldSumR(T... args) {
+        return (args + ...);    // (arg1 + (arg2 + arg3))...
+\end{lstlisting}
+那么如下调用
+\begin{lstlisting}
+    foldSumR(1, 2, 3)
+\end{lstlisting}
+将求值为
+\begin{lstlisting}
+    (1 + (2 + 3))
+\end{lstlisting}
+这意味着下面的例子不能再通过编译：
+\begin{lstlisting}
+    std::cout << foldSumR(std::string("hello"), "world", "!")
+              << '\n';  // ERROR
+\end{lstlisting}
+然而如下调用现在反而可以编译了：
+\begin{lstlisting}
+    std::cout << foldSumR("hello", "world", std::string("!"))
+              << '\n';  // OK
+\end{lstlisting}
+在任何情况下，从左向右求值都是符合直觉的。
+因此，更推荐使用左折叠的语法：
+\begin{lstlisting}
+    (... + args);       // 推荐的折叠表达式语法
+\end{lstlisting}
+
 \subsubsection{处理空参数包}\label{ch11.2.1}
+当使用折叠表达式处理空参数包时，将遵循如下规则：
+\begin{itemize}[leftmargin=*]
+    \item 如果使用了\texttt{\&\&}运算符，值为\texttt{true}。
+    \item 如果使用了\texttt{||}运算符，值为\texttt{false}。
+    \item 如果使用了逗号运算符，值为\texttt{void()}。
+    \item 使用所有其他的运算符，都会引发格式错误
+\end{itemize}
+对于所有其他的情况，你可以添加一个初始值：
+给定一个参数包\emph{args}，一个初始值\emph{value}，一个操作符\emph{op}，
+C++17允许我们这么写：
+\begin{itemize}[leftmargin=*]
+    \item \emph{\textbf{二元左折叠}}\\
+    ( \emph{value \textbf{op} \ldots \, \textbf{op} args} )\\
+    将会展开为：\emph{(((value \textbf{op} arg1) \textbf{op} arg2) \textbf{op} arg3) \textbf{op} \ldots}
+    \item \emph{\textbf{二元右折叠}}\\
+    ( \emph{args \textbf{op} \ldots \, \textbf{op} value} )\\
+    将会展开为：\emph{arg1 \textbf{op} (arg2 \textbf{op} \ldots \, (argN \textbf{op} value))}
+\end{itemize}
+省略号两侧的\emph{op}必须相同。
+
+例如，下面的定义在进行加法时允许传递一个空参数包：
+\begin{lstlisting}
+    template<typename... T>
+    auto foldSum (T... s) {
+        return (0 + ... + s);   // 即使sizeof...(s)==0也能工作
+    }
+\end{lstlisting}
+从概念上讲，不管\texttt{0}是第一个还是最后一个操作数应该和结果无关：
+\begin{lstlisting}
+    template<typename... T>
+    auto foldSum (T... s) {
+        return (s + ... + 0);   // 即使sizeof...(s)==0也能工作
+    }
+\end{lstlisting}
+然而，对于一元折叠表达式来说，\hyperref[ch11.2]{不同的求值顺序比想象中的更重要}。
+对于二元表达式来说，也更推荐左折叠的方式：
+\begin{lstlisting}
+    (val + ... + args);         // 推荐的二元折叠表达式语法
+\end{lstlisting}
+有时候第一个操作数是特殊的，比如下面的例子：
+\begin{lstlisting}
+    template<typename... T>
+    void print(const T&... args)
+    {
+        (std::cout << ... << args) << '\n';
+    }
+\end{lstlisting}
+这里，传递给\texttt{print()}的第一个参数输出之后将返回输出流，所以后面的参数可以继续输出。
+其他的实现可能不能编译或者产生一些意料之外的结果。例如，
+\begin{lstlisting}
+    std::cout << (args << ... << '\n');
+\end{lstlisting}
+类似\texttt{print(1)}的调用可以编译，但会打印出1左移\texttt{'\textbackslash n'}位之后的值，
+\texttt{'\textbackslash n'}的值通常是10，所以结果是1024。
+
+注意在这个\texttt{print()}的例子中，两个参数之间没有输出空格字符。
+因此，如下调用\texttt{print("hello", 42, "world")}将会打印出：
+\begin{lstlisting}
+    hello42world
+\end{lstlisting}
+为了用空格分隔传入的参数，
+你需要一个帮助函数来确保除了第一个参数之外的剩余参数输出前都先输出一个空格。
+例如，使用如下的模板\texttt{spaceBefore()}可以做到这一点：
+\inputcodefile{addspace.hpp}
+这里，折叠表达式
+\begin{lstlisting}
+    (std::cout << ... << spaceBefore(args))
+\end{lstlisting}
+将会展开为：
+\begin{lstlisting}
+    std::cout << spaceBefore(arg1) << spaceBefore(arg2) << ...
+\end{lstlisting}
+因此，对于参数包中的每一个参数\texttt{args}，都会调用帮助函数，
+在输出参数之前先输出一个空格到\texttt{std::cout}。
+为了确保不会对第一个参数调用帮助函数，我们添加了额外的模板参数对第一个参数进行单独处理。
+
+注意要想让参数包正确输出需要确保对每个参数调用\texttt{spaceBefore()}之前左侧的所有输出都已经完成。
+得益于操作符\texttt{<<}的\nameref{ch8.2}，自从C++17起将保证行为正确：
+
+我们也可以使用lambda来在\texttt{print()}内定义\texttt{spaceBefore()}：
+\begin{lstlisting}
+    template<typename First, typename... Args>
+    void print (const First& firstarg, const Args&... args) {
+        std::cout << firstarg;
+        auto spaceBefore = [](const auto& arg) {
+            std::cout << ' ';
+            return arg;
+        };
+        (std::cout << ... << spaceBefore(args)) < '\n';
+    }
+\end{lstlisting}
+然而，注意默认情况下lambda以值返回对象，这意味着会创建参数的不必要的拷贝。
+解决方法是显式指明返回类型为\texttt{const auto\&}或者\texttt{decltype(auto)}：
+\begin{lstlisting}
+    template<typename First, typename... Args>
+    void print (const First& firstarg, const Args&... args) {
+        std::cout << firstarg;
+        auto spaceBefore = [](const auto& arg) -> const auto& {
+            std::cout << ' ';
+            return arg;
+        };
+        (std::cout << ... << spaceBefore(args)) << '\n';
+    }
+\end{lstlisting}
+如果你不能把他们写在一个表达式里那么C++就不是C++了：
+\begin{lstlisting}
+    template<typename First, typename... Args>
+    void print (const First& firstarg, const Args&... args) {
+        std::cout << firstarg;
+        (std::cout << ... << [](const auto& arg) -> decltype(auto) {
+                                std::cout << ' ';
+                                return arg;
+                             }(args)) << '\n';
+    }
+\end{lstlisting}
+不过，一个更简单的实现\texttt{print()}的方法是使用一个lambda输出空格和参数，
+然后在一元折叠表达式里使用它：
+\footnote{感谢Barry Revzin指出这一点。}
+\begin{lstlisting}
+    template<typename First, typename... Args>
+    void print(First first, const Args&... args) {
+        std::cout << first;
+        auto outWithSpace = [](const auto& arg) {
+                                std::cout << ' ' << arg;
+                            };
+        (... , outWithSpace(args));
+        std::cout << '\n';
+    }
+\end{lstlisting}
+通过使用新的\hyperref[ch13.1.1]{\texttt{auto}模板参数}，我们可以使\texttt{print()}
+变得更加灵活：可以把间隔符定义为一个参数，这个参数可以是一个字符、一个字符串或者其它任何可打印的类型。
+
+\subsubsection{支持的运算符}
+你可以对除了\texttt{.}、\texttt{->}、\texttt{[]}之外的所有二元运算符使用折叠表达式。
+
+\subsubsection*{折叠函数调用}
+折叠表达式可以用于逗号运算符，这样就可以在一条语句里进行多次函数调用。
+也就是说，你现在可以简单写出如下实现：
+\begin{lstlisting}
+    template<typename... Types>
+    void callFoo(const Types&... args)
+    {
+        ...
+        (... , foo(args));  // 调用foo(arg1)，foo(arg2)，foo(arg3)，...
+    }
+\end{lstlisting}
+来对所有参数调用函数\texttt{foo()}。
+
+另外，如果需要支持移动语义：
+\begin{lstlisting}
+    template<typename... Types>
+    void callFoo(Types&&... args)
+    {
+        ...
+        (... , foo(std::forward<Types>(args))); // 调用foo(arg1)，foo(arg2)，...
+    }
+\end{lstlisting}
+
+如果\texttt{foo()}函数返回的类型重载了逗号运算符，那么代码行为可能会改变。
+为了保证这种情况下代码依然安全，你需要把返回值转换为\texttt{void}：
+\begin{lstlisting}
+    template<typename... Types>
+    void callFoo(const Types&... args)
+    {
+        ...
+        (... , (void)foo(std::forward<Types>(args))); // 调用foo(arg1)，foo(arg2)，...
+    }
+\end{lstlisting}
+注意自然情况下，对于逗号运算符不管我们是左折叠还是右折叠都是一样的。
+函数调用们总是会从左向右执行。如下写法：
+\begin{lstlisting}
+    (foo(args) , ...);
+\end{lstlisting}
+中的括号只是把后边的调用括在一起，因此首先是第一个\texttt{foo()}调用，
+之后是被括起来的两个\texttt{foo()}调用：
+\begin{lstlisting}
+    foo(arg1) , (foo(arg2) , foo(arg3));
+\end{lstlisting}
+然而，因为逗号表达式的求值顺序通常是自左向右，所以第一个调用通常发生在括号里的的后两个调用之前，
+并且括号里左侧的调用在右侧的调用之前。
+\footnote{如果重载逗号运算符，你可以改变它的求值顺序，这可能影响左折叠和右折叠的求值顺序。}
+
+不过，因为左折叠更符合自然的求值顺序，因此在使用折叠表达式进行多次函数调用时还是推荐使用左折叠。
+
+\subsubsection*{组合哈希函数}
+另一个使用逗号折叠表达式的例子是组合哈希函数。可以用如下的方法完成：
+\begin{lstlisting}
+    template<typename T>
+    void hashCombine (std::size_t& seed, const T& val)
+    {
+        seed ^= std::hash<T>()(val) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+    }
+
+    template<typename... Types>
+    std::size_t combinedHashValue (const Types&... args)
+    {
+        std::size_t seed = 0;               // 初始化seed
+        (... , hashCombine(seed, args));    // 链式调用hashCombine()
+        return seed;
+    }
+\end{lstlisting}
+如下调用
+\begin{lstlisting}
+    combinedHashValue ("Hi", "World", 42);
+\end{lstlisting}
+函数中的折叠表达式将被展开为：
+\begin{lstlisting}
+    hashCombine(seed, "Hi"), (hashCombine(seed, "World"), hashCombine(seed, 42));
+\end{lstlisting}
+有了这些定义，我们现在可以轻易的定义出一个新的哈希函数，
+并将这个函数用于某一个类型例如\texttt{Customer}的无序set或无序map：
+\begin{lstlisting}
+    sturct CustomerHash
+    {
+        std::size_t operator() (const Customer& c) const {
+            return combinedHashValue(c.getFirstname(), c.getLastname(),
+                                     c.getValue());
+        }
+    };
+
+    std::unordered_set<Customer, CustomerHash> coll;
+    std::unordered_map<Customer, std::string, CustomerHash> map;
+\end{lstlisting}
+
+\subsubsection*{折叠基类的函数调用}
+折叠表达式可以在更复杂的场景中使用。例如，你可以折叠逗号表达式来调用可变数量基类的成员函数：
+\inputcodefile{foldcalls.cpp}
+这里
+\begin{lstlisting}
+    template<typename... Bases>
+    class MultiBase : private Bases...
+    {
+        ...
+    };
+\end{lstlisting}
+允许我们用可变数量的基类初始化对象：
+\begin{lstlisting}
+    MultiBase<A, B, C> mb;
+\end{lstlisting}
+进一步通过
+\begin{lstlisting}
+    (... , Bases::print());
+\end{lstlisting}
+这个折叠表达式将展开为调用每一个基类中的\texttt{print}。
+也就是说，这条语句会被展开为如下代码：
+\begin{lstlisting}
+    (A::print(), B::print()), C::print();
+\end{lstlisting}
+
+\subsubsection*{折叠路径遍历}
+你也可以使用折叠表达式通过运算符\texttt{->*}遍历一个二叉树中的路径。
+考虑下面的递归数据结构：
+\inputcodefile{foldtraverse.hpp}
+这里，
+\begin{lstlisting}
+    (np ->* ... ->* paths)
+\end{lstlisting}
+使用了折叠表达式以\texttt{np}为起点遍历可变长度的路径，可以像下面这样使用这个函数：
+\inputcodefile{foldtraverse.cpp}
+当调用
+\begin{lstlisting}
+    Node::traverse(root, Node::left, Node::right);
+\end{lstlisting}
+时折叠表达式将展开为：
+\begin{lstlisting}
+    root ->* Node::left ->* Node::right
+\end{lstlisting}
+结果等价于
+\begin{lstlisting}
+    root -> subLeft -> subRight
+\end{lstlisting}
+
+\subsubsection{使用折叠表达式处理类型}
+通过使用类型特征，我们也可以使用折叠表达式来处理模板参数包（任意数量的模板类型参数）。
+例如，你可以使用折叠表达式来判断一些类型是否相同：
+\inputcodefile{ishomogeneous.hpp}
+类型特征\texttt{IsHomogeneous<>}可以像下面这样使用：
+\begin{lstlisting}
+    IsHomogeneous<int, MyType, decltype(42)>::value
+\end{lstlisting}
+这种情况下，折叠表达式将会展开为：
+\begin{lstlisting}
+    std::is_same_v<int, MyType> && std::is_same_v<int, decltype(42)>
+\end{lstlisting}
+函数模板\texttt{isHomogeneous<>()}可以像下面这样使用：
+\begin{lstlisting}
+    isHomogeneous(43, -1, "hello", nullptr)
+\end{lstlisting}
+在这种情况下，折叠表达式将会展开为：
+\begin{lstlisting}
+    std::is_same_v<int, int> && std::is_same_v<int, const char*>
+        && is_same_v<int, std::nullptr_t>
+\end{lstlisting}
+像通常一样，运算符\texttt{\&\&}会短路求值（出现第一个\texttt{false}时就会停止运算）。
+
+标准库里\hyperref[ch9.2.6.3]{\texttt{std::array<>}的推导指引}就使用了这个特性。
+
+\subsection{后记}
+折叠表达式特性最早由Andrew Sutton和Richard Smith在\url{https://wg21.link/n4191}中提出。
+最终被接受的提案由Andrew Sutton和Richard Smith发表于\url{https://wg21.link/n4295}。
+之后对运算符\texttt{*、+、\&、|}处理空参数包的支持由Thibaut Le Jehan在
+\url{https://wg21.link/p0036}中移除。

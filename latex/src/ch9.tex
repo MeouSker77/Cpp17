@@ -671,7 +671,7 @@ C++17标准在标准库中引入了很多推导指引。
 唯一的例外是传递单独一个vector（这时\hyperref[ch9.1.1]{会优先进行拷贝}）。
 当传递别的含义的参数时，使用圆括号会更好。
 
-在任何情况下，对于像\textbf{std::vector<>}或其他STL容器一样拥有复杂的构造函数的类模板，
+在任何情况下，对于像\texttt{std::vector<>}或其他STL容器一样拥有复杂的构造函数的类模板，
 \textbf{强烈建议\emph{不要}使用类模板参数推导}，而是显式指明类型。
 
 \subsubsection*{\texttt{std::array<>}推导}\label{ch9.2.6.3}
