@@ -39,12 +39,12 @@ rulecolor=\color{lightgray},
 \newcommand\inputcodefile[1]{
 \lstinputlisting[
 frame = single,
-xleftmargin = 10pt,
+xleftmargin = 13pt,
 title = #1,
-]{../#1}
+]{../code/#1}
 }
 
-\includeonly{ch14}
+%\includeonly{ch15}
 
 % Document
 \begin{document}
@@ -85,13 +85,17 @@ title = #1,
 
     \part{新的标准库组件}\label{part3}
     这一部分介绍C++17中新的标准库组件。
+
+    \include{ch15}
     \include{ch16}
     \include{ch18}
+    \include{ch19}
     \include{ch20}
 
 
     \part{已有标准库的拓展和修改}\label{part4}
     这一部分介绍C++17对已有标准库组件的拓展和修改
+
     \include{ch21}
     \include{ch22}
     \include{ch24}
@@ -104,6 +108,7 @@ title = #1,
     它主要包括了为编写基础库和语言特性的程序员准备的用来解决特殊问题语言特性（例如修改了堆内存的管理方式）。
 
     \include{ch30}
+    \include{ch31}
     \include{ch33}
 
 

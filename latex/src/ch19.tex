@@ -1,0 +1,13 @@
+\section{字符串视图(String Views)}\label{ch19}
+
+\subsection{和\texttt{std::string}的不同之处}
+
+\subsection{使用字符串视图}
+
+\subsection{使用字符串视图作为参数}
+
+\label{改进asInt}
+另一个例子是使用字符串视图作为只读的字符串来改进\hyperref[ch15.1.1]
+{\texttt{std::optional}章节的\texttt{asInt()}示例}，
+改进的方法就是把参数声明为字符串视图：
+\inputcodefile{lib/asint.cpp}

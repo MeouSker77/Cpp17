@@ -1,0 +1,105 @@
+\section{\texttt{std::optional<>}}\label{ch15}
+在编程时，我们经常会遇到我们\emph{可能}会返回/传递/使用一个确定类型的对象。
+也就是说，这个对象可能有一个确定类型的值也可能没有任何值。
+因此，我们需要一种方法来模拟类似指针的语义：指针可以通过\texttt{nullptr}来表示\texttt{没有值}。
+解决方法是定义该对象的同时再定义一个附加的bool类型的值作为标志来表示该对象是否有值。
+\texttt{std::optional<>}提供了一种类型安全的方式来实现这种对象。
+
+可选对象所需的内存等于\emph{内含}对象的大小加上一个布尔类型的大小。
+因此，可选对象一般比内含对象大一个字节（可能还要加上内存对齐的空间开销）。
+可选对象不需要分配对内存，并且对齐方式和内含对象相同。
+
+然而，可选对象并不是简单的等价于附加了bool标志的内含对象。
+例如，在没有值的情况下，将不会调用内含对象的构造函数（通过这种方式，
+没有默认构造函数的内含类型也可以处于有效的默认状态）。
+
+和\texttt{std::variant<>}和\texttt{std::any}一样，可选对象有值语义。
+也就是说，拷贝操作会被实现为\emph{深拷贝}：将创建一个新的独立对象，
+新对象在自己的内存空间内拥有原对象的标记和内含值（如果有的话）的拷贝。
+拷贝一个无内含值的\texttt{std::optional<>}的开销很小，
+但拷贝有内含值的\texttt{std::optional<>}的开销约等于拷贝内含值的开销。
+另外，\texttt{std::optional<>}对象也支持move语义。
+
+\subsection{使用\texttt{std::optional<>}}
+\texttt{std::optional<>}模拟了一个可以为空的任意类型的实例。
+他可以被用作成员、参数、返回值等。
+
+\subsubsection{可选的返回值}\label{ch15.1.1}
+下面的示例程序展示了将\texttt{std::optional<>}用作返回值的一些功能：
+\inputcodefile{lib/optional.cpp}
+这段程序包含了一个\texttt{asInt()}函数来把传入的字符串转换为整数。
+然而这个操作有可能会失败，因此把返回值定义为\texttt{std::optional<>}，
+这样我们可以返回\emph{“无整数值”}而不是约定一个特殊的\texttt{int}值，
+或者向调用者抛出异常来表示失败。
+
+因此，我们可能会用\texttt{stoi()}调用的结果也就是一个\texttt{int}来初始化返回值并返回，
+也可能会返回\texttt{std::nullopt}来表明没有\texttt{int}值。
+
+我们也可以像下面这样实现相同的行为：
+\begin{lstlisting}
+    std::optional<int> asInt(const std::string& s)
+    {
+        std::optional<int> ret; // 初始化为无值
+        try {
+            ret = std::stoi(s);
+        }
+        catch (...) {
+        }
+        return ret;
+    }
+\end{lstlisting}
+在\texttt{main()}中，我们用不同的字符串调用了这个函数：
+\begin{lstlisting}
+    for (auto s : {"42", "  077", "hello", "0x33"} ) {
+        // 尝试把s转换为int，并打印结果
+        std::optional<int> oi = asInt(s);
+        ...
+    }
+\end{lstlisting}
+对于每一个返回的\texttt{std::optional<int>}类型的\texttt{oi}，
+我们可以判断它是否含有值（将该对象用作布尔表达式）并通过“解引用”的方式访问了该可选对象的值：
+\begin{lstlisting}
+    if (oi) {
+        std::cout << "convert '" << s << "' to int: " << *oi << "\n";
+    }
+\end{lstlisting}
+注意用字符串\texttt{"0x33"}调用\texttt{asInt()}将会返回\texttt{0}，
+因为\texttt{stoi()}不会以十六进制的方式来解析字符串。
+
+还有一些别的方式来处理返回值，例如：
+\begin{lstlisting}
+    std::optional<int> oi = asInt(s);
+    if (oi.has_value()) {
+        std::cout << "convert '" << s << "' to int: " << oi.value() << "\n";
+    }
+\end{lstlisting}
+这里使用了\texttt{has\_value()}来检查是否返回了一个值，
+使用了\texttt{value()}来访问值。\texttt{value()}比运算符\texttt{*}更安全：
+当没有值时它会抛出一个异常。运算符\texttt{*}应该只用于已经确定含有值的场景，
+否则程序将可能有未定义的行为。
+\footnote{注意你可能不会注意到这个未定义的行为，
+因为运算符\texttt{*}将会返回某个内存位置的值，这个值可能是有意义的。}
+
+注意，我们现在可以使用新的类型\texttt{std::string\_view}和新的快捷函数\hyperref[ch31.2.1]
+{\texttt{std::from\_chars()}}来\hyperref[改进asInt]{改进\texttt{asInt()}}。
+
+\subsubsection{可选的参数和数据成员}
+另一个使用\texttt{std::optional<>}的例子是传递可选的参数和
+设置可选的数据成员：
+\inputcodefile{lib/optionalmember.cpp}
+类\texttt{Name}代表了一个由名、可选的中间名、姓组成的姓名。
+成员\texttt{middle}被定义为可选的，当没有中间名是你可以传递一个\texttt{std::nullopt}。
+这和中间名是空字符串是不同的。
+
+注意和通常值语义的类型一样，最佳的定义构造函数的方式是以值传参，然后把参数的值移动到成员里。
+
+注意\texttt{std::optional<>}改变了成员\texttt{middle}的值的使用方式。
+直接使用\texttt{n.middle}将是一个布尔表达式，标记是否有中间名。
+使用\texttt{*n.middle}可以访问当前的值（如果有值的话）。
+
+另一个访问值的方法是使用成员函数\texttt{value\_or()}，当没有值的时候可以指定一个备选值。
+例如，在类\texttt{Name}里我们可以实现为：
+\begin{lstlisting}
+    std::cout << middle.value_or("");   // 打印中间名或空
+\end{lstlisting}
+然而，这种方式下，当没有值时名和姓之间将有两个空格而不是一个。
