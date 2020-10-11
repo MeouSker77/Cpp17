@@ -1,3 +1,98 @@
-\section{扩展的\texttt{using}声明}\label{ch14}
+\section{扩展的using声明}\label{ch14}
+using声明扩展之后可以支持逗号分隔的名称，也可以支持参数包。
 
-\subsection{使用变长的\texttt{using}声明}\label{ch14.1}
+例如，你现在可以这么写：
+\begin{lstlisting}
+    class Base {
+      public:
+        void a();
+        void b();
+        void c();
+    };
+
+    class Derived : private Base {
+      public:
+        using Base::a, Base::b, Base::c;
+    };
+\end{lstlisting}
+在C++17之前，你需要使用3个using声明分别进行声明。
+
+\subsection{使用变长的using声明}\label{ch14.1}
+逗号分隔的using声明允许你用泛型代码从可变数量的所有基类中派生同一种运算。
+
+这项技术的一个很酷的应用是创建一个重载的lambda的集合。通过如下定义：
+\inputcodefile{tmpl/overload.hpp}
+你可以像下面这样重载两个lambda：
+\begin{lstlisting}
+    auto twice = overload {
+                    [](std::string& s) { s += s; },
+                    [](auto& v) { v *= 2; }
+                 };
+\end{lstlisting}
+这里，我们创建了一个\texttt{overload}类型的对象，并且提供了\hyperref[ch9]{推导指引}
+来根据lambda的类型推导出\texttt{overload}的基类的类型。
+并且我们使用了\hyperref[ch4]{聚合体初始化}
+来调用每个lambda生成的闭包类型的拷贝构造函数来初始化基类子对象。
+
+上例中的using声明使得\texttt{overload}类型可以同时访问所有子类中的函数调用运算符。
+如果没有这个using声明，两个基类会产生同一个成员函数\texttt{operator()}的重载，
+这将会导致歧义。
+\footnote{clang和Visual C++都不会把不同基类中不同类型的同名函数当作歧义处理，
+所以这个例子中其实不需要\texttt{using}。然而，这段代码如果没有using声明的将不具备可移植性。}
+
+最后，如果你传递一个字符串参数将会调用第一个重载，其他类型（操作符\texttt{*=}有效的类型）
+将会调用第二个重载：
+\begin{lstlisting}
+    int i = 42;
+    twice(i);
+    std::cout << "i: " << i << '\n';    // 打印出：84
+    std::string s = "hi";
+    twice(s);
+    std::cout << "s: " << s << '\n';    // 打印出：hihi
+\end{lstlisting}
+这项技术的另一个应用是\hyperref[ch16.3.3.4]{\texttt{std::variant}访问器}。
+
+\subsection{使用变长using声明继承构造函数}
+除了逐个声明继承构造函数之外，现在还支持如下的方式：
+你可以声明一个可变参数类模板\texttt{Multi}，让它继承每一个参数类型的基类：
+\inputcodefile{tmpl/using2.hpp}
+有了所有基类构造函数的using声明，你可以继承每个类型对应的构造函数。
+
+现在，当使用不同类型声明\texttt{Multi<>}时：
+\begin{lstlisting}
+    using MultiISB = Multi<int, std::string, bool>;
+\end{lstlisting}
+你可以使用每一个相应的构造函数来声明对象：
+\begin{lstlisting}
+    MultiISB m1 = 42;
+    MultiISB m2 = std::string("hello");
+    MultiISB m3 = true;
+\end{lstlisting}
+根据新的语言规则，每一个初始化会调用匹配基类的相应构造函数和所有其他基类的默认构造函数。因此：
+\begin{lstlisting}
+    MultiISB m2 = std::string("hello");
+\end{lstlisting}
+会调用\texttt{Base<int>}的默认构造函数，\texttt{Base<std::string>}的字符串构造函数，
+\texttt{Base<bool>}的默认构造函数。
+
+原则上讲，你也可以通过如下声明来支持\texttt{Multi<>}进行赋值操作：
+\begin{lstlisting}
+    template<typename... Types>
+    class Multi : private Base<Types>...
+    {
+        ...
+        // 派生所有赋值运算符
+        using Base<Types>::operator=...;
+    };
+\end{lstlisting}
+
+\subsection{后记}
+逗号分隔的using声明列表由Robert Haberlach在\url{https://wg21.link/p0195r0}中首次提出。
+最终被接受的提案由Robert Haberlach和Richard Smith发表于\url{https://wg21.link/p0195r2}。
+
+关于继承构造函数有一些核心的问题。最终修复这些问题的提案由Richard Smith发表于
+\url{https://wg21.link/n4429}。
+
+还有一个由Vicente J.Botet Escriba提出的提案。
+除了lambda之外，它还支持重载普通函数、成员函数来实现泛型的\texttt{overload}函数。
+然而，这个提议并没有进入C++17标准。详情请见\url{https://wg21.link/p0051r1}。
