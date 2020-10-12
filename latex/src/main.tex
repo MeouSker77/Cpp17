@@ -16,13 +16,14 @@
 \usepackage[font={it}]{caption}
 \usepackage[numbered]{bookmark}
 
-\setCJKmainfont{宋体}
+\setCJKmainfont[ItalicFont=楷体, BoldItalicFont=楷体]{宋体}
 \setCJKmonofont{宋体}
 \setmainfont{Times New Roman}
-\setmonofont{Noto Sans Mono}
+\setmonofont[ItalicFont={Noto Sans Mono}]{Noto Sans Mono}
 \linespread{1.25}
 \CJKsetecglue{\,}
 \numberwithin{figure}{section}
+\numberwithin{table}{section}
 
 \lstset{
 basicstyle = \ttfamily\footnotesize,

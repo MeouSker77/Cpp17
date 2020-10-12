@@ -342,7 +342,7 @@
 然而你，事实上它能通过编译，因为\texttt{std::pair<>}定义\emph{推导指引}，
 我们将在下一小节讨论它。
 
-\subsection{推导指引}
+\subsection{推导指引}\label{ch9.2}
 你可以定义特定的\emph{推导指引}来给类模板参数添加新的推导或者修正构造函数定义的推导。
 例如，你可以定义无论何时推导\texttt{Pair3}的模板参数，推导的行为都好像参数是以值传递的：
 \begin{lstlisting}
