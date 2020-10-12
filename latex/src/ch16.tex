@@ -1,12 +1,136 @@
 \section{\texttt{std::variant<>}}\label{ch16}
+通过\texttt{std::variant<>}，C++标准库提供了一个新的\emph{联合}类型，
+它最大的优势是提供了一种新的具有多态性的处理异构集合的方法。
+也就是说，它可以帮助我们处理不同类型的数据，并且不需要公共基类和指针。
 
 \subsection{\texttt{std::variant<>}的动机}
+起源于C语言，C++也提供对\texttt{union}的支持，它的作用是持有一个值，
+这个值的类型可能是指定的若干类型中的任意\emph{一个}。
+然而，这项语言特性有一些缺陷：
+\begin{itemize}[leftmargin=*]
+    \item 对象并不知道它们现在持有的值的类型。
+    \item 因此，你不能持有非平凡类型，例如\texttt{std::string}（没有进行特殊处理的话）。
+    \footnote{自从C++11起，原则上\texttt{union}可以拥有非平凡类型的成员，
+    但你必须实现几个特定的成员函数例如拷贝构造函数和析构函数，因为你只能通过程序的逻辑
+    来判断当前哪个成员是有效的。}
+    \item 你不能从\texttt{union}派生。
+\end{itemize}
+通过\texttt{std::variant<>}，C++标准库提供了一种\emph{可辨识的联合}
+（这意味着要指明一个可能的类型列表）
+\begin{itemize}[leftmargin=*]
+    \item 当前值的类型已知
+    \item 可以持有任何类型的值
+    \item 可以从它派生
+\end{itemize}
+事实上，一个\texttt{std::variant<>}持有的值有若干\emph{侯选项(alternative)}，这些选项通常有不同的类型。
+然而，两个不同选项的类型也有可能相同，这在多个类型相同的选项分别代表不同含义的时候很有用
+（例如，可能有两个选项类型都是字符串，分别代表数据库中不同列的名称，
+你可以知道当前的值代表哪一个列）。
+
+\texttt{variant}所占的内存大小等于所有可能的底层类型中最大的再加上一个记录当前选项的固定内存开销。
+不会分配堆内存。
+\footnote{这一点和Boost.Variant不同，后者必须在堆里分配内存来确保当值改变时如果发生异常可以恢复。}
+
+一般情况下，除非你指定了一个侯选项来表示为空，否则\texttt{variant}不可能为空。然而，在非常罕见的情况下
+（例如赋予一个不同类型新值时发生了异常），\texttt{variant}可能会变为没有值的状态。
+
+和\texttt{std::optional<>}、\texttt{std::any}一样，\texttt{variant}对象是值语义。
+也就是说，拷贝被实现为\emph{深拷贝}，将会创建一个在自己独立的内存空间内存储有当前选项的值的新对象。
+然而，拷贝\texttt{std::variant<>}的开销要比拷贝当前选项的开销稍微大一点，
+这是因为\texttt{variant}必须找出要拷贝哪个值。另外，\texttt{variant}也支持move语义。
 
 \subsection{使用\texttt{std::variant<>}}
+下面的代码展示了\texttt{std::variant<>}的核心功能：
+\inputcodefile{lib/variant.cpp}
+成员函数\texttt{index()}可以用来指出当前选项的索引（第一个选项的索引是0）。
+
+初始化和赋值操作都会查找最匹配的选项。如果类型不能精确匹配，
+\hyperref[ch16.5]{可能会发生奇怪的事情}。
+
+注意空variant、有引用成员的variant、有C风格数组成员的variant、
+有不完全类型（例如\texttt{void}）的variant都是不允许的。
+\footnote{这些特性可能会在之后添加，但直到C++17还没有足够的经验来支持它们。}
+
+variant没有空的状态。这意味着每一个构造好的variant对象，至少调用了一次构造函数。
+默认构造函数会调用第一个选项类型的默认构造函数：
+\begin{lstlisting}
+    std::variant<std::string, int> var; // => var.index()==0, 值==""
+\end{lstlisting}
+如果第一个类型没有默认构造函数，那么调用variant的默认构造函数将会导致编译期错误：
+\begin{lstlisting}
+    struct NoDefConstr {
+        NoDefConstr(int i) {
+            std::cout << "NoDefConstr::NoDefConstr(int) called\n";
+        }
+    };
+
+    std::variant<NoDefConstr, int> v1; // ERROR：不能默认构造第一个选项
+\end{lstlisting}
+辅助类型\texttt{std::monostate}提供了处理这种情况的能力，还可以用来模拟空值的状态。
+
 \subsubsection*{\texttt{std::monostate}}\label{ch16.2.1}
+为了支持第一个类型没有默认构造函数的variant，C++标准库提供了一个特殊的辅助类型：
+\texttt{std::monostate}。\texttt{std::monostate}类型的对象总是处于相同的状态。
+因此，比较它们的结果总是相等。它的作用是可以作为一个选项，当variant处于这个选项时表示
+此variant\emph{没有其他任何类型的值}。
+
+因此，类\texttt{std::monostate}可以作为第一个选项类型来保证variant能默认构造。例如：
+\begin{lstlisting}
+    std::variant<std::monostate, NoDefConstr, int> v2;  // OK
+    std::cout << "index: " << v2.index() << '\n';       // 打印出0
+\end{lstlisting}
+某种意义上，你可以把这种状态解释为variant为空的信号。
+\footnote{理论上讲，\texttt{std::monostate}可以作为任意选项，而不是必须作为第一个选项。
+然而，如果不是第一个选项的话就不能帮助variant进行默认构造。}
+
+下面的代码展示了几种检测monostate的方法，也同时展示了variant的其他一些操作：
+\begin{lstlisting}
+    if (v2.index() == 0) {
+        std::cout << "has monostate\n";
+    }
+    if (!v2.index()) {
+        std::cout << "has monostate\n";
+    }
+    if (std::holds_alternative<std::monostate>(v2)) {
+        std::cout << "has monostate\n";
+    }
+    if (std::get_if<0>(&v2)) {
+        std::cout << "has monostate\n";
+    }
+    if (std::get_if<std::monostate>(&v2)) {
+        std::cout << "has monostate\n";
+    }
+\end{lstlisting}
+\texttt{get\_if<>()}的参数是一个指针，并在当前选项为\texttt{T}时返回一个指向当前选项的指针，
+否则返回\texttt{nullptr}。这和\texttt{get<T>()}不同，后者获取variant的引用作为参数并在
+提供的索引或类型正确时以值返回当前选项，否则抛出异常。
+
+通常情况下，你可以赋予variant一个和当前选项类型不同的其他选项的值，
+甚至可以赋值为\texttt{monostate}来表示为空：
+\begin{lstlisting}
+    v2 = 42;
+    std::cout << "index: " << v2.index() << '\n';   // index：1
+
+    v2 = std::monostate{};
+    std::cout << "index: " << v2.index() << '\n';   // index: 0
+\end{lstlisting}
+
 \subsubsection*{从variant派生}
+你可以从variant派生。例如，你可以定义如下派生自\texttt{std::variant<>}的
+\hyperref[ch4]{聚合体}：
+\begin{lstlisting}
+    class Derived : public std::variant<int, std::string> {
+    };
+
+    Derived d = {{"hello"}};
+    std::cout << d.index() << '\n';         // 打印出：1
+    std::cout << std::get<1>(d) << '\n';    // 打印出：hello
+    d.emplace<0>(77);                       // 初始化为int，销毁string
+    std::cout << std::get<0>(d) << '\n';    // 打印出：77
+\end{lstlisting}
 
 \subsection{\texttt{std::variant<>}类型和操作}
+这一节详细描述了\texttt{std::variant<>}类型和操作。
 
 \subsubsection{\texttt{std::variant<>}类型}
 

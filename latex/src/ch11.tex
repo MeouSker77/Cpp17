@@ -209,7 +209,7 @@ C++17允许我们这么写：
     hello42world
 \end{lstlisting}
 为了用空格分隔传入的参数，
-你需要一个帮助函数来确保除了第一个参数之外的剩余参数输出前都先输出一个空格。
+你需要一个辅助函数来确保除了第一个参数之外的剩余参数输出前都先输出一个空格。
 例如，使用如下的模板\texttt{spaceBefore()}可以做到这一点：
 \inputcodefile{tmpl/addspace.hpp}
 这里，折叠表达式
@@ -220,9 +220,9 @@ C++17允许我们这么写：
 \begin{lstlisting}
     std::cout << spaceBefore(arg1) << spaceBefore(arg2) << ...
 \end{lstlisting}
-因此，对于参数包中的每一个参数\texttt{args}，都会调用帮助函数，
+因此，对于参数包中的每一个参数\texttt{args}，都会调用辅助函数，
 在输出参数之前先输出一个空格到\texttt{std::cout}。
-为了确保不会对第一个参数调用帮助函数，我们添加了额外的模板参数对第一个参数进行单独处理。
+为了确保不会对第一个参数调用辅助函数，我们添加了额外的模板参数对第一个参数进行单独处理。
 
 注意要想让参数包正确输出需要确保对每个参数调用\texttt{spaceBefore()}之前左侧的所有输出都已经完成。
 得益于操作符\texttt{<<}的\nameref{ch8.2}，自从C++17起将保证行为正确：
