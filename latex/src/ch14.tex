@@ -22,7 +22,7 @@ using声明扩展之后可以支持逗号分隔的名称，也可以支持参数
 
 这项技术的一个很酷的应用是创建一个重载的lambda的集合。通过如下定义：
 \inputcodefile{tmpl/overload.hpp}
-你可以像下面这样重载两个lambda：
+你可以像下面这样重载两个lambda：\label{重载的两倍lambda}
 \begin{lstlisting}
     auto twice = overload {
                     [](std::string& s) { s += s; },

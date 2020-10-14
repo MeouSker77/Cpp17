@@ -1,6 +1,6 @@
 \section{\texttt{std::variant<>}}\label{ch16}
 通过\texttt{std::variant<>}，C++标准库提供了一个新的\emph{联合}类型，
-它最大的优势是提供了一种新的具有多态性的处理异构集合的方法。
+它最大的优势是提供了一种新的具有多态性的处理异质集合的方法。
 也就是说，它可以帮助我们处理不同类型的数据，并且不需要公共基类和指针。
 
 \subsection{\texttt{std::variant<>}的动机}
@@ -133,17 +133,633 @@ variant没有空的状态。这意味着每一个构造好的variant对象，至
 这一节详细描述了\texttt{std::variant<>}类型和操作。
 
 \subsubsection{\texttt{std::variant<>}类型}
+在头文件\texttt{variant}，C++标准库以如下方式定义了类\texttt{std::variant<>}：
+\begin{lstlisting}
+    namespace std {
+        template<typename... Types> class variant;
+        // 译者注：此处原文的定义是
+        // template<typename Types...> class variant;
+        // 应是作者笔误
+    }
+\end{lstlisting}
+也就是说，\texttt{std::variant<>}是一个\emph{可变参数(variadic)}类模板
+（C++11引入的处理任意数量参数的特性）。
 
-\subsubsection{\texttt{std::variant<>}操作}
+另外，还定义了下面的类型和对象：
+\begin{itemize}[leftmargin=*]
+    \item 类模板\texttt{std::variant\_size}
+    \item 类模板\texttt{std::variant\_alternative}
+    \item 值\texttt{std::variant\_npos}
+    \item 类型\texttt{std::monostate}
+    \item 异常类\texttt{std::bad\_variant}，派生自\texttt{std::exception}
+\end{itemize}
+还有两个为variant定义的变量模板：\texttt{std::in\_place\_type<>}和 \texttt{std::\\
+in\_place\_index<>}。它们的类型分别是\texttt{std::in\_place\_type\_t}和\\
+\texttt{std::in\_place\_index\_t}，在头文件\texttt{<utility>}中定义。
+
+\subsubsection{\texttt{std::variant<>}的操作}
+表\hyperref[t16.1]{\texttt{std::variant}的操作}列出了\texttt{std::variant<>}的所有操作。
+\begin{table}[ht]
+    \begin{tabular}{l|p{0.47\textwidth}}
+        \hline
+        \textbf{操作符}                      & \textbf{效果}                                \\
+        \hline
+        \emph{构造函数}                       & 创建一个variant对象（可能会调用底层类型的构造函数）              \\
+        \emph{析构函数}                       & 销毁一个variant对象                              \\
+        \texttt{=}                        & 赋新值                                        \\
+        \texttt{emplace<T>()}             & 销毁旧值并赋一个\texttt{T}类型选项的新值                  \\
+        \texttt{emplace<Idx>()}           & 销毁旧值并赋一个索引为\texttt{Idx}的选项的新值              \\
+        \texttt{valueless\_by\_exception} & 返回变量是否因为异常而没有值                             \\
+        \texttt{index()}                  & 返回当前选项的索引                                  \\
+        \texttt{swap()}                   & 交换两个对象的值                                   \\
+        \texttt{==、!=、<、<=、>、>=}          & 比较variant对象                                \\
+        \texttt{hash<>}                   & 计算哈希值的函数对象                                 \\
+        \texttt{holds\_alternative<T>()}  & 返回是否持有类型T的值                                \\
+        \texttt{get<T>()}                 & 返回类型为\texttt{T}的选项的值                       \\
+        \texttt{get<Idx>()}               & 返回索引为\texttt{Idx}的选项的值                     \\
+        \texttt{get\_if<T>()}             & 返回指向类型为\texttt{T}的选项的指针或\texttt{nullptr}   \\
+        \texttt{get\_if<Idx>()}           & 返回指向索引为\texttt{Idx}的选项的指针或\texttt{nullptr} \\
+        \texttt{visit()}                  & 对当前选项进行操作                                  \\
+        \hline
+    \end{tabular}
+    \caption{\texttt{std::variant<>}的操作}
+    \label{t16.1}
+\end{table}
+
 \subsubsection*{构造函数}
-\subsubsection*{获取值}
-\subsubsection*{修改值}
-\subsubsection*{比较}
-\subsubsection*{move语义}
-\subsubsection*{哈希}
+默认情况下，variant的默认构造函数会调用第一个选项的默认构造函数：
+\begin{lstlisting}
+    std::variant<int, int, std::string> v1; // 第一个int初始化为0，index()==0
+\end{lstlisting}
+选项被默认初始化，意味着基本类型会初始化为\texttt{0}、\texttt{false}、\texttt{nullptr}。
 
-\subsubsection{访问器}
+如果传递一个值来初始化，将会使用最佳匹配的类型：
+\begin{lstlisting}
+    std::variant<long, int> v2{42};
+    std::cout << v2.index() << '\n';    // 打印出1
+\end{lstlisting}
+然而你，如果有两个类型同等匹配会导致歧义：
+\begin{lstlisting}
+    std::variant<long, long> v3{42};          // ERROR：歧义
+    std::variant<int, float> v4{42.3};        // ERROR：歧义
+    std::variant<int, double> v5{42.3};       // OK
+    std::variant<int, long double> v6{42.3};  // ERROR：歧义
+
+    std::variant<std::string, std::string_view> v7{"hello"}; // ERROR：歧义
+    std::variant<std::string, std::string_view,
+        const char*> v8{"hello"};       // OK
+    std::cout << v8.index() << '\n';    // 打印出2
+\end{lstlisting}
+为了传递多个值来调用构造函数初始化，你必须使用\texttt{in\_place\_type}或者
+\texttt{in\_place\_index}标记：
+\begin{lstlisting}
+    std::variant<std::complex<double>> v9{3.0, 4.0};    // ERROR
+    std::variant<std::complex<double>> v10{{3.0, 4.0}}; // ERROR
+    std::variant<std::complex<double>>
+        v11{std::in_place_type<std::complex<double>>, 3.0, 4.0};
+    std::variant<std::complex<double>>
+        v12{std::in_place_index<0>, 3.0, 4.0};
+\end{lstlisting}
+你也可以使用\texttt{in\_place\_index}在初始化时解决歧义问题或者打破匹配优先级：
+\begin{lstlisting}
+    std::variant<int, int>
+        v13{std::in_place_index<1>, 77};    // 初始化第二个int
+    std::variant<int, long>
+        v14{std::in_place_index<1>, 77};    // 初始化long，而不是int
+    std::cout << v14.index() << '\n';       // 打印出1
+\end{lstlisting}
+你甚至可以传递一个带有其他参数的初值列：
+\begin{lstlisting}
+    // 用一个lambda作为排序准则初始化一个set的variant
+    auto sc = [] (int x, int y) {
+                return std::abs(x) < std::abs(y);
+              };
+    std::variant<std::vector<int>, std::set<int, decltype(sc)>>
+        v15{std::in_place_index<1>, {4, 8, -7, -2, 0, 5}, sc};
+\end{lstlisting}
+然而，只有当所有初始值都和容器里元素类型匹配时才可以这么做。
+否则你必须显式传递一个\texttt{std::initializer\_list<>}：
+\begin{lstlisting}
+    // 用一个lambda作为排序准则初始化一个set的variant
+    auto sc = [] (int x, int y) {
+                return std::abs(x) < std::abs(y);
+              };
+    std::variant<std::vector<int>, std::set<int, decltype(sc)>>
+    v15{std::in_place_index<1>, std::initializer_list<int>{4, 5L}, sc};
+\end{lstlisting}
+\texttt{std::variant<>}不能使用\nameref{ch9}，
+也没有\texttt{make\_variant<>()}快捷函数（不像\texttt{std::optional<>}和
+\texttt{std::any}）。这样做也没有意义，因为variant的目标是处理多个侯选项。
+
+如果所有的侯选项都支持拷贝，那么就可以拷贝variant对象：
+\begin{lstlisting}
+    struct NoCopy {
+        NoCopy() = default;
+        NoCopy(const NoCopy&) = delete;
+    };
+
+    std::variant<int, NoCopy> v1;
+    std::variant<int, NoCopy> v2{v1};   // ERROR
+\end{lstlisting}
+
+\subsubsection*{访问值}
+通常调用\texttt{get<>()}或\texttt{get\_if<>}来获取当前选项的值。
+你可以传递一个索引、或者传递一个类型（该类型的选项只能有一个）。
+使用一个无效的索引和无效/歧义的类型将会导致编译错误。
+如果访问的索引或者类型不是当前的选项，将会抛出一个\texttt{std::bad\_variant\_exception}。
+
+例如：
+\begin{lstlisting}
+    std::variant<int, int, std::string> var; // 第一个int设为0，index()==0
+
+    auto a = std::get<double>(var); // 编译期ERROR：没有double类型的选项
+    auto b = std::get<4>(var);      // 编译期ERROR：没有第五个选项
+    auto c = std::get<int>(var);    // 编译期ERROR：有两个int类型的选项
+
+    try {
+        auto s = std::get<std::string>(var); // 抛出异常（当前选项是第一个int）
+        auto i = std::get<0>(var);  // OK，i==0
+        auto j = std::get<1>(var);  // 抛出异常（当前选项是另一个int）
+    }
+    catch (const std::bad_variant_access& e) {
+        std::cout << "Exception: " << e.what() << '\n';
+    }
+\end{lstlisting}
+还有另一个API可以在访问值之前先检查给定的选项是否是当前选项。
+你需要给\texttt{get\_if<>()}传递一个指针，如果访问成功则返回指向当前选项的指针，否则返回\texttt{nullptr}。
+\begin{lstlisting}
+    if (auto ip = std::get_if<1>(&var); ip != nullptr) {
+        std::cout << *ip << '\n';
+    }
+    else {
+        std::cout << "alternative with index 1 not set\n";
+    }
+\end{lstlisting}
+这里还使用了\nameref{ch2.1}，把初始化过程和条件检查分成了两条语句。\\
+你也可以直接把初始化语句用作条件语句：
+\begin{lstlisting}
+    if (auto ip = std::get_if<1>(&var)) {
+        std::cout << *ip << '\n';
+    }
+    else {
+        std::cout << "alternative with index 1 not set\n";
+    }
+\end{lstlisting}
+另一种访问不同选项的值的方法是使用\hyperref[ch16.3.3]{variant访问器}。
+
+\subsubsection*{修改值}
+赋值操作和\texttt{emplace()}函数可以修改值：
+\begin{lstlisting}
+    std::variant<int, int, std::string> var; // 设置第一个int为0，index()==0
+    var == "hello";         // 设置string选项，index()==2
+    var.emplace<1>(42);     // 设置第二个int，index()==1
+\end{lstlisting}
+注意\texttt{operator=}将会直接赋予variant一个新值，只要有和新值类型对应的选项。
+\texttt{emplace()}在赋予新值之前会先销毁旧的值。
+
+你也可以使用\texttt{get<>()}或者\texttt{get\_if<>()}来给当前选项赋予新值：
+\begin{lstlisting}
+    std::variant<int, int, std::string> var; // 设置第一个int为0，index()==0
+    std::get<0>(var) = 77;  // OK，但当前选项仍是第一个int
+    std::get<1>(var) = 99;  // 抛出异常（因为当前选项是另一个int）
+\end{lstlisting}
+另一个修改不同选项的值的方法是\hyperref[ch16.3.3]{variant访问器}。
+
+\subsubsection*{比较}
+对两个类型相同的variant（也就是说，它们每个选项的类型和顺序都相同），你可以使用通常的比较运算符。
+比较运算将遵循如下规则：
+\begin{itemize}[leftmargin=*]
+    \item 当前选项索引较小的小于当前选项索引较大的。
+    \item 如果两个variant当前的选项相同，将调用当前选项类型的比较运算符进行比较。
+    注意所有的\texttt{std::monostate}类型的对象都相等。
+    \item 两个都处于特殊状态（\hyperref[ch16.3.4]{\texttt{valueless\_by\_exception()}}为真）的variant相等。
+    否则，\texttt{valueless\_by\_exception()}返回ture的variant小于另一个。
+\end{itemize}
+例如：
+\begin{lstlisting}
+    std::variant<std::monostate, int, std::string>
+        v1, v2{"hello"}, v3{42};
+    std::variant<std::monostate, std::string, int> v4;
+        v1 == v4    // 编译期错误
+        v1 == v2    // 返回false
+        v1 < v2     // 返回true
+        v1 < v3     // 返回true
+        v2 < v3     // 返回false
+
+    v1 = "hello";
+        v1 == v2    // 返回true
+
+    v2 = 41;
+        v2 < v3     // 返回true
+\end{lstlisting}
+
+\subsubsection*{move语义}
+只要所有的选项都支持move语义，那么\texttt{std::variant<>}也支持move语义。
+
+如果你move了variant对象，那么当前状态会被拷贝，而当前选项的值会被move。
+因此，被move的variant对象仍然保持之前的选项，但值会变为未定义。
+
+你也可以把值一进或移出variant对象。
+
+\subsubsection*{哈希}
+如果所有的选项类型都能计算哈希值，那么variant对象也能计算哈希值。
+注意variant对象的哈希值\emph{不}保证是当前选项的哈希值。在某些平台上它是，有些平台上不是。
+
+\subsubsection{访问器}\label{ch16.3.3}
+另一个处理variant对象的值的方法是使用访问器(visitor)。访问器是为明确的每一个可能的类型都提供一个
+函数调用运算符的对象。当这些对象“visit”一个variant时，它们会调用和当前选项类型最匹配的函数。
+
 \subsubsection*{使用函数对象作为访问器}
+例如：
+\inputcodefile{lib/variantvisit.cpp}
+如果访问器没有某一个可能的类型的\texttt{operator()}重载，那么调用\texttt{visit()}将会导致
+编译期错误，如果调用有歧义的话也会导致编译期错误。这里的示例能正常工作是因为\texttt{long double}
+比\texttt{int}更匹配\texttt{double}。
+
+你也可以使用访问器来修改当前选项的值（但不能赋予一个其他选项的新值）。
+例如：
+\begin{lstlisting}
+    struct Twice
+    {
+        void operator()(double& d) const {
+            d *= 2;
+        }
+        void operator()(int& i) const {
+            i *= 2;
+        }
+        void operator()(std::string& s) const {
+            s = s + s;
+        }
+    };
+    std::visit(Twice(), var);   // 调用匹配类型的operator()
+\end{lstlisting}
+访问器调用时只根据类型判断，你不能对类型相同的不同选项做不同的处理。
+
+注意上面例子中的函数调用运算符都应该标记为\texttt{const}，因为它们是
+\emph{无状态的(stateless)}（它们的行为只受参数的影响）。
+
 \subsubsection*{使用泛型lambda作为访问器}\label{ch16.3.3.2}
+最简单的使用访问器的方式是使用泛型lambda，它是一个可以处理任意类型的函数对象：
+\begin{lstlisting}
+    auot printvariant = [](const auto& val) {
+                            std::cout << val << '\n';
+                        };
+    ...
+    std::visit(printvariant, var);
+\end{lstlisting}
+这里，泛型lambda生成的闭包类型中会将函数调用运算符定义为模板：
+\begin{lstlisting}
+    class ComplierSpecificClosureTypeName {
+      public:
+        template<typename T>
+        auto operator() (const T& val) const {
+            std::cout << val << '\n';
+        }
+    };
+\end{lstlisting}
+因此，只要调用时生成的函数内的语句有效（这个例子中就是输出运算符要有效），
+那么把lambda传递给\texttt{std::visit()}就可以正常编译。
+
+你可以可以使用lambda来修改当前选项的值：
+\begin{lstlisting}
+    // 将当前选项的值变为两倍
+    std::visit([](auto& val) {
+                    val = val + val;
+                }, var);
+\end{lstlisting}
+或者：
+\begin{lstlisting}
+    // 将当前选项的值设为默认值
+    std::visit([](auto& val) {
+                    val = std::remove_reference_t<decltype(val)>{};
+                }, var);
+\end{lstlisting}
+你甚至可以使用\nameref{ch10}来对不同的选项类型进行不同的处理。例如：
+\begin{lstlisting}
+    auto dblvar = [](auto& val) {
+        if constexpr(std::is_convertible_v<decltype(val), std::string>) {
+            val = val + val;
+        }
+        else {
+            val *= 2;
+        }
+    };
+    ...
+    std::visit(dblvar, var);
+\end{lstlisting}
+这里，对于\texttt{std::string}类型的选项，泛型lambda会把函数调用模板实例化为计算：
+\begin{lstlisting}
+    val = val + val;
+\end{lstlisting}
+而对于其他类型的选项，例如\texttt{int}或\texttt{double}，lambda函数调用模板会实例化为计算：
+\begin{lstlisting}
+    val *= 2;
+\end{lstlisting}
+注意检查\texttt{val}的类型时必须小心。
+这里，我们检查了\texttt{val}的类型是否能转换为\texttt{std::string}。
+如下检查：
+\begin{lstlisting}
+    if constexpr(std::is_same_v<decltype(val), std::string>) {
+\end{lstlisting}
+将不能正确工作，因为\texttt{val}的类型只可能是\texttt{int\&、std::string\&、
+long double\&}这样的引用类型。
+
 \subsubsection*{在访问器中返回值}
+访问器中的函数调用可以返回值，但所有返回值类型必须相同。例如：
+\begin{lstlisting}
+    using IntOrDouble = std::variant<int, double>;
+
+    std::vector<IntOrDouble> coll { 42, 7.7, 0, -0.7 };
+
+    double sum{0};
+    for (const auto& elem : coll) {
+        sum += std::visit([] (const auto& val) -> double {
+                            return val;
+                          }, elem);
+    }
+\end{lstlisting}
+上面的代码会把所有选项的值加到\texttt{sum}上。
+如果lambda中没有显式指明返回类型将不能通过编译，因为自动推导的话返回类型会不同。
+
 \subsubsection*{使用重载的lambda作为访问器}\label{ch16.3.3.4}
+通过使用函数对象和lambda的\emph{重载器(overloader)}，可以定义一系列lambda，
+其中最佳的匹配将会被用作访问器。
+
+假设有一个\hyperref[ch14.1]{如下定义的\texttt{overload}}重载器：
+\inputcodefile{tmpl/overload.hpp}
+你可以为每个可能的选项提供一个lambda，之后使用\texttt{overload}来访问variant：
+\begin{lstlisting}
+    std::variant<int, std::string> var(42);
+    ...
+    std::visit(overload { // 为当前选项调用最佳匹配的lambda
+                    [](int i) { std::cout << "int: " << i << '\n'; },
+                    [](const std::string& s) {
+                        std::cout << "string: " << s << '\n';
+                    },
+               }, var);
+\end{lstlisting}
+你也可以使用泛型lambda，它可以匹配所有情况。例如，要想修改一个variant当前选项的值，
+你可以使用\hyperref[重载的两倍lambda]{重载实现字符串和其他类型值翻倍}：
+\begin{lstlisting}
+    auto twice = overload {
+                    [] (std::string& s) { s += s; },
+                    [] (auto& i) { i *= 2; },
+                 };
+\end{lstlisting}
+使用这个重载，对于字符串类型的选项，值将变为原本的字符串再重复一遍；
+而对于其他类型，将会把值乘以2。下面展示了怎么应用于variant：
+\begin{lstlisting}
+    std::variant<int, std::string> var(42);
+    std::visit(twice, var); // 值42变为84
+    ...
+    var = "hi";
+    std::visit(twice, var); // 值"hi"变为"hihi"
+\end{lstlisting}
+
+\subsubsection{异常造成的无值}\label{ch16.3.4}
+如果你赋给一个variant新值时发生了异常，那么这个variant可能会进入一个非常特殊的状态：
+它已经失去了旧的值但还没有获得新的值。例如：
+\begin{lstlisting}
+    struct S {
+        operator int() { throw "EXCEPTION"; } // 转换为int时会抛出异常
+    };
+    std::variant<double, int> var{12.2};      // 初始化为double
+    var.emplace<1>(S{});    // OOPS：当设为int时抛出异常
+\end{lstlisting}
+如果这种情况发生了，那么：
+\begin{itemize}[leftmargin=*]
+    \item \texttt{var.valueless\_by\_exception()}会返回\texttt{true}
+    \item \texttt{var.index()}会返回\texttt{std::variant\_npos}
+\end{itemize}
+这些都标志该variant当前没有值。
+
+这种情况下有如下保证：
+\begin{itemize}[leftmargin=*]
+    \item 如果\texttt{emplace()}抛出异常，那么\texttt{valueless\_by\_exception()}可能会返回\texttt{true}。
+    \item 如果\texttt{operator=()}抛出异常且这次修改没有改变当前选项，那么\texttt{index()}
+    和\texttt{value\_by\_exception()}的状态将保持不变。值的状态依赖于值类型的异常保证。
+    \item 如果\texttt{operator=()}抛出异常并且新值是新的选项，那么variant\emph{可能}会没有值
+    （\texttt{valueless\_by\_exception()}\emph{可能}会返回\texttt{true}）。这依赖于异常
+    抛出的时机。如果发生在实际修改值之前的类型转换期间，那么variant将依然持有旧值。
+\end{itemize}
+通常情况下，如果你不再使用这种情况下的variant那么这些保证就足够了。
+如果你仍然想使用抛出了异常的variant，你需要检查它的状态。例如：
+\begin{lstlisting}
+    std::variant<double, int> var{12.2};  // 初始化为double
+    try {
+        var.emplace<1>(S{});              // OOPS：设置为int时抛出异常
+    }
+    catch (...) {
+        if (!var.valueless_by_exception()) {
+            ...
+        }
+    }
+\end{lstlisting}
+
+\subsection{使用\texttt{std::variant}实现多态的异质集合}
+\texttt{std::variant}允许一种新式的多态性，可以用来实现异质集合。
+这是一种带有闭类型集合的运行时多态性。
+
+关键在于\texttt{variant<>}可以持有多种选项类型的值。
+可以将元素类型定义为variant来实现异质的集合，这样的集合可以持有不同类型的值。
+因为每一个variant知道当前的选项，并且有了访问器接口，我们可以定义在运行时根据不同类型
+进行不同操作的函数/方法。同时因为variant有值语义，所以我们不需要指针（和相应的内存管理）或者虚函数。
+
+\subsubsection{使用\texttt{std::variant}实现几何对象}
+例如，假设我们要负责编写表示几何对象的库：
+\inputcodefile{lib/variantpoly1.cpp}
+首先，我们为所有可能的类型定义了一个公共类型：
+\begin{lstlisting}
+    using GeoObj = std::variant<Line, Circle, Rectangle>;
+\end{lstlisting}
+这三个类型不需要有任何特殊的关系。事实上它们甚至没有一个公共的基类、没有任何虚函数、
+接口也可能不同。例如：
+\inputcodefile{lib/circle.hpp}
+我们现在可以创建相应的对象并把它们以值传递给容器，最后可以得到这些类型的元素的集合：
+\begin{lstlisting}
+    std::vector<GeoObj> createFigure()
+    {
+        std::vector<GeoObj> f;
+        f.push_back(Line{Coord{1, 2}, Coord{3, 4}});
+        f.push_back(Circle{Coord{5, 5}, 2});
+        f.push_back(Rectangle{Coord{3, 3}, Coord{6, 4}});
+        return f;
+    }
+\end{lstlisting}
+以前如果没有使用继承和多态的话是不可能写出这些代码的。
+以前要想实现这样的异构集合，所有的类型都必须继承自\texttt{GeoObj}，
+并且最后将得到一个元素类型为\texttt{GeoObj}的指针的vector。
+为了使用指针，必须用\texttt{new}创建新对象，这导致最后还要追踪什么时候调用\texttt{delete}，
+或者要使用智能指针来完成（\texttt{unique\_ptr}或者\texttt{shared\_ptr}）。
+
+现在，通过使用访问器，我们可以迭代每一个元素，并依据元素的类型“做正确的事情”：
+\begin{lstlisting}
+    std::vector<GeoObj> figure = createFigure();
+    for (const GeoObj& geoobj : figure) {
+        std::visit([] (const auto& obj) {
+                        obj.draw(); // 多态调用draw()
+                   }, geoobj);
+    }
+\end{lstlisting}
+这里，\texttt{visit()}使用了泛型lambda来为每一个可能的\texttt{GeoObj}类型实例化。
+也就是说，当编译\texttt{visit()}调用时，lambda将会被实例化并编译为3个函数：
+\begin{itemize}[leftmargin=*]
+    \item 为类型\texttt{Line}编译代码：
+    \begin{lstlisting}
+    [] (const Line& obj) {
+        obj.draw(); // 调用Line::draw()
+    }
+    \end{lstlisting}
+    \item 为类型\texttt{Circle}编译代码：
+    \begin{lstlisting}
+    [] (const Circle& obj) {
+        obj.draw(); // 调用Circle::draw()
+    }
+    \end{lstlisting}
+    \item 为类型\texttt{Rectangle}编译代码：
+    \begin{lstlisting}
+    [] (const Rectangle& obj) {
+        obj.draw(); // 调用Rectangle::draw()
+    }
+    \end{lstlisting}
+\end{itemize}
+如果这些实例中有一个不能编译，那么对\texttt{visit()}的调用也不能编译。
+如果所有实例都能编译，那么将保证会对所有元素类型调用相应的函数。
+注意生成的代码并不是\emph{if-else}链。
+C++标准保证这些调用的性能不会依赖于variant选项的数量。
+
+也就是说，从效率上讲，这种方式和虚函数表的方式的行为相同
+（通过类似于为所有\texttt{visit()}创建局部虚函数表的方式）。
+注意，\texttt{draw()}函数不需要是虚函数。
+
+如果对不同类型的操作不同，我们可以使用\nameref{ch10}或者\hyperref[ch16.3.3.4]{重载访问器}
+来处理不同的情况（见上边的第二个例子）。
+
+\subsubsection{使用\texttt{std::variant}实现其他异质集合}
+考虑如下另一个使用\texttt{std::variant<>}实现异质集合的例子：
+\inputcodefile{lib/variantpoly2.cpp}
+我们又一次定义了自己的类型来表示若干可能类型中的一个：
+\begin{lstlisting}
+    using Var = std::variant<int, double, std::string>;
+\end{lstlisting}
+我们可以用它创建并初始化一个异质的集合：
+\begin{lstlisting}
+    std::vector<Var> values {42, 0.19, "hello world", 0.815};
+\end{lstlisting}
+注意我们可以用若干异质的元素来实例化vector，因为它们都能自动转换为variant类型。
+然而，如果我们还传递了一个\texttt{long}类型的初值，上面的初始化将不能编译，
+因为编译器不能决定将它转换为\texttt{int}还是\texttt{double}。
+
+当我们第迭代元素时，我们使用了访问器来调用相应的函数。这里使用了一个泛型lambda。
+lambda为3种可能的类型分别实例化了一个函数调用。
+为了对字符串进行特殊的处理（在输出值时用双引号包括起来），我们使用了\nameref{ch10}：
+\begin{lstlisting}
+    for (const Var& val : values) {
+        std::visit([] (const auto& v) {
+            if constexpr(std::is_same_v<decltype(v), const std::string&>) {
+                std::cout << '"' << v << "\" ";
+            }
+            else {
+                std::cout << v << ' ';
+            }
+        }, val);
+    }
+\end{lstlisting}
+这意味着输出将是：
+\begin{lstlisting}
+    42 0.19 "hello world" 0.815
+\end{lstlisting}
+通过使用\hyperref[ch16.3.3.4]{重载访问器}，我们可以像下面这样实现：
+\begin{lstlisting}
+    for (const auto& val : values) {
+        std::visit(overload {
+            [] (const auto& v) {
+                std::cout << v << ' ';
+            },
+            [] (const std::string& v) {
+                std::cout << '"' << v "\" ";
+            }
+        }, val);
+    }
+\end{lstlisting}
+然而，注意这样可能会陷入重载匹配的问题。有的情况下泛型lambda（即函数模板）
+匹配度比隐式类型更高，这意味着可能会调用错误的类型。
+
+\subsubsection{比较多态的\texttt{variant}}
+让我们来总结一下使用\texttt{std::variant}实现多态的异构集合的优点和缺点：
+
+优点有：
+\begin{itemize}[leftmargin=*]
+    \item 你可以使用任意类型并且这些类型不需要有公共的基类（这种方法是非侵入性的）
+    \item 你不需要使用指针来实现异质集合
+    \item 不需要\texttt{virtual}成员函数
+    \item 值语义（不会出现访问已释放内存或内存泄露等问题）
+    \item vector中的元素是连续存放在一起的（原本指针的方式所有元素是散乱分布在堆内存中的）
+\end{itemize}
+缺点有：
+\begin{itemize}[leftmargin=*]
+    \item 闭类型集合（你必须在编译期指定所有可能的类型）
+    \item 每个元素的大小都是所有可能的类型中最大的（当不同类型大小差距很大时这是个问题）
+    \item 拷贝元素的开销可能会更大
+\end{itemize}
+一般来说，我并不确定是否要推荐默认使用\texttt{std::variant<>}来实现多态。
+一方面这种方法很安全（没有指针，意味着没有\texttt{new}和\texttt{delete}），
+也不需要虚函数。然而另一方面，使用访问器有一些笨拙，有时你可能会需要引用语义
+（在多个地方使用同一个对象），还有在某些情形下并不能在编译期确定所有的类型。
+
+性能开销也有很大不同。没有了\texttt{new}和\texttt{delete}可能会减少很大开销。
+但另一方面，以值传递对象又可能会增大很多开销。
+在实践中，你必须自己测试对你的代码来说哪种方法效率更高。
+在不同的平台上，我已经观测到性能上的显著差异了。
+
+\subsection{\texttt{std::variant<>的特殊情况}}\label{ch16.5}
+特定类型的variant可能导致特殊或着出乎意料的行为。
+
+\subsubsection{同时有\texttt{bool}和\texttt{std::string}选项}
+如果一个\texttt{std::variant<>}同时有\texttt{bool}和\texttt{std::string}选项，
+赋予一个字符串字面量可能会导致令人惊奇的事，因为字符串字面量会优先转换为\texttt{bool}，
+而不是\texttt{std::string}。例如：
+\begin{lstlisting}
+    std::variant<bool, std::string> v;
+    v = "hi";   // OOPS：设置bool选项
+    std::cout << "index: " << v.index() << '\n';
+    std::visit([](const auto& val) {
+                    std::cout << "value: " << val << '\n';
+                }, v);
+\end{lstlisting}
+这段代码片段将会有如下输出：
+\begin{lstlisting}
+    index: 0
+    value: true
+\end{lstlisting}
+可以看出，字符串字面量会被解释为初始化variant的bool选项为\texttt{true}
+（因为指针不是0所以是\texttt{true}）。
+
+这里有一下修复这个赋值问题的方法：
+\begin{lstlisting}
+    v.emplace<1>("hello");           // 显式赋值给第二个选项
+
+    v.emplace<std::string>("hello"); // 显式赋值给string选项
+
+    v = std::string{"hello"};        // 确保用string赋值
+
+    using namespace std::literals;   // 确保用string赋值
+    v = "hello"s;
+\end{lstlisting}
+参见\url{https://wg21.link/p0608}进一步了解关于这个问题的讨论。
+
+\subsection{后记}
+variant对象由Axel Naumann于2005年\url{https://wg21.link/n4218}中首次提出，
+并指定了Boost.Variant作为参考实现。最终被接受的提案由Axel Naumann发表于
+\url{https://wg21.link/p0088r3}。
+
+Tony van Eerd在\url{https://wg21.link/p0393r3}中显著的改进了比较运算符的语义。
+Vicente J. Botet Escriba在\url{https://wg21.link/p0032r3}中统一了
+\texttt{std::variant}和\texttt{std::optional<>}以及\texttt{std::any}的API。
+Jonathan Wakely在\url{https://wg21.link/p0504r0}中修正了\texttt{in\_place}标记类型的行为。
+禁止使用引用、不完全类型、数组作为选项类型和禁止空variant的限制
+由Erich Keane在\url{https://wg21.link/p0510r0}中提出。
+C++17标准发布之后，Mike Spertus、Walter E、Brown和Stephan T. Lavavej
+在\url{https://wg21.link/p0739r0}中修复了一些小缺陷。
+
+\setcounter{footnote}{0}
