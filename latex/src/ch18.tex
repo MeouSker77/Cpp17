@@ -1,1 +1,266 @@
 \section{\texttt{std::byte}}\label{ch18}
+通过\texttt{std::byte}，C++17引入了一个类型来代表内存的最小单位：字节。
+\texttt{std::byte}本质上代表一个字节的值，但并不能进行数字或字符的操作，
+也不对每一位进行解释。对于不需要数字计算和字符序列的场景，这样会更加类型安全。
+
+然而你，注意\texttt{std::byte}实现的大小和\texttt{unsigned char}一样，这意味着
+它并不保证是8位，可能会更多。
+
+\subsection{使用\texttt{std::byte}}
+下面的代码展示了\texttt{std::byte}的核心能力：
+\begin{lstlisting}
+    #include <cstddef>  // for std::byte
+
+    std::byte b1{0x3F};
+    std::byte b2{0b1111'0000};
+
+    std::byte b3[4] {b1, b2, std::byte{1}}; // 4个字节（最后一个是0）
+
+    if (b1 == b3[0]) {
+        b1 <<= 1;
+    }
+
+    std::cout << std::to_integer<int>(b1) << '\n';  // 输出：126
+\end{lstlisting}
+这里，我们定义了两个初始值不同的字节。\texttt{b2}的初始化使用了两个C++14引入的特性：
+\begin{itemize}[leftmargin=*]
+    \item 前缀\texttt{0b}允许定义二进制字面量
+    \item \emph{数字分隔符}\texttt{'}可以增强数字字面量的可读性
+    （它可以被放置在数字字面量中任意两个数字之间）。
+\end{itemize}
+注意列表初始化（使用花括号初始化）是唯一可以直接初始化\texttt{std::byte}对象的方法。
+所有其他的形式都不能编译：
+\begin{lstlisting}
+    std::byte b1{42};       // OK（因为自从C++17起所有枚举都有固定的底层类型）
+    std::byte b2(42);       // ERROR
+    std::byte b3 = 42;      // ERROR
+    std::byte b4 = {42};    // ERROR
+\end{lstlisting}
+这是将\texttt{std::byte}实现为枚举类型的一个直接后果。
+花括号初始化使用了新的\hyperref[ch8.3]{用整数值初始化有作用域的枚举}特性。
+
+这里不能使用隐式类型转换，这意味着你必须显式对整数值进行转换才能初始化字节数组：
+\begin{lstlisting}
+    std::byte b5[] {1};             // ERROR
+    std::byte b6[] {std::byte{1}};  // OK
+\end{lstlisting}
+如果没有初始化，\texttt{std::byte}将是栈上的值未定义的对象：
+\begin{lstlisting}
+    std::byte b;    // 值未定义
+\end{lstlisting}
+像通常一样（除了原子类型），你可以使用花括号强制初始化为每一位为0：
+\begin{lstlisting}
+    std::byte b{};  // 等价于b{0}
+\end{lstlisting}
+\texttt{std::to\_integer<>}允许你将\texttt{std::byte}对象转换为整数值（包括\texttt{bool}
+和\texttt{char}类型）。如果没有转换，将不能使用输出运算符。注意因为这个转换函数是模板，
+所以你需要使用带有\texttt{std::}的完整名称：
+\begin{lstlisting}
+    std::cout << b1;    // ERROR
+    std::cout << to_integer<int>(b1);       // ERROR（ADL在这里不起作用）
+    std::cout << std::to_integer<int>(b1);  // OK
+\end{lstlisting}
+也可以使用using声明（但请只在局部作用域中这么做）：
+\begin{lstlisting}
+    using std::to_integer;
+    ...
+    std::cout << to_integer<int>(b1);       // OK
+\end{lstlisting}
+如果要将\texttt{std::byte}用作布尔值也需要这样的转换。例如：
+\begin{lstlisting}
+    if (b2) ...                         // ERROR
+    if (b2 != std::byte{0}) ...         // OK
+    if (to_integer<bool>(b2)) ...       // ERROR（ADL在这里不起作用）
+    if (std::to_integer<bool>(b2)) ...  // OK
+\end{lstlisting}
+因为\texttt{std::byte}被实现为底层类型是\texttt{unsigned char}的枚举类型，
+所以它的大小总是1：
+\begin{lstlisting}
+    std::cout << sizeof(b);             // 总是1
+\end{lstlisting}
+它的位数依赖于底层类型\texttt{unsigned char}的位数，
+你可以通过标准数字限制来获取位数：
+\begin{lstlisting}
+    std::cout << std::numeric_limits<unsigned char>::digits; // std::byte的位数
+\end{lstlisting}
+这等价于：
+\begin{lstlisting}
+    std::cout <<
+        std::numeric_limits<std::underlying_type_t<std::byte>>::digits;
+\end{lstlisting}
+大多数时候结果是8，但在有些平台上可能不是。
+
+\subsection{\texttt{std::byte}类型和操作}
+这一节详细描述\texttt{std::byte}类型和操作。
+
+\subsubsection{\texttt{std::byte}类型}
+在头文件\texttt{<cstddef>}中，C++标准库以如下方式定义了\texttt{std::byte}：
+\begin{lstlisting}
+    namespace std {
+        enum class byte : unsigned char {
+        };
+    }
+\end{lstlisting}
+也就是说，\texttt{std::byte}不是别的，只是一个带有一些位运算符操作的有作用域的枚举类型：
+\begin{lstlisting}
+    namespace std {
+        ...
+        template<typename IntType>
+        constexpr byte  operator<<  (byte  b, IntType shift) noexcept;
+        template<typename IntType>
+        constexpr byte& operator<<= (byte& b, IntType shift) noexcept;
+        template<typename IntType>
+        constexpr byte  operator>>  (byte  b, IntType shift) noexcept;
+        template<typename IntType>
+        constexpr byte& operator>>= (byte& b, IntType shift) noexcept;
+
+        constexpr byte& operator|= (byte& l, byte r) noexcept;
+        constexpr byte  operator|  (byte  l, byte r) noexcept;
+        constexpr byte& operator&= (byte& l, byte r) noexcept;
+        constexpr byte  operator&  (byte  l, byte r) noexcept;
+        constexpr byte& operator^= (byte& l, byte r) noexcept;
+        constexpr byte  operator^  (byte  l, byte r) noexcept;
+        constexpr byte  operator~  (byte b) noexcept;
+
+        template<typename IntType>
+        constexpr IntType to_integer (byte b) noexcept;
+    }
+\end{lstlisting}
+
+\subsubsection{\texttt{std::byte}操作}
+表\hyperref[t18.1]{\texttt{std::byte}的操作}列出了\texttt{std::byte}的所有操作。
+\begin{table}[ht]
+    \begin{tabular}{l|p{0.5\textwidth}}
+        \hline
+        \textbf{操作} & \textbf{效果} \\
+        \hline
+        \emph{构造函数} & 创建一个字节对象（调用默认构造函数时值未定义） \\
+        \emph{析构函数} & 销毁一个字节对象（什么也不做） \\
+        \texttt{=} & 赋予新值 \\
+        \texttt{==、!=、<、<=、>、>=} & 比较字节对象 \\
+        \texttt{<<、>>、|、\&、\textasciicircum、\textasciitilde} & 二元位运算符    \\
+        \texttt{<<=、>>=、|=、 \&=、\textasciicircum =} & 修改自身的位运算符 \\
+        \texttt{to\_integer<T>()} & 把字节对象转换为整数类型\texttt{T} \\
+        \texttt{sizeof()} & 返回1 \\
+        \hline
+    \end{tabular}
+    \caption{\texttt{std::byte}的操作}
+    \label{t18.1}
+\end{table}
+
+\subsubsection*{转换为整数类型}
+用\texttt{to\_integer<>()}可以把\texttt{std::byte}转换为任意基本整数类型
+（\texttt{bool}、字符类型或者整数类型）。这也是必须的，
+例如为了将\texttt{std::byte}和整数值比较或者将它用作条件：
+\begin{lstlisting}
+    if (b2) ...                         // ERROR
+    if (b2 != std::byte{0}) ...         // OK
+    if (to_integer<bool>(b2)) ...       // ERROR（ADL在这里不生效）
+    if (std::to_integer<bool>(b2)) ...  // OK
+\end{lstlisting}
+另一个例子使用它的例子是\hyperref[ch18.2.2.2]{\texttt{std::byte} I/O}。
+
+\texttt{to\_integer<>()}使用\texttt{static\_cast}来把\texttt{unsigned char}
+转换为目标类型。例如：
+\begin{lstlisting}
+    std::byte ff{0xFF};
+    std::cout << std::to_integer<unsigned int>(ff); // 255
+    std::cout << std::to_integer<int>(ff);          // 也是255
+    std::cout << static_cast<int>(std::to_integer<signed char>(ff)); // -1
+\end{lstlisting}
+
+\subsubsection*{\texttt{std::byte}的I/O}\label{ch18.2.2.2}
+\texttt{std::byte}没有定义输入和输出运算符，因此不得不把它转换为整数类型再进行I/O：
+\begin{lstlisting}
+    std::byte b;
+    ...
+    std::cout << std::to_integer<int>(b);   // 以十进制值打印出值
+    std::cout << std::hex << std::to_integer<int>(b); // 以十六进制打印出值
+\end{lstlisting}
+通过使用\texttt{std::bitset<>}，你可以以二进制输出值（一串位序列）：
+\begin{lstlisting}
+    #include <cstddef>  // for std::byte
+    #include <bitset>   // for std::bitset
+    #include <limits>   // for std::numeric_limits
+
+    std::byte b1{42};
+    using ByteBitset =
+        std::bitset<std::numeric_limits<unsigned char>::digits>;
+    std::cout << ByteBitset{std::to_integer<unsigned>(b1)};
+\end{lstlisting}
+上例中using声明定义了一个位数和\texttt{std::byte}相同的bitset类型，
+之后把字节对象转换为整数来初始化一个这种类型的对象，最后输出了该对象。
+最后值42将会有如下输出（假设一个\texttt{char}是8位）：
+\begin{lstlisting}
+    00101010
+\end{lstlisting}
+另外，你可以使用\texttt{std::underlying\_type\_t<std::byte>}代替\texttt{unsigned char}，
+这样using声明的目的将更明显。
+
+你也可以使用这种方法把\texttt{std::byte}的二进制表示写入一个字符串：
+\begin{lstlisting}
+    std::string s = ByteBitset{std::to_integer<unsigned>(b1)}.to_string();
+\end{lstlisting}
+如果你已经有了一个字符序列，你也可以像下面这样使用\nameref{ch31.2.2}：
+\footnote{感谢Daniel Krügler指出这一点。}
+\begin{lstlisting}
+    #include <charconv>
+    #include <cstddef>
+
+    std::byte b1{42};
+    // 译者注：此处原文写的是
+    // int value = 42;
+    // 应是作者笔误
+
+    char str[100];
+    std::to_chars_result res =
+        std::to_chars(str, str+99, std::to_integer<int>(b1), 2);
+    *res.ptr = '\0';    // 确保最后有一个空字符结尾
+\end{lstlisting}
+注意这种形式将不会写入前导0，这意味着对于值42，最后的结果是（假设一个\texttt{char}有8位）：
+\begin{lstlisting}
+    101010
+    // 译者注：此处原文写的是
+    // 1111110
+    // 应是作者笔误
+\end{lstlisting}
+可以使用相似的方式进行输入：以整数、字符串或bitset类型读入并进行转换。
+例如，你可以像下面这样实现读入字节对象的二进制表示的输入运算符：
+\begin{lstlisting}
+    std::istream& operator>> (std::istream& strm, std::byte& b)
+    {
+        // 读入一个bitset
+        std::bitset<std::numeric_limits<unsigned char>::digits> bs;
+        strm >> bs;
+        // 如果没有失败就转换为std::byte
+        if (!std::cin.fail()) {
+            b = static_cast<std::byte>(bs.to_ulong());  // OK
+        }
+        return strm;
+    }
+\end{lstlisting}
+注意我们必须使用\texttt{static\_cast<>()}来把bitset转换成的unsigned long转换为
+\texttt{std::byte}，列表初始化将不能工作，因为会发生窄化：
+\footnote{使用gcc/g++时，如果没有编译选项\texttt{-pedantic-errors}，
+窄化初始化也可能通过编译。}
+\begin{lstlisting}
+    b = std::byte{bs.to_ulong()};   // ERROR：发生窄化
+\end{lstlisting}
+并且我们也没有其他的初始化方法了。
+
+另外，你也可以使用\nameref{ch31.2.1}来从给定的字符序列读取：
+\begin{lstlisting}
+    #include <charconv>
+
+    const char* str = "101001";
+    int value;
+    std::from_chars_result res =
+        std::from_chars(str, str+6, // 要读取的字符范围
+                        value,      // 读取后存入的对象
+                        2);         // 2进制
+\end{lstlisting}
+
+\subsection{后记}
+Neil MacIntosh在发表于\url{https://wg21.link/p0298r0}的提案中首次提出\texttt{std::byte}。
+最终被接受的提案由Neil MacIntosh发表于\url{https://wg21.link/p0298r3}。
+

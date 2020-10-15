@@ -198,7 +198,7 @@ in\_place\_index<>}。它们的类型分别是\texttt{std::in\_place\_type\_t}�
     std::variant<long, int> v2{42};
     std::cout << v2.index() << '\n';    // 打印出1
 \end{lstlisting}
-然而你，如果有两个类型同等匹配会导致歧义：
+然而，如果有两个类型同等匹配会导致歧义：
 \begin{lstlisting}
     std::variant<long, long> v3{42};          // ERROR：歧义
     std::variant<int, float> v4{42.3};        // ERROR：歧义
