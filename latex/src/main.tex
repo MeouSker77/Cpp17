@@ -15,6 +15,7 @@
 \usepackage{xcolor}
 \usepackage[font={it}]{caption}
 \usepackage[numbered]{bookmark}
+\usepackage{graphicx}
 
 \setCJKmainfont[ItalicFont=楷体, BoldItalicFont=楷体]{宋体}
 \setCJKmonofont{宋体}
@@ -45,7 +46,7 @@ title = #1,
 ]{../code/#1}
 }
 
-%\includeonly{ch18}
+%\includeonly{ch19}
 
 % Document
 \begin{document}
@@ -100,8 +101,11 @@ title = #1,
 
     \include{ch21}
     \include{ch22}
+    \include{ch23}
     \include{ch24}
     \include{ch25}
+    \include{ch26}
+    \include{ch27}
     \include{ch28}
 
 
@@ -109,12 +113,16 @@ title = #1,
     这一部分介绍了普通应用程序员通常不需要知道的新的语言特性和库。
     它主要包括了为编写基础库和语言特性的程序员准备的用来解决特殊问题语言特性（例如修改了堆内存的管理方式）。
 
+    \include{ch29}
     \include{ch30}
     \include{ch31}
+    \include{ch32}
     \include{ch33}
 
 
     \part{一些通用的提示}\label{part6}
     这一部分介绍了一些有关C++17的通用的提示，例如对C语言和废弃特性的兼容性更改。
+    \include{ch34}
+    \include{ch35}
 
 \end{document}

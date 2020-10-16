@@ -23,7 +23,8 @@ int main()
         // 尝试把s转换为int，并打印结果
         std::optional<int> oi = asInt(s);
         if (oi) {
-            std::cout << "convert '" << s << "' to int: " << *oi << "\n";
+            std::cout << "convert '" << s << "' to int: "
+                      << *oi << "\n";
         }
         else {
             std::cout << "can't convert '" << s << "' to int\n";
