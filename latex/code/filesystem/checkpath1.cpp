@@ -11,13 +11,11 @@ int main(int argc, char* argv[])
 
     std::filesystem::path p{argv[1]}; // p代表一个文件系统路径（可能不存在）
     if (is_regular_file(p)) {   // 路径p是普通文件吗？
-        std::cout << p << " exists with "
-                  << file_size(p) << " bytes\n";
+        std::cout << p << " exists with " << file_size(p) << " bytes\n";
     }
     else if (is_directory(p)) { // 路径p是目录吗？
         std::cout << p << " is a directory containing:\n";
-        for (const auto& e : std::filesystem::directory_iterator{p})
-        {
+        for (const auto& e : std::filesystem::directory_iterator{p}) {
             std::cout << "  " << e.path() << '\n';
         }
     }

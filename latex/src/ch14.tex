@@ -1,4 +1,4 @@
-\section{扩展的using声明}\label{ch14}
+\chapter{扩展的using声明}\label{ch14}
 using声明扩展之后可以支持逗号分隔的名称，也可以支持参数包。
 
 例如，你现在可以这么写：
@@ -17,7 +17,7 @@ using声明扩展之后可以支持逗号分隔的名称，也可以支持参数
 \end{lstlisting}
 在C++17之前，你需要使用3个using声明分别进行声明。
 
-\subsection{使用变长的using声明}\label{ch14.1}
+\section{使用变长的using声明}\label{ch14.1}
 逗号分隔的using声明允许你用泛型代码从可变数量的所有基类中派生同一种运算。
 
 这项技术的一个很酷的应用是创建一个重载的lambda的集合。通过如下定义：
@@ -52,7 +52,7 @@ using声明扩展之后可以支持逗号分隔的名称，也可以支持参数
 \end{lstlisting}
 这项技术的另一个应用是\hyperref[ch16.3.3.4]{\texttt{std::variant}访问器}。
 
-\subsection{使用变长using声明继承构造函数}
+\section{使用变长using声明继承构造函数}
 除了逐个声明继承构造函数之外，现在还支持如下的方式：
 你可以声明一个可变参数类模板\texttt{Multi}，让它继承每一个参数类型的基类：
 \inputcodefile{tmpl/using2.hpp}
@@ -86,7 +86,7 @@ using声明扩展之后可以支持逗号分隔的名称，也可以支持参数
     };
 \end{lstlisting}
 
-\subsection{后记}
+\section{后记}
 逗号分隔的using声明列表由Robert Haberlach在\url{https://wg21.link/p0195r0}中首次提出。
 最终被接受的提案由Robert Haberlach和Richard Smith发表于\url{https://wg21.link/p0195r2}。
 
@@ -96,5 +96,3 @@ using声明扩展之后可以支持逗号分隔的名称，也可以支持参数
 还有一个由Vicente J.Botet Escriba提出的提案。
 除了lambda之外，它还支持重载普通函数、成员函数来实现泛型的\texttt{overload}函数。
 然而，这个提议并没有进入C++17标准。详情请见\url{https://wg21.link/p0051r1}。
-
-\setcounter{footnote}{0}

@@ -1,4 +1,4 @@
-\section{\texttt{std::byte}}\label{ch18}
+\chapter{\texttt{std::byte}}\label{ch18}
 通过\texttt{std::byte}，C++17引入了一个类型来代表内存的最小单位：字节。
 \texttt{std::byte}本质上代表一个字节的值，但并不能进行数字或字符的操作，
 也不对每一位进行解释。对于不需要数字计算和字符序列的场景，这样会更加类型安全。
@@ -6,7 +6,8 @@
 然而你，注意\texttt{std::byte}实现的大小和\texttt{unsigned char}一样，这意味着
 它并不保证是8位，可能会更多。
 
-\subsection{使用\texttt{std::byte}}
+
+\section{使用\texttt{std::byte}}
 下面的代码展示了\texttt{std::byte}的核心能力：
 \begin{lstlisting}
     #include <cstddef>  // for std::byte
@@ -23,7 +24,7 @@
     std::cout << std::to_integer<int>(b1) << '\n';  // 输出：126
 \end{lstlisting}
 这里，我们定义了两个初始值不同的字节。\texttt{b2}的初始化使用了两个C++14引入的特性：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 前缀\texttt{0b}允许定义二进制字面量
     \item \emph{数字分隔符}\texttt{'}可以增强数字字面量的可读性
     （它可以被放置在数字字面量中任意两个数字之间）。
@@ -85,15 +86,15 @@
 \end{lstlisting}
 这等价于：
 \begin{lstlisting}
-    std::cout <<
-        std::numeric_limits<std::underlying_type_t<std::byte>>::digits;
+    std::cout << std::numeric_limits<std::underlying_type_t<std::byte>>::digits;
 \end{lstlisting}
 大多数时候结果是8，但在有些平台上可能不是。
 
-\subsection{\texttt{std::byte}类型和操作}
+
+\section{\texttt{std::byte}类型和操作}
 这一节详细描述\texttt{std::byte}类型和操作。
 
-\subsubsection{\texttt{std::byte}类型}
+\subsection{\texttt{std::byte}类型}
 在头文件\texttt{<cstddef>}中，C++标准库以如下方式定义了\texttt{std::byte}：
 \begin{lstlisting}
     namespace std {
@@ -127,10 +128,10 @@
     }
 \end{lstlisting}
 
-\subsubsection{\texttt{std::byte}操作}
+\subsection{\texttt{std::byte}操作}
 表\hyperref[t18.1]{\texttt{std::byte}的操作}列出了\texttt{std::byte}的所有操作。
 \begin{table}[ht]
-    \begin{tabular}{l|p{0.5\textwidth}}
+    \begin{tabular}{l|p{0.6\textwidth}}
         \hline
         \textbf{操作} & \textbf{效果} \\
         \hline
@@ -138,8 +139,8 @@
         \emph{析构函数} & 销毁一个字节对象（什么也不做） \\
         \texttt{=} & 赋予新值 \\
         \texttt{==、!=、<、<=、>、>=} & 比较字节对象 \\
-        \texttt{<<、>>、|、\&、\textasciicircum、\textasciitilde} & 二元位运算符    \\
-        \texttt{<<=、>>=、|=、 \&=、\textasciicircum =} & 修改自身的位运算符 \\
+        \texttt{<<、>>、|、\& 、\textasciicircum、\textasciitilde} & 二元位运算符    \\
+        \texttt{<<=、>>=、|=、 \& =、\textasciicircum =}              & 修改自身的位运算符 \\
         \texttt{to\_integer<T>()} & 把字节对象转换为整数类型\texttt{T} \\
         \texttt{sizeof()} & 返回1 \\
         \hline
@@ -148,7 +149,7 @@
     \label{t18.1}
 \end{table}
 
-\subsubsection*{转换为整数类型}
+\subsubsection{转换为整数类型}
 用\texttt{to\_integer<>()}可以把\texttt{std::byte}转换为任意基本整数类型
 （\texttt{bool}、字符类型或者整数类型）。这也是必须的，
 例如为了将\texttt{std::byte}和整数值比较或者将它用作条件：
@@ -169,7 +170,7 @@
     std::cout << static_cast<int>(std::to_integer<signed char>(ff)); // -1
 \end{lstlisting}
 
-\subsubsection*{\texttt{std::byte}的I/O}\label{ch18.2.2.2}
+\subsubsection{\texttt{std::byte}的I/O}\label{ch18.2.2.2}
 \texttt{std::byte}没有定义输入和输出运算符，因此不得不把它转换为整数类型再进行I/O：
 \begin{lstlisting}
     std::byte b;
@@ -184,8 +185,7 @@
     #include <limits>   // for std::numeric_limits
 
     std::byte b1{42};
-    using ByteBitset =
-        std::bitset<std::numeric_limits<unsigned char>::digits>;
+    using ByteBitset = std::bitset<std::numeric_limits<unsigned char>::digits>;
     std::cout << ByteBitset{std::to_integer<unsigned>(b1)};
 \end{lstlisting}
 上例中using声明定义了一个位数和\texttt{std::byte}相同的bitset类型，
@@ -213,8 +213,7 @@
     // 应是作者笔误
 
     char str[100];
-    std::to_chars_result res =
-        std::to_chars(str, str+99, std::to_integer<int>(b1), 2);
+    std::to_chars_result res = std::to_chars(str, str+99, std::to_integer<int>(b1), 2);
     *res.ptr = '\0';    // 确保最后有一个空字符结尾
 \end{lstlisting}
 注意这种形式将不会写入前导0，这意味着对于值42，最后的结果是（假设一个\texttt{char}有8位）：
@@ -260,8 +259,7 @@
                         2);         // 2进制
 \end{lstlisting}
 
-\subsection{后记}
+
+\section{后记}
 Neil MacIntosh在发表于\url{https://wg21.link/p0298r0}的提案中首次提出\texttt{std::byte}。
 最终被接受的提案由Neil MacIntosh发表于\url{https://wg21.link/p0298r3}。
-
-\setcounter{footnote}{0}

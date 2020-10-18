@@ -1,4 +1,4 @@
-\section{编译期\texttt{if}语句}\label{ch10}
+\chapter{编译期\texttt{if}语句}\label{ch10}
 通过使用语法\texttt{if constexpr(...)}，编译器可以计算编译期的条件表达式来在编译期决定使用
 一个\texttt{if}语句的\emph{then}的部分还是\emph{else}的部分。其余部分的代码将会被丢弃，这意味着
 它们甚至不会被生成。然而这并不意味着被丢弃的部分完全被忽略，
@@ -12,7 +12,7 @@
 （如果使用运行时\texttt{if}语句则不能通过编译）：
 \inputcodefile{tmpl/ifcomptime.cpp}
 
-\subsection{编译期\texttt{if}语句的动机}
+\section{编译期\texttt{if}语句的动机}
 如果我们在上面的例子中使用运行时\texttt{if}，下面的代码将永远不能通过编译：
 \inputcodefile{tmpl/ifruntime.hpp}
 这是因为模板在实例化时整个模板会作为一个整体进行编译。
@@ -23,7 +23,7 @@
 
 使用编译期\texttt{if}语句时，\emph{then}部分和\emph{else}部分中不可能被用到的部分将成为
 \emph{丢弃的语句}：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 当传递一个\texttt{std::string}时，第一个\texttt{if}语句的\emph{else}部分将被丢弃。
     \item 当传递一个数字时，第一个\texttt{if}语句的\emph{then}部分和最后的\emph{else}部分将被丢弃。
     \item 当传递一个字符串字面量（类型为\texttt{const char*}）时，第一和第二个\texttt{if}语句
@@ -54,7 +54,7 @@
     }
 \end{lstlisting}
 对于一个符合标准的编译器来说，上面的例子\emph{永远}不能通过编译的原因有两个：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 即使\texttt{T}是一个整数类型，如下调用：
     \begin{lstlisting}
     undeclared(); // 如果未声明将导致错误（即使被丢弃也一样）
@@ -76,7 +76,7 @@
 \footnote{Visual C++正在一步步的修复这个错误的行为，然而可能需要指定编译选项例如
 \texttt{/permissive-，因为这个修复可能会破坏现有的代码。}}
 
-\subsection{使用编译期\texttt{if}语句}
+\section{使用编译期\texttt{if}语句}
 原则上讲，只要条件表达式是编译期的表达式你就可以像使用运行期\texttt{if}一样使用编译期\texttt{if}。
 你也可以混合使用编译期和运行期的\texttt{if}：
 \begin{lstlisting}
@@ -105,7 +105,7 @@
 \footnote{感谢Graham Haynes、Paul Reilly和Barry Revzin
 提醒了我编译期\texttt{if}对这些方面的影响。}
 
-\subsubsection*{编译期\texttt{if}影响返回值类型}
+\subsubsection{编译期\texttt{if}影响返回值类型}
 编译期\texttt{if}可能会影响函数的返回值类型。例如，下面的代码总能通过编译，
 但返回值的类型可能会不同：
 \begin{lstlisting}
@@ -121,7 +121,7 @@
 \end{lstlisting}
 这里，因为我们使用了\texttt{auto}，返回值的类型将依赖于返回语句，
 而执行哪条返回语句又依赖于\texttt{int}的字节数：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 如果大于4字节，返回\texttt{42}的返回语句将会生效，因此返回值类型是\texttt{int}。
     \item 否则，返回\texttt{42u}的返回语句将生效，因此返回值类型是\texttt{unsigned int}。
 \end{itemize}
@@ -138,7 +138,7 @@
 注意这里如果使用运行期\texttt{if}那么代码将永远不能通过编译，
 因为推导返回值类型时会考虑到所有可能的返回值类型，因此推导会有歧义。
 
-\subsubsection*{即使在\emph{then}部分返回也要考虑\emph{else}部分}
+\subsubsection{即使在\emph{then}部分返回也要考虑\emph{else}部分}
 运行期\texttt{if}有一个模式不能应用于编译期\texttt{if}：
 如果代码在\emph{then}和\emph{else}部分都会返回，
 那么在运行期\texttt{if}中你可以跳过\texttt{else}部分。
@@ -173,7 +173,7 @@
 如果条件表达式为true（\texttt{int}大于4字节），编译器将会推导出两个不同的返回值类型，
 这会导致错误。否则，将只会有一条有效的返回语句，因此代码能通过编译。
 
-\subsubsection*{编译期短路求值}
+\subsubsection{编译期短路求值}
 考虑如下代码：
 \begin{lstlisting}
     template<typename T>
@@ -229,9 +229,9 @@
     }
 \end{lstlisting}
 
-\subsubsection{其他编译期\texttt{if}的示例}
-\subsubsection*{完美返回泛型值}
-编译期\texttt{if}的一个引用就是完美转发返回值，并在返回之前对返回值进行一些处理。
+\subsection{其他编译期\texttt{if}的示例}
+\subsubsection{完美返回泛型值}
+编译期\texttt{if}的一个应用就是返回值的完美转发，这些返回值在返回之前必须先进行一些处理。
 因为\texttt{decltype(auto)}不能推导为\texttt{void}（因为\texttt{void}是不完全的类型），
 所以你必须像下面这么写：
 \inputcodefile{tmpl/perfectreturn.hpp}
@@ -239,7 +239,7 @@
 但\texttt{ret}的声明不能推导为\texttt{void}，
 因此必须把\texttt{op}返回\texttt{void}的情况单独处理。
 
-\subsubsection*{使用编译期\texttt{if}进行类型分发}
+\subsubsection{使用编译期\texttt{if}进行类型分发}
 编译期\texttt{if}的一个典型应用是类型分发。在C++17之前，
 你必须为每一个想处理的类型重载一个单独的函数。现在，有了编译期\texttt{if}，
 你可以把所有的逻辑放在一个函数里。
@@ -253,14 +253,12 @@
     }
 
     template<typename Iterator, typename Distance>
-    void advanceImpl(Iterator& pos, Distance n,
-                    std::random_access_iterator_tag) {
+    void advanceImpl(Iterator& pos, Distance n, std::random_access_iterator_tag) {
         pos += n;
     }
 
     template<typename Iterator, typename Distance>
-    void advanceImpl(Iterator& pos, Distance n,
-                    std::bidirectional_iterator_tag) {
+    void advanceImpl(Iterator& pos, Distance n, std::bidirectional_iterator_tag) {
         if (n >= 0) {
             while (n--) {
                 ++pos;
@@ -274,8 +272,7 @@
     }
 
     template<typename Iterator, typename Distance>
-    void advanceImpl(Iterator& pos, Distance n,
-                    std::input_iterator_tag) {
+    void advanceImpl(Iterator& pos, Distance n, std::input_iterator_tag) {
         while (n--) {
             ++pos;
         }
@@ -286,12 +283,10 @@
     template<typename Iterator, typename Distance>
     void advance(Iterator& pos, Distance n) {
         using cat = std::iterator_traits<Iterator>::iterator_category;
-        if constexpr (std::is_convertible_v<cat,
-                      std::random_access_iterator_tag>) {
+        if constexpr (std::is_convertible_v<cat, std::random_access_iterator_tag>) {
             pos += n;
         }
-        else if constexpr (std::is_convertible_v<cat,
-                           std::bidirectional_access_iterator_tag>) {
+        else if constexpr (std::is_convertible_v<cat, std::bidirectional_access_iterator_tag>) {
             if (n >= 0) {
                 while (n--) {
                     ++pos;
@@ -313,7 +308,7 @@
 这里我们就像是有了一个编译期\texttt{switch}，每一个\texttt{if constexpr}语句就像是一个
 case。然而，注意例子中的两种实现还是有一处不同的：
 \footnote{感谢Graham Haynes和Barry Revzin指出这一点。}
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 重载函数的版本遵循\textbf{最佳匹配}语义。
     \item 编译期\texttt{if}的版本遵循\textbf{最先匹配}语义。
 \end{itemize}
@@ -323,7 +318,7 @@ case。然而，注意例子中的两种实现还是有一处不同的：
 第三个例子是在用作\hyperref[ch16.3.3.2]{\texttt{std::variant<>}访问器}
 的泛型lambda中处理不同的类型。
 
-\subsection{带初始化的编译期\texttt{if}语句}
+\section{带初始化的编译期\texttt{if}语句}
 注意编译期\texttt{if}语句也可以使用新的\hyperref[ch2]{带初始化}的形式。
 例如，如果有一个\texttt{constexpr}函数\texttt{foo()}，你可以这样写：
 \begin{lstlisting}
@@ -353,7 +348,7 @@ case。然而，注意例子中的两种实现还是有一处不同的：
 注意如果想在条件语句中使用\texttt{obj}的值，
 那么\texttt{obj}必须要声明为\texttt{constexpr}。
 
-\subsection{在模板之外使用编译期\texttt{if}}
+\section{在模板之外使用编译期\texttt{if}}
 \texttt{if constexpr}可以在任何函数中使用，而并非仅限于模板。
 只要条件表达式是编译期的，并且可以转换成\texttt{bool}类型。
 然而，在普通函数里使用时\emph{then}和\emph{else}部分的所有语句都必须有效，
@@ -412,7 +407,7 @@ case。然而，注意例子中的两种实现还是有一处不同的：
 因为编译器可以优化掉永远不会被使用的代码。然而，如果使用了\texttt{constexpr}，
 那么这一行为将得到保证。}
 
-\subsection{后记}
+\section{后记}
 编译期\texttt{if}语句最初的灵感来自于Walter Bright、Herb Sutter、Andrei Alexandrescu
 发表的\url{https://wg21.link/n3329}以及
 Ville Voutilainen在\url{https://wg21.link/n4461}中提出的\texttt{static if}特性。
@@ -420,5 +415,3 @@ Ville Voutilainen在\url{https://wg21.link/n4461}中提出的\texttt{static if}�
 在\url{https://wg21.link/p0128r0}中，Ville Voutilainen提出了这个特性并命名为
 \texttt{constexpr\_if}（本章的特性由此得名）。
 最终被接受的提案由Jens Maurer发表于\url{https://wg21.link/p0292r2}。
-
-\setcounter{footnote}{0}

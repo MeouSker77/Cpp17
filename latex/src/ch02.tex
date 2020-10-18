@@ -1,4 +1,4 @@
-\section{带初始化的\texttt{if}和\texttt{switch}语句}\label{ch2}
+\chapter{带初始化的\texttt{if}和\texttt{switch}语句}\label{ch2}
 \texttt{if}和\texttt{switch}语句现在允许在条件表达式里添加一条初始化语句。
 例如，你可以写出如下代码：
 \begin{lstlisting}
@@ -12,7 +12,7 @@
 \end{lstlisting}
 它初始化了\texttt{s}，\texttt{s}将在整个\texttt{if}语句中有效（包括\texttt{else}分支里）。
 
-\subsection{带初始化的\texttt{if}语句}\label{ch2.1}
+\section{带初始化的\texttt{if}语句}\label{ch2.1}
 在\texttt{if}语句的条件表达式里定义的变量将在整个\texttt{if}语句中有效
 （包括\emph{then}部分和\emph{else}部分）。例如：
 \begin{lstlisting}
@@ -103,7 +103,7 @@
 \end{lstlisting}
 注意这个拓展也适用于\nameref{ch10}特性。
 
-\subsection{带初始化的\texttt{switch}语句}\label{ch2.2}
+\section{带初始化的\texttt{switch}语句}\label{ch2.2}
 通过使用带初始化的\texttt{switch}语句，我们可以在控制流之前初始化一个对象/实体。
 例如，我们可以先声明一个\nameref{ch20.2.3}，然后再根据它的类别进行处理：
 \begin{lstlisting}
@@ -115,8 +115,7 @@
             break;
         case fs::file_type::directory:
             std::cout << p << ":\n";
-            for (const auto& e :
-                std::filesystem::directory_iterator{p}) {
+            for (const auto& e : std::filesystem::directory_iterator{p}) {
                 std::cout << "- " << e.path() << '\n';
             }
             break;
@@ -127,9 +126,7 @@
 \end{lstlisting}
 这里，初始化的路径\texttt{p}可以在整个\texttt{switch}语句中使用。
 
-\subsection{后记}
+\section{后记}
 带初始化的\texttt{if}和\texttt{switch}语句最早由Thomas Köppe
 在\url{https://wg21.link/p0305r0}中提出，一开始只是提到了扩展\texttt{if}语句。
 最终被接受的提案由Thomas Köpped发表于\url{https://wg21.link/p0305r1}。
-
-\setcounter{footnote}{0}

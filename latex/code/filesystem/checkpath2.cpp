@@ -10,14 +10,11 @@ int main(int argc, char* argv[])
     }
     std::filesystem::path p{argv[1]};   // p代表一个文件系统路径（可能不存在）
     if (is_regular_file(p)) {   // 路径p是普通文件吗？
-        std::cout << '"' << p.string() << "\" existes with "
-                  << file_size(p) << " bytes\n";
+        std::cout << '"' << p.string() << "\" existes with " << file_size(p) << " bytes\n";
     }
     else if (is_directory(p)) { // 路径p是目录吗？
-        std::cout << '"' << p.string()
-                  << "\" is a directory containing:\n";
-        for (const auto& e : std::filesystem::directory_iterator{p})
-        {
+        std::cout << '"' << p.string() << "\" is a directory containing:\n";
+        for (const auto& e : std::filesystem::directory_iterator{p}) {
             std::cout << "  \"" << e.path().string() << "\"\n";
         }
     }
@@ -25,7 +22,6 @@ int main(int argc, char* argv[])
         std::cout << '"' << p.string() << "\" is a special file\n";
     }
     else {
-        std::cout << "path \"" << p.string()
-                  << "\" does not exist\n";
+        std::cout << "path \"" << p.string() << "\" does not exist\n";
     }
 }

@@ -1,4 +1,4 @@
-\section[字符串视图]{字符串视图(String Views)}\label{ch19}
+\chapter[字符串视图]{字符串视图(String Views)}\label{ch19}
 在C++17中，C++标准库引入了一个特殊的字符串类：\texttt{std::string\_view}，
 它能让我们像处理字符串一样处理字符序列，而不需要为它们分配内存空间。
 也就是说，\texttt{std::string\_view}类型的对象只是引用一个外部的字符序列，
@@ -16,9 +16,10 @@
 然而，它也有一些潜在的危险，就和原生指针一样，在使用\texttt{string\_view}时也必须
 程序员自己来保证引用的字符串序列是有效的。
 
-\subsection{和\texttt{std::string}的不同之处}
+
+\section{和\texttt{std::string}的不同之处}
 和\texttt{std::string}相比，\texttt{std::string\_view}对象有以下特点：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 底层的字符序列是只读的。没有操作可以修改底层的字符。你只能赋予一个新值、
     交换值、把视图缩小为字符序列的子序列。
     \item 字符序列不保证有空字符终止。因此，字符串视图并不是一个\emph{空字符终止的字节流(NTBS)}。
@@ -30,9 +31,10 @@
 所以你使用\texttt{operator[]}或者\texttt{data()}之前应该总是使用\texttt{size()}获取长度
 （除非你已经知道了长度）。
 
-\subsection{使用字符串视图}
+
+\section{使用字符串视图}
 字符串视图有两个主要的应用：
-\begin{enumerate}[leftmargin=*]
+\begin{enumerate}
     \item 你可能已经分配或者映射了字符序列或者字符串的数据，
     并且想在不分配更多内存的情况下使用这些数据。典型的例子是内存映射文件或者处理大文本文件中的子串。
     \item 你可能想提升接收字符串为参数并以只读方式使用它们的函数/操作的性能，且这些函数/操作不需要结尾的空字符。
@@ -50,7 +52,8 @@
 这样可能导致性能问题和一些\hyperref[ch19.3.1]{运行时错误}。
 请仔细的阅读下面的小节。
 
-\subsection{使用字符串视图作为参数}
+
+\section{使用字符串视图作为参数}
 下面是使用字符串视图作为只读字符串的第一个例子，
 这个例子定义了一个函数将传入的字符串视图作为前缀，之后打印一个集合中的元素：
 \begin{lstlisting}
@@ -107,19 +110,19 @@
 \end{lstlisting}
 使用字符串视图还可以显著\hyperref[ch22.1.2.1]{提升子字符串排序的性能}。
 
-\subsubsection{字符串视图有害的一面}\label{ch19.3.1}
+\subsection{字符串视图有害的一面}\label{ch19.3.1}
 通常“智能对象”例如智能指针会比相应的语言特性更安全（至少不会更危险）。
 因此，你可能会有一种印象：字符串视图是一种字符串的引用，应该比字符串引用更安全或者至少一样安全。
 然而不幸的是，事实并不是这样的，字符串视图远比字符串引用或者智能指针更危险。
 它们的行为更近似于原生字符指针。
 
-\subsubsection*{不要把临时字符串赋值给字符串视图}
+\subsubsection{不要把临时字符串赋值给字符串视图}
 考虑声明一个返回新字符串的函数：
 \begin{lstlisting}
     std::string retString();
 \end{lstlisting}
 使用返回值总是安全的：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 用返回值来初始化一个string或者用\texttt{auto}声明的对象是安全的：
     \begin{lstlisting}
     std::string s1 = retString();   // 安全
@@ -164,7 +167,7 @@
     std::cout << sub << '\n';     // 运行时ERROR：临时字符串s已经被销毁
 \end{lstlisting}
 
-\subsubsection*{返回值类型是字符串视图时不要返回字符串}
+\subsubsection{返回值类型是字符串视图时不要返回字符串}
 返回值类型是字符串视图时返回字符串是非常危险的。因此，你\emph{不}应该像下面这样写：
 \begin{lstlisting}
     class Person {
@@ -185,7 +188,7 @@
 如果把\texttt{getName()}改为返回一个值或者引用就不会有这个问题了，
 因为\texttt{n}将会变为返回值的拷贝。
 
-\subsubsection*{函数模板应该使用\texttt{auto}作为返回值类型}
+\subsubsection{函数模板应该使用\texttt{auto}作为返回值类型}
 注意无意中把字符串作为字符串视图返回是很常见的。
 例如，下面的两个函数单独看起来都很有用：
 \begin{lstlisting}
@@ -216,7 +219,7 @@
     }
 \end{lstlisting}
 
-\subsubsection*{不要在调用链中使用字符串视图来初始化字符串}
+\subsubsection{不要在调用链中使用字符串视图来初始化字符串}
 在一个中途或者最后需要字符串的调用链中使用字符串视图可能会适得其反。
 例如，如果你定义了一个有如下构造函数的类\texttt{Person}：
 \begin{lstlisting}
@@ -267,39 +270,40 @@
 构造函数里我们有了一个叫\texttt{n}的string，这是一个有内存地址的对象
 （一个\emph{广义左值(glvalue)}）。之后把这个对象的值move到成员\texttt{name}里。
 
-\subsubsection*{安全使用字符串视图的总结}
+\subsubsection{安全使用字符串视图的总结}
 总结起来就是\textbf{小心的使用\texttt{std::string\_view}}，
 也就是说你应该按下面这样调整你的编码风格：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 不要在把参数传递给string的API中使用string view。
-    \begin{itemize}[leftmargin=*]
+    \begin{itemize}
         \item 不要用string view形参来初始化string成员。
         \item 不要把string设为string view调用链的终点。
     \end{itemize}
     \item 不要返回string view。
-    \begin{itemize}[leftmargin=*]
+    \begin{itemize}
         \item 除非它只是转发输入的参数，或者你可以标记它很危险，例如，通过命名来体现危险性。
     \end{itemize}
     \item \textbf{函数模板}永远不应该返回传入的泛型参数的类型\textbf{T}。
-    \begin{itemize}[leftmargin=*]
+    \begin{itemize}
         \item 作为替代，返回\texttt{auto}类型。
     \end{itemize}
     \item 永远不要用返回之类初始化为string view。
     \item \textbf{不要}把返回泛型类型的函数模板的返回值赋给\textbf{\texttt{auto}}。
-    \begin{itemize}[leftmargin=*]
+    \begin{itemize}
         \item 这意味着AAA(\emph{总是auto(Almost Always Auto)})原则不适用于string view。
     \end{itemize}
 \end{itemize}
-如果因为这些规则太过复杂或者太困难而不能遵守，那就完全不要使用\texttt{std::\\
+如果因为这些规则太过复杂或者太困难而不能遵守，那就完全不要使用\texttt{std::
 string\_view}（除非你知道自己在做什么）。
 
-\subsection{字符串视图类型和操作}
+
+\section{字符串视图类型和操作}
 这一节详细描述字符串视图类型和操作
 
-\subsubsection{字符串视图的具体类型}
+\subsection{字符串视图的具体类型}
 在头文件\texttt{<string\_view>}中，C++标准库为\texttt{basic\_string\_view<>}提供了很多
 特化版本：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 类\texttt{std::string\_view}是预定义的字符为\texttt{char}类型的特化模板：
     \begin{lstlisting}
     namespace std {
@@ -322,10 +326,10 @@ string\_view}（除非你知道自己在做什么）。
 这本书中的例子通常使用类型\texttt{string\_view}，因为欧洲和英美的环境是大部分软件开发的
 普遍环境。
 
-\subsubsection{字符串视图的操作}
+\subsection{字符串视图的操作}
 表\hyperref[t19.1]{字符串视图的操作}列出了字符串视图的所有操作。
 \begin{table}[ht]
-    \begin{tabular}{l|p{0.4\textwidth}}
+    \begin{tabular}{l|p{0.5\textwidth}}
         \hline
         \textbf{操作}                        & \textbf{效果}                        \\
         \hline
@@ -362,11 +366,11 @@ string\_view}（除非你知道自己在做什么）。
 然而，相应的操作的保证可能有些许不同，\texttt{data()}的返回值可能是\texttt{nullptr}
 或者没有空字符终止。
 
-\subsubsection*{构造}
+\subsubsection{构造}
 你可以使用很多种方法来创建字符串视图：用默认构造函数创建、用拷贝函数构造创建、从原生字符数组创建
 （空字符终止或者指明长度）、从\texttt{std::string}创建或者从带有\texttt{sv}后缀的字面量创建。
 然而，注意以下几点：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 默认构造函数创建的字符串视图对象调用\texttt{data()}会返回\texttt{nullptr}。
     因此，\texttt{operator[]}调用将无效。
     \begin{lstlisting}
@@ -419,13 +423,13 @@ string\_view}（除非你知道自己在做什么）。
     constexpr string_view hello = "Hello World!";
 \end{lstlisting}
 
-\subsubsection*{结尾的空字符}
+\subsubsection{结尾的空字符}
 创建字符串视图的不同方式展示了字符串视图优越的一点，理解这一点是很重要的：
 一般情况下，字符串视图的值不以空字符结尾，甚至可能是\texttt{nullptr}。
 因此，你应该\emph{总是}在访问字符串视图的字符之前检查\texttt{size()}
 （除非你已经明确知道值）。
 然而，你\emph{可能}会遇到两个特殊的场景，这两个场景会让人很迷惑：
-\begin{enumerate}[leftmargin=*]
+\begin{enumerate}
     \item 你可以确保字符串视图的值以空字符结尾，尽管空字符并不是值的一部分。
     当你用字符串字面量初始化字符串视图时就会遇到这种情况：
     \begin{lstlisting}
@@ -450,12 +454,12 @@ string\_view}（除非你知道自己在做什么）。
 当返回空字符结尾的字符串时用\texttt{string\_view}
 作为返回类型（\url{https://wg21.link/P0555r0}有一个例子）。
 
-\subsubsection*{哈希}
+\subsubsection{哈希}
 C++标准库保证值相同的字符串和字符串视图的哈希值相同。
 
-\subsubsection*{修改字符串视图}
+\subsubsection{修改字符串视图}
 这里有几个修改字符串视图的操作：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 你可以赋予新值或者交换两个字符串视图的值：
     \begin{lstlisting}
     std::string_view sv1 = "hey";
@@ -487,13 +491,13 @@ C++标准库保证值相同的字符串和字符串视图的哈希值相同。
 \footnote{理论上讲，我们可以标准化一个操作来把两个字符串视图连接起来并返回新的string，
 但直到目前为止还没有实现。}
 
-\subsubsection{其他类型对字符串视图的支持}
+\subsection{其他类型对字符串视图的支持}
 原则上讲，任何需要传递字符串值的地方都可以传递字符串视图，前提是接收者只读取值且不需要空字符结尾。
 
 然而，到目前为止，C++标准只为大多数重要的场景添加了支持：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 使用字符串时可以联合使用字符串视图：
-    \begin{itemize}[leftmargin=*]
+    \begin{itemize}
         \item 你可以从一个字符串视图创建一个string（构造函数是explict的）。如果字符串视图
         没有值（\texttt{data()}返回\texttt{nullptr}），字符串将被初始化为空。
         \item 你可以把字符串视图用作字符串的赋值、扩展、插入、替换、比较或查找操作的参数。
@@ -510,13 +514,14 @@ C++标准库保证值相同的字符串和字符串视图的哈希值相同。
 \end{itemize}
 其他对字符串视图的支持，例如C++标准库中的正则表达式库的支持，仍然缺失。
 
-\subsection{在API中使用字符串视图}
-字符串视图开销很低并且每一个\texttt{std::string}都可以用作字符串视图。
-因此，看起来好像\texttt{std::string\_view}是更好的用作字符串参数的类型。
-然而，有一些细节很重要\ldots
+
+\section{在API中使用字符串视图}
+字符串视图开销很小并且每一个\texttt{std::string}都可以用作字符串视图。
+因此，看起来好像\texttt{std::string\\
+\_view}是更好的用作字符串参数的类型。然而，有一些细节很重要\ldots
 
 首先，只有当函数按照如下约束使用参数时，使用\texttt{std::string\_view}才有意义：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 它并不需要结尾有空字符。给一个以单个\texttt{const char*}
     为参数而没有长度参数的C函数传递参数时就不属于这种情况。
     \item 它不会违反传入参数的生命周期。通常，这意味着接收函数只会在传入值的生命周期结束之前使用它。
@@ -531,7 +536,7 @@ C++标准库保证值相同的字符串和字符串视图的哈希值相同。
     foo("hello");   // ERROR：歧义
 \end{lstlisting}
 最后，记住\hyperref[ch19.3.1]{上文提到的警告}：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 不要把临时字符串赋给字符串视图。
     （此处原文是Do not assign temporary string views to strings. 应是作者笔误）
     \item 不要返回字符串视图。
@@ -539,12 +544,11 @@ C++标准库保证值相同的字符串和字符串视图的哈希值相同。
 \end{itemize}
 带着这些考虑，让我们来看一些使用字符串视图进行改进的例子。
 
-\subsubsection{使用字符串视图代替string}
+\subsection{使用字符串视图代替string}
 考虑下列代码：
 \begin{lstlisting}
     // 带前缀输出时间点
-    void print (const std::string& prefix,
-                const std::chrono::system_clock::time_point& tp)
+    void print (const std::string& prefix, const std::chrono::system_clock::time_point& tp)
     {
         // 转换为日历时间
         auto rawtime{std::chrono::system_clock::to_time_t(tp)};
@@ -557,8 +561,7 @@ C++标准库保证值相同的字符串和字符串视图的哈希值相同。
 \end{lstlisting}
 可以被替换为下列代码：
 \begin{lstlisting}
-    void print (std::string_view prefix,
-                const std::chrono::system_clock::time_point& tp)
+    void print (std::string_view prefix, const std::chrono::system_clock::time_point& tp)
     {
         auto rawtime{std::chrono::system_clock::to_time_t(tp)};
         std::string_view ts{std::ctime(&rawtime)};  // 注意：不是线程安全的
@@ -581,8 +584,7 @@ C++标准库保证值相同的字符串和字符串视图的哈希值相同。
 
 如果函数返回把前缀和时间点连接起来的字符串，代码可能会像下面这样：
 \begin{lstlisting}
-    std::string toString (std::string_view prefix,
-                          const std::chrono::system_clock::time_point& tp)
+    std::string toString (std::string_view prefix, const std::chrono::system_clock::time_point& tp)
     {
         auto rawtime{std::chrono::system_clock_to_time_t(tp)};
         std::string_view ts{std::ctime(&rawtime)};  // 注意：不是线程安全的
@@ -591,16 +593,15 @@ C++标准库保证值相同的字符串和字符串视图的哈希值相同。
         return std::string{prefix} + ts; // 很不幸没有两个字符串视图的+运算符
     }
 \end{lstlisting}
-注意我们不能简单的用\texttt{operator+}连接两个字符串视图。
-作为替代，我们必须把其中一个转换为\texttt{std::string}
+注意我们不能简单地用\texttt{operator+}连接两个字符串视图。
+我们必须把其中一个转换为\texttt{std::string}
 （很不幸这个操作会分配不必要的内存）。如果字符串视图没有值
 （\texttt{data()}返回\texttt{nullptr}），字符串将为空。
 
 另一个使用字符串视图的例子是使用字符串视图和
 并行算法来\hyperref[{ch22.1.2.1}]{排序子字符串}：
 \begin{lstlisting}
-    sort(std::execution::par,
-        coll.begin(), coll.end(),
+    sort(std::execution::par, coll.begin(), coll.end(),
         // 译者注：此处原文是
         // sort(coll.begin(), coll.end(),
         // 应是作者笔误
@@ -620,8 +621,9 @@ C++标准库保证值相同的字符串和字符串视图的哈希值相同。
 \end{lstlisting}
 这是因为string的substr是一个会分配自己内存的新字符串。
 
-\subsection{后记}
-第一个引用语义的字符串类由Jeffrey Yasskin在\url{https://wg21.link/n3334}中提出
+
+\section{后记}
+首个引用语义的字符串类由Jeffrey Yasskin在\url{https://wg21.link/n3334}中提出
 （命名为\texttt{string\_ref}）。这个类因Jeffrey Yasskin在\url{https://wg21.link/n3921}
 中的提议而被Library Fundamentals TS采纳。
 
@@ -635,5 +637,3 @@ Antony Polukhin在发表于\url{https://wg21.link/p0426r1}提案中添加了对
 
 Daniel Krügler发表的\url{https://wg21.link/lwg2946}中包含了一些修复
 （作为C++17的缺陷被C++20采纳）。
-
-\setcounter{footnote}{0}

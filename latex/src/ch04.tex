@@ -1,7 +1,8 @@
-\section{聚合体扩展}\label{ch4}
-C++有很多初始化对象的方法。其中之一叫做\emph{聚合体初始化}(aggregate initialization)，
+\chapter{聚合体扩展}\label{ch4}
+C++有很多初始化对象的方法。其中之一叫做\emph{聚合体初始化(aggregate initialization)}，
 这是聚合体\footnote{聚合体指数组或者C风格的简单类，简单类要求没有用户定义的构造函数、
-没有私有或保护的非静态数据成员、没有虚函数，此外在C++17之前，还要求没有继承}专有的一种初始化方法。
+没有私有或保护的非静态数据成员、没有虚函数，另外在C++17之前，还要求没有继承。}
+专有的一种初始化方法。
 从C语言引入的初始化方式是用花括号括起来的一组值来初始化类：
 \begin{lstlisting}
     struct Data {
@@ -31,13 +32,12 @@ C++有很多初始化对象的方法。其中之一叫做\emph{聚合体初始�
 \end{lstlisting}
 这样写将遵循嵌套聚合体初始化时的通用规则，你传递的实参被用来初始化哪一个成员取决于它们的顺序。
 
-\subsection{扩展聚合体初始化的动机}
+\section{扩展聚合体初始化的动机}
 如果没有这个特性，那么所有的派生类都不能使用聚合体初始化，这意味着你要像下面这样定义构造函数：
 \begin{lstlisting}
     struct Cpp14Data : Data {
         bool done;
-        Cpp14Data (const std::string& s, double d, bool b)
-            : Data{s, d}, done{b} {
+        Cpp14Data (const std::string& s, double d, bool b) : Data{s, d}, done{b} {
         }
     };
 
@@ -68,7 +68,7 @@ C++有很多初始化对象的方法。其中之一叫做\emph{聚合体初始�
 \end{lstlisting}
 或者，提供一个默认构造函数。
 
-\subsection{使用聚合体扩展}
+\section{使用聚合体扩展}
 聚合体初始化的一个典型应用场景是对一个派生自C风格结构体并且添加了新成员的类进行初始化。例如：
 \begin{lstlisting}
     struct Data {
@@ -96,7 +96,7 @@ C++有很多初始化对象的方法。其中之一叫做\emph{聚合体初始�
     CppData x4;             // 成员的值未定义
 \end{lstlisting}
 注意使用空花括号和不使用花括号完全不同：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item \texttt{x1}的定义会把所有成员默认初始化为0值，
     因此字符指针\texttt{name}被初始化为\texttt{nullptr}，
     \texttt{double}类型的\texttt{value}初始化为\texttt{0.0}，
@@ -142,12 +142,12 @@ C++有很多初始化对象的方法。其中之一叫做\emph{聚合体初始�
 
 这个新的特性也可以帮助我们用很少的代码定义\hyperref[ch14.1]{重载的\texttt{lambda}}。
 
-\subsection{聚合体的定义}
+\section{聚合体的定义}
 总的来说，在C++17中满足如下条件之一的对象被认为是\emph{聚合体}：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 是一个数组
     \item 或者是一个满足如下条件的\emph{类类型}(class, struct, union)：
-    \begin{itemize}[leftmargin=*]
+    \begin{itemize}
         \item 没有用户定义的和\texttt{explicit}的构造函数
         \item 没有使用\texttt{using}声明继承的构造函数
         \item 没有\texttt{private}和\texttt{protected}的非静态数据成员
@@ -156,7 +156,7 @@ C++有很多初始化对象的方法。其中之一叫做\emph{聚合体初始�
     \end{itemize}
 \end{itemize}
 然而，要想使用聚合体初始化来初始化聚合体，那么还需要满足如下额外的约束：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 基类中没有\texttt{private}或者\texttt{protected}的数据成员
     \item 没有\texttt{private}或者\texttt{protected}的构造函数
 \end{itemize}
@@ -173,7 +173,7 @@ C++17引入了一个\hyperref[ch21.2.1]{新的类型trait \texttt{is\_aggregate<
     std::cout << std::is_aggregate<decltype(s)>::value; // 输出1(true)
 \end{lstlisting}
 
-\subsection{向后的不兼容性}
+\section{向后的不兼容性}
 注意下面的例子不能再通过编译：
 \inputcodefile{lang/aggr14.cpp}
 在C++17之前，\texttt{Derived}不是聚合体。因此
@@ -195,11 +195,9 @@ C++17引入了一个\hyperref[ch21.2.1]{新的类型trait \texttt{is\_aggregate<
 然而，因为基类有一个\texttt{private}的构造函数（见上一节）所以不能使用花括号来初始化。
 这和派生类是否是基类的友元无关。
 
-\subsection{后记}
+\section{后记}
 聚合体初始化扩展由Oleg Smolsky在\url{https://wg21.link/n4404}中第一次提到。
 最终被接受的正式提案由Oleg Smolsky发表于\url{https://wg21.link/p0017r1}。
 
-类型trait \texttt{std::is\_aggregate<>}作为美国国家机构对C++17标准的一个注释引入
+类型特征\texttt{std::is\_aggregate<>}作为美国国家机构对C++17标准的一个注释引入
 （见\url{https://wg21.link/lwg2911}）。
-
-\setcounter{footnote}{0}

@@ -9,14 +9,10 @@ class Name
     std::optional<std::string> middle;
     std::string last;
   public:
-    Name (std::string f,
-          std::optional<std::string> m,
-          std::string l)
-          : first{std::move(f)}, middle{std::move(m)},
-          last{std::move(l)} {
+    Name (std::string f, std::optional<std::string> m, std::string l)
+          : first{std::move(f)}, middle{std::move(m)}, last{std::move(l)} {
     }
-    friend std::ostream& operator << (std::ostream& strm,
-                                        const Name& n) {
+    friend std::ostream& operator << (std::ostream& strm, const Name& n) {
         strm << n.first << ' ';
         if (n.middle) {
             strm << *n.middle << ' ';

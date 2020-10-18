@@ -1,4 +1,4 @@
-\section{折叠表达式}\label{ch11}
+\chapter{折叠表达式}\label{ch11}
 自从C++17起，有一个新的特性可以计算对参数包中的\emph{所有}参数应用一个二元运算符的结果。
 
 例如，下面的函数将会返回所有参数的总和：
@@ -43,7 +43,7 @@
     (arg1 + (arg2 + arg3)) ...
 \end{lstlisting}
 
-\subsection{折叠表达式的动机}
+\section{折叠表达式的动机}
 折叠表达式的出现让我们不必再用递归实例化模板的方式来处理参数包。
 在C++17之前，你必须实现为：
 \begin{lstlisting}
@@ -65,14 +65,14 @@
 \end{lstlisting}
 能显著的减少程序员和编译器的工作量。
 
-\subsection{使用折叠表达式}\label{ch11.2}
+\section{使用折叠表达式}\label{ch11.2}
 给定一个参数\emph{args}和一个操作符\emph{op}，C++17允许我们这么写：
-\begin{itemize}[leftmargin=*]
-    \item \emph{\textbf{一元左折叠}}\\
-    ( \ldots \, \emph{\textbf{op} args} )\\
+\begin{itemize}
+    \item \emph{\textbf{一元左折叠}}
+    ( \ldots \, \emph{\textbf{op} args} )
     将会展开为：\emph{((arg1 \textbf{op} arg2) \textbf{op} arg3) \textbf{op} \ldots}
-    \item \emph{\textbf{一元右折叠}}\\
-    ( \emph{args \textbf{op}} \ldots \,)\\
+    \item \emph{\textbf{一元右折叠}}
+    ( \emph{args \textbf{op}} \ldots \,)
     将会展开为：\emph{arg1 \textbf{op} (arg2 \textbf{op} \ldots \, (argN-1 \textbf{op} argN))}
 \end{itemize}
 括号是必须的，然而，括号和省略号(\ldots)之间并不需要用空格分隔。
@@ -146,9 +146,9 @@
     (... + args);       // 推荐的折叠表达式语法
 \end{lstlisting}
 
-\subsubsection{处理空参数包}\label{ch11.2.1}
+\subsection{处理空参数包}\label{ch11.2.1}
 当使用折叠表达式处理空参数包时，将遵循如下规则：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 如果使用了\texttt{\&\&}运算符，值为\texttt{true}。
     \item 如果使用了\texttt{||}运算符，值为\texttt{false}。
     \item 如果使用了逗号运算符，值为\texttt{void()}。
@@ -157,12 +157,12 @@
 对于所有其他的情况，你可以添加一个初始值：
 给定一个参数包\emph{args}，一个初始值\emph{value}，一个操作符\emph{op}，
 C++17允许我们这么写：
-\begin{itemize}[leftmargin=*]
-    \item \emph{\textbf{二元左折叠}}\\
-    ( \emph{value \textbf{op} \ldots \, \textbf{op} args} )\\
+\begin{itemize}
+    \item \emph{\textbf{二元左折叠}}
+    ( \emph{value \textbf{op} \ldots \, \textbf{op} args} )
     将会展开为：\emph{(((value \textbf{op} arg1) \textbf{op} arg2) \textbf{op} arg3) \textbf{op} \ldots}
-    \item \emph{\textbf{二元右折叠}}\\
-    ( \emph{args \textbf{op} \ldots \, \textbf{op} value} )\\
+    \item \emph{\textbf{二元右折叠}}
+    ( \emph{args \textbf{op} \ldots \, \textbf{op} value} )
     将会展开为：\emph{arg1 \textbf{op} (arg2 \textbf{op} \ldots \, (argN \textbf{op} value))}
 \end{itemize}
 省略号两侧的\emph{op}必须相同。
@@ -280,10 +280,10 @@ C++17允许我们这么写：
 通过使用新的\hyperref[ch13.1.1]{\texttt{auto}模板参数}，我们可以使\texttt{print()}
 变得更加灵活：可以把间隔符定义为一个参数，这个参数可以是一个字符、一个字符串或者其它任何可打印的类型。
 
-\subsubsection{支持的运算符}
+\subsection{支持的运算符}
 你可以对除了\texttt{.}、\texttt{->}、\texttt{[]}之外的所有二元运算符使用折叠表达式。
 
-\subsubsection*{折叠函数调用}
+\subsubsection{折叠函数调用}
 折叠表达式可以用于逗号运算符，这样就可以在一条语句里进行多次函数调用。
 也就是说，你现在可以简单写出如下实现：
 \begin{lstlisting}
@@ -332,7 +332,7 @@ C++17允许我们这么写：
 
 不过，因为左折叠更符合自然的求值顺序，因此在使用折叠表达式进行多次函数调用时还是推荐使用左折叠。
 
-\subsubsection*{组合哈希函数}
+\subsubsection{组合哈希函数}
 另一个使用逗号折叠表达式的例子是组合哈希函数。可以用如下的方法完成：
 \begin{lstlisting}
     template<typename T>
@@ -363,8 +363,7 @@ C++17允许我们这么写：
     sturct CustomerHash
     {
         std::size_t operator() (const Customer& c) const {
-            return combinedHashValue(c.getFirstname(), c.getLastname(),
-                                     c.getValue());
+            return combinedHashValue(c.getFirstname(), c.getLastname(), c.getValue());
         }
     };
 
@@ -372,7 +371,7 @@ C++17允许我们这么写：
     std::unordered_map<Customer, std::string, CustomerHash> map;
 \end{lstlisting}
 
-\subsubsection*{折叠基类的函数调用}
+\subsubsection{折叠基类的函数调用}
 折叠表达式可以在更复杂的场景中使用。例如，你可以折叠逗号表达式来调用可变数量基类的成员函数：
 \inputcodefile{tmpl/foldcalls.cpp}
 这里
@@ -397,7 +396,7 @@ C++17允许我们这么写：
     (A::print(), B::print()), C::print();
 \end{lstlisting}
 
-\subsubsection*{折叠路径遍历}
+\subsubsection{折叠路径遍历}
 你也可以使用折叠表达式通过运算符\texttt{->*}遍历一个二叉树中的路径。
 考虑下面的递归数据结构：
 \inputcodefile{tmpl/foldtraverse.hpp}
@@ -420,7 +419,7 @@ C++17允许我们这么写：
     root -> subLeft -> subRight
 \end{lstlisting}
 
-\subsubsection{使用折叠表达式处理类型}
+\subsection{使用折叠表达式处理类型}
 通过使用类型特征，我们也可以使用折叠表达式来处理模板参数包（任意数量的模板类型参数）。
 例如，你可以使用折叠表达式来判断一些类型是否相同：
 \inputcodefile{tmpl/ishomogeneous.hpp}
@@ -438,17 +437,14 @@ C++17允许我们这么写：
 \end{lstlisting}
 在这种情况下，折叠表达式将会展开为：
 \begin{lstlisting}
-    std::is_same_v<int, int> && std::is_same_v<int, const char*>
-        && is_same_v<int, std::nullptr_t>
+    std::is_same_v<int, int> && std::is_same_v<int, const char*> && is_same_v<int, std::nullptr_t>
 \end{lstlisting}
 像通常一样，运算符\texttt{\&\&}会短路求值（出现第一个\texttt{false}时就会停止运算）。
 
 标准库里\hyperref[ch9.2.6.3]{\texttt{std::array<>}的推导指引}就使用了这个特性。
 
-\subsection{后记}
+\section{后记}
 折叠表达式特性最早由Andrew Sutton和Richard Smith在\url{https://wg21.link/n4191}中提出。
 最终被接受的提案由Andrew Sutton和Richard Smith发表于\url{https://wg21.link/n4295}。
 之后对运算符\texttt{*、+、\&、|}处理空参数包的支持由Thibaut Le Jehan在
 \url{https://wg21.link/p0036}中移除。
-
-\setcounter{footnote}{0}

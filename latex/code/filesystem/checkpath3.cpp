@@ -12,24 +12,19 @@ int main(int argc, char* argv[])
 
     switch (fs::path p{argv[1]}; status(p).type()) {
         case fs::file_type::not_found:
-            std::cout << "path \"" << p.string()
-                      << "\" does not exist\n";
+            std::cout << "path \"" << p.string() << "\" does not exist\n";
             break;
         case fs::file_type::regular:
-            std::cout << '"' << p.string() << "\" exists with "
-                      << file_size(p) << " bytes\n";
+            std::cout << '"' << p.string() << "\" exists with " << file_size(p) << " bytes\n";
             break;
         case fs::file_type::directory:
-            std::cout << '"' << p.string()
-                      << "\" is a directory containing:\n";
-            for (const auto& e :
-                std::filesystem::directory_iterator{p}) {
+            std::cout << '"' << p.string() << "\" is a directory containing:\n";
+            for (const auto& e : std::filesystem::directory_iterator{p}) {
                 std::cout << "  " << e.path().string() << '\n';
             }
             break;
         default:
-            std::cout << '"' << p.string()
-                      << "\" is a special file\n";
+            std::cout << '"' << p.string() << "\" is a special file\n";
             break;
     }
 }

@@ -1,4 +1,4 @@
-\section{内联变量}\label{ch3}
+\chapter{内联变量}\label{ch3}
 出于可移植性和易于整合的目的，提供包含类库声明的头文件是很重要的。
 然而，在C++17之前，只有当这个库既不提供也不需要全局对象的时候才可以直接在头文件中定义。
 
@@ -14,7 +14,7 @@
 只要一个翻译单元内没有重复的定义即可。此例中的定义即使被多个翻译单元使用，
 也会指向同一个对象。
 
-\subsection{内联变量产生的动机}
+\section{内联变量产生的动机}
 在C++里不允许在类里初始化非常量静态成员：
 \begin{lstlisting}
     class MyClass {
@@ -56,9 +56,9 @@
     MyClass myGlobalObject; // 如果被多个CPP文件包含会导致链接ERROR
 \end{lstlisting}
 
-\subsubsection*{解决方法}
+\subsubsection{解决方法}
 对于一些场景，这里有一些解决方法：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 你可以在一个\texttt{class/struct}的定义中初始化数字或枚举类型的常量静态成员：
     \begin{lstlisting}
     class MyClass {
@@ -115,7 +115,7 @@
 另外，全局变量的初始化可能会推迟到第一次使用时。
 所以那些假设变量一开始就已经初始化的写法是不可行的（例如使用一个对象来监控整个程序的过程）。
 
-\subsection{使用内联变量}
+\section{使用内联变量}
 现在，使用了\texttt{inline}修饰符之后，即使定义所在的头文件被多个CPP文件包含，
 也只会有一个全局对象：
 \begin{lstlisting}
@@ -127,7 +127,7 @@
     inline MyClass myGlobalObj; // 即使被多个CPP文件包含也OK
 \end{lstlisting}
 这里使用的\texttt{inline}和函数声明时的\texttt{inline}有相同的语义：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 它可以在多个翻译单元中定义，只要所有定义都是相同的。
     \item 它必须在每个使用它的翻译单元中定义
 \end{itemize}
@@ -155,7 +155,7 @@
 \end{lstlisting}
 另一个使用内联变量的例子参见\hyperref[ch30.4]{追踪所有\texttt{new}调用的头文件}。
 
-\subsection{\texttt{constexpr static}成员现在隐含\texttt{inline}}
+\section{\texttt{constexpr static}成员现在隐含\texttt{inline}}
 对于静态成员，\texttt{constexpr}修饰符现在隐含着\texttt{inline}。
 自从C++17起，如下声明\emph{定义}了静态数据成员\texttt{n}：
 \begin{lstlisting}
@@ -203,7 +203,7 @@
 现在当使用C++17进行构建时，类中的声明本身就成了定义，因此即使没有正式的定义，
 上面的所有例子现在也都可以正常工作。正式的定义现在仍然有效但已经成了废弃的多余声明。
 
-\subsection{内联变量和\texttt{thread\_local}}
+\section{内联变量和\texttt{thread\_local}}
 通过使用\texttt{thread\_local}你可以为每个线程创建一个内联变量：
 \begin{lstlisting}
     struct ThreadData {
@@ -244,9 +244,7 @@
     - lName: thread1 name
 \end{lstlisting}
 
-\subsection{后记}
-内联变量的动机起源于David Krauss的\url{https://wg21.link/n4147}，
+\section{后记}
+内联变量的动机起源于David Krauss的\url{https://wg21.link/n4147}提案，
 之后由Hal Finkel和Richard Smith在\url{https://wg21.link/n4424}中第一次提出。
 最终被接受的提案由Hal Finkel和Richard Smith发表于\url{https://wg21.link/p0386r2}。
-
-\setcounter{footnote}{0}

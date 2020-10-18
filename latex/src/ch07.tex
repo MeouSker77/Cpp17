@@ -1,26 +1,26 @@
-\section{新属性和属性特性}\label{ch7}
+\chapter{新属性和属性特性}\label{ch7}
 自从C++11起，就可以指明\emph{属性}(attribute)（允许或者禁用某些警告的注解）。
 C++17引入了新的属性，另外现在属性也可以在其他一些地方使用，也许能带来一些便利。
 
-\subsection{\texttt{[[nodiscard]]}属性}
+\section{\texttt{[[nodiscard]]}属性}
 新属性\texttt{[[nodiscard]]}可以鼓励编译器在某个函数的返回值未被使用时给出警告
 （这并不意味着编译器一定要给出警告）。
 \texttt{[[nodiscard]]}通常应该用于防止某些因为返回值未被使用导致的不当行为。
 这些不当行为可能是（译者注：请配合下边的例子理解这些不当行为）：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item \textbf{内存泄露}，例如返回值中含有动态分配的内存，但并未使用。
     \item \textbf{未知的或出乎意料的行为}，例如因为没有使用返回值而导致了一些奇怪的行为。
     \item \textbf{不必要的开销}，例如因为返回值没被使用而进行了一些无意义的行为。
 \end{itemize}
 这里有一些该属性发挥所用的例子：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 申请资源但自身并不释放，而是将资源返回等待其他函数释放的函数应该被标记为
     \texttt{[[nodiscard]]}。一个典型的例子是申请内存的函数，
     例如\texttt{malloc()}函数或者分配器的\texttt{allocate()}成员函数。
 
     然而，注意有些函数\emph{可能}会返回一个无需再处理的值。例如，程序员可能会用0字节调用C函数
     \texttt{realloc()}来释放内存，这种情况下的返回值无需之后调用\texttt{free()}函数释放。
-    因此，如果对\texttt{realloc()}标记\texttt{[[nodiscard]]}将会适得其反。
+    因此，如果把\texttt{realloc()}函数标记为\texttt{[[nodiscard]]}将会适得其反。
     \item 有时如果没有使用返回值将导致函数行为和预期不同，一个很好的例子是\texttt{std::async()}
     （C++11引入）。\texttt{std::async()}会在后台异步地执行一个任务并返回一个可以用来等待
     任务执行结束的句柄（也可以通过它获取返回值或者异常）。然而，如果返回值没有被使用的话该调用
@@ -28,7 +28,7 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
     函数会阻塞等待任务运行结束。因此，不使用返回值导致的结果与\texttt{std::async()}的目的
     完全矛盾。将\texttt{std::async()}标记为\texttt{[[nodiscard]]}可以让编译器给出警告。
     \item 另一个例子是成员函数\texttt{empty()}，它的作用是检查一个对象（容器/字符串）是否
-    没有元素。程序员经常误用该函数来“清空“容器：
+    没有元素。程序员经常误用该函数来“清空”容器：
     \begin{lstlisting}
     cont.empty();
     \end{lstlisting}
@@ -84,14 +84,14 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
 中实现（见C++20中通过的\url{https://wg21.link/p0600r1}提案）。
 
 为了保证代码的可移植性，你应该使用\texttt{[[nodiscard]]}而不是一些不可移植的方案
-（例如gcc和clang的\texttt{[[gnu:warn\_unused\_result]]}或者Visual C++的
-\texttt{\_Check\_return\_}）。
+（例如gcc和clang的\\
+\texttt{[[gnu:warn\_unused\_result]]}或者Visual C++的\texttt{\_Check\_return\_}）。
 
 当\hyperref[ch30.2.2]{定义\texttt{new()}运算符}时，
 你应该用\texttt{[[nodiscard]]}对该函数进行标记，
 例如\hyperref[ch30.4]{定义一个追踪所有\texttt{new}调用的头文件}。
 
-\subsection{\texttt{[[maybe\_unused]]}属性}
+\section{\texttt{[[maybe\_unused]]}属性}
 新的属性\texttt{[[maybe\_unused]]}可以避免编译器在某个变量未被使用时发出警告。
 新的属性可以应用于类的声明、使用\texttt{typedef}或者\texttt{using}定义的类型、
 一个变量、一个非静态数据成员、一个函数、一个枚举类型、一个枚举值等场景。
@@ -128,7 +128,7 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
     }
 \end{lstlisting}
 
-\subsection{\texttt{[[fallthrough]]}属性}
+\section{\texttt{[[fallthrough]]}属性}
 新的属性\texttt{[[fallthrough]]}可以避免编译器在\texttt{switch}语句中某一个标签
 缺少\texttt{break}语句时发出警告。例如：
 \begin{lstlisting}
@@ -155,9 +155,9 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
 注意这个属性必须被用作单独的语句，还要有分号结尾。
 另外在\texttt{switch}语句的最后一个分支不能使用它。
 
-\subsection{通用的属性扩展}
+\section{通用的属性扩展}
 自从C++17起下列有关属性的通用特性变得可用：
-\begin{enumerate}[leftmargin=*]
+\begin{enumerate}
     \item 属性现在可以用来标记命名空间。例如，你可以像下面这样弃用一个命名空间：
     \begin{lstlisting}
     namespace [[deprecated]] DraftAPI {
@@ -191,24 +191,22 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
     \end{lstlisting}
 \end{enumerate}
 
-\subsection{后记}
+\section{后记}
 三个新属性由Andrew Tomazos在\url{https://wg21.link/p0068r0}中首次提出。
 
-\texttt{[[nodiscard]]}最终被接受的提案由Andrew Tomazos发表于
+\texttt{[[nodiscard]]}属性最终被接受的提案由Andrew Tomazos发表于
 \url{https://wg21.link/p0189r1}。
 
-\texttt{[[maybe\_unused]]}最终被接受的提案由Andrew Tomazos发表于
+\texttt{[[maybe\_unused]]}属性最终被接受的提案由Andrew Tomazos发表于
 \url{https://wg21.link/p0212r1}。
 
-\texttt{[[fallthrough]]}最终被接受的提案由Andrew Tomazos发表于
+\texttt{[[fallthrough]]}属性最终被接受的提案由Andrew Tomazos发表于
 \url{https://wg21.link/p0188r1}。
 
-允许为命名空间和枚举值标记属性的特性由Richard Smith在\url{https://wg21.link/n4196}
+允许为命名空间和枚举值标记属性由Richard Smith在\url{https://wg21.link/n4196}
 中首次提出。该特性最终被接受的提案由Richard Smith发表于\url{https://wg21.link/n4266}。
 
 属性的\texttt{using}前缀由J. Daniel Garcia、Luis M. Sanchez、
 Massimo Torquati、Marco Danelutto、Peter Sommerlad在\url{https://wg21.link/p0028r0}
 中首次提出。最终被接受的提案由J. Daniel Garcia和Daveed Vandevoorde发表于
 \url{https://wg21.link/P0028R4}。
-
-\setcounter{footnote}{0}

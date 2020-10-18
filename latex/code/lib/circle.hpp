@@ -16,8 +16,7 @@ class Circle {
     }
 
     void draw() const {
-        std::cout << "circle at " << center
-                  << " with radius " << rad << '\n';
+        std::cout << "circle at " << center << " with radius " << rad << '\n';
     }
 };
 

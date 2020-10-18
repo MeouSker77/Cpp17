@@ -1,8 +1,8 @@
-\section{处理字符串字面量模板参数}\label{ch12}
+\chapter{处理字符串字面量模板参数}\label{ch12}
 一直以来，不同版本的C++标准一直在放宽模板参数的标准，C++17也是如此。
 另外现在非类型模板参数的实参不需要再定义在使用处的外层作用域。
 
-\subsection{在模板中使用字符串}
+\section{在模板中使用字符串}
 非类型模板参数只能是常量整数值（包括枚举）、对象/函数/成员的指针、对象或函数的左值引用、
 \texttt{std::nullptr\_t}（\texttt{nullptr}的类型）。
 
@@ -49,8 +49,6 @@
     A<pNum()> b;    // C++17之前ERROR，现在OK
 \end{lstlisting}
 
-\subsection{后记}
+\section{后记}
 允许编译期常量求值结果作为非类型模板实参由Richard Smith在\url{https://wg21.link/n4198}中首次提出。
 最终被接受的提案由Richard Smith发表于\url{https://wg21.link/n4268}。
-
-\setcounter{footnote}{0}

@@ -1,4 +1,4 @@
-\section{\texttt{std::optional<>}}\label{ch15}
+\chapter{\texttt{std::optional<>}}\label{ch15}
 在编程时，我们经常会遇到我们\emph{可能}会返回/传递/使用一个确定类型的对象。
 也就是说，这个对象可能有一个确定类型的值也可能没有任何值。
 因此，我们需要一种方法来模拟类似指针的语义：指针可以通过\texttt{nullptr}来表示\texttt{没有值}。
@@ -20,11 +20,12 @@
 但拷贝有内含值的\texttt{std::optional<>}的开销约等于拷贝内含值的开销。
 另外，\texttt{std::optional<>}对象也支持move语义。
 
-\subsection{使用\texttt{std::optional<>}}
+
+\section{使用\texttt{std::optional<>}}
 \texttt{std::optional<>}模拟了一个可以为空的任意类型的实例。
 他可以被用作成员、参数、返回值等。
 
-\subsubsection{可选的返回值}\label{ch15.1.1}
+\subsection{可选的返回值}\label{ch15.1.1}
 下面的示例程序展示了将\texttt{std::optional<>}用作返回值的一些功能：
 \inputcodefile{lib/optional.cpp}
 这段程序包含了一个\texttt{asInt()}函数来把传入的字符串转换为整数。
@@ -32,8 +33,8 @@
 这样我们可以返回\emph{“无整数值”}而不是约定一个特殊的\texttt{int}值，
 或者向调用者抛出异常来表示失败。
 
-因此，我们可能会用\texttt{stoi()}调用的结果也就是一个\texttt{int}来初始化返回值并返回，
-也可能会返回\texttt{std::nullopt}来表明没有\texttt{int}值。
+因此，当转换成功时我们用\texttt{stoi()}返回的\texttt{int}初始化返回值并返回，
+否则会返回\texttt{std::nullopt}来表明没有\texttt{int}值。
 
 我们也可以像下面这样实现相同的行为：
 \begin{lstlisting}
@@ -83,7 +84,7 @@
 注意，我们现在可以使用新的类型\texttt{std::string\_view}和新的快捷函数\hyperref[ch31.2.1]
 {\texttt{std::from\_chars()}}来\hyperref[改进asInt]{改进\texttt{asInt()}}。
 
-\subsubsection{可选的参数和数据成员}
+\subsection{可选的参数和数据成员}
 另一个使用\texttt{std::optional<>}的例子是传递可选的参数和
 设置可选的数据成员：
 \inputcodefile{lib/optionalmember.cpp}
@@ -104,10 +105,11 @@
 \end{lstlisting}
 然而，这种方式下，当没有值时名和姓之间将有两个空格而不是一个。
 
-\subsection{\texttt{std::optional<>}类型和操作}
+
+\section{\texttt{std::optional<>}类型和操作}
 这一小节详细描述\texttt{std::optional}类型和支持的操作。
 
-\subsubsection{\texttt{std::optional<>}类型}
+\subsection{\texttt{std::optional<>}类型}
 标准库在头文件\texttt{<optional>}中以如下方式定义了\texttt{std::optional<>}类：
 \begin{lstlisting}
     namespace std {
@@ -115,7 +117,7 @@
     }
 \end{lstlisting}
 另外还定义了下面这些类型和对象：\label{nullopt}
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item \texttt{std::nullopt\_t}类型的\texttt{std::nullopt}，作为可选对象无值时候的“值”。
     \item 从\texttt{std::exception}派生的\texttt{std::bad\_optional\_access}异常类，
     当无值时候访问值将会抛出该异常。
@@ -123,10 +125,10 @@
 可选对象也使用了\texttt{<utility>}头文件中定义的\texttt{std::in\_place}对象
 （类型是\texttt{std::in\_place\_t}）来初始化多个参数的可选对象（见下文）。
 
-\subsubsection{\texttt{std::optional<>}的操作}
-表\hyperref[t15.1]{\texttt{std::optional}的操作}列出了\texttt{std::optional<>}的所有操作：\\
+\subsection{\texttt{std::optional<>}的操作}
+表\hyperref[t15.1]{\texttt{std::optional}的操作}列出了\texttt{std::optional<>}的所有操作：
 \begin{table}[ht]
-    \begin{tabular}{l|p{0.6\textwidth}}
+    \begin{tabular}{l|p{0.7\textwidth}}
         \hline
         \textbf{操作符}                & \textbf{效果}                   \\
         \hline
@@ -151,9 +153,9 @@
     \label{t15.1}
 \end{table}
 
-\subsubsection*{构造函数}
+\subsubsection{构造函数}
 特殊的构造函数允许你直接传递内含类型的值作为参数。
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 你可以创建一个不含有值的可选对象。这种情况下，你必须指明内含的类型：
     \begin{lstlisting}
     std::optional<int> o1;
@@ -179,8 +181,7 @@
     auto sc = [] (int x, int y) {
                 return std::abs(x) < std::abs(y);
               };
-    std::optional<std::set<int, decltype(sc)>> o8{std::in_place,
-                                        {4, 8, -7, -2, 0, 5}, sc};
+    std::optional<std::set<int, decltype(sc)>> o8{std::in_place, {4, 8, -7, -2, 0, 5}, sc};
     \end{lstlisting}
     然而，只有当素有的初始值都和容器里元素的类型匹配时才可以这么写。否则，
     你必须显式传递一个\texttt{std::initializer\_list<>}：
@@ -189,19 +190,19 @@
     auto sc = [] (int x, int y) {
                 return std::abs(x) < std::abs(y);
               };
-    std::optional<std::set<int, decltype(sc)>> o8{std::in_place,
-                        std::initializer_list<int>{4, 5L}, sc};
+    std::optional<std::set<int, decltype(sc)>>
+        o8{std::in_place, std::initializer_list<int>{4, 5L}, sc};
     \end{lstlisting}
     \item 如果底层类型支持拷贝的话可选对象也可以拷贝（支持类型转换）：
     \begin{lstlisting}
-        std::optional o9{"hello"};          // 推导出optional<const char*>
-        std::optional<std::string> o10{o9}; // OK
+    std::optional o9{"hello"};          // 推导出optional<const char*>
+    std::optional<std::string> o10{o9}; // OK
     \end{lstlisting}
     然而，注意如果内含类型本身可以用一个可选对象来构造，那么将会优先用可选对象构造内含对象，而不是拷贝：
     \footnote{感谢Tim Song指出这一点。}
     \begin{lstlisting}
-        std::optional<int> o11;
-        std::optional<std::any> o12{o11}; // o12内含了一个any对象，该对象的值是一个空的optional<int>
+    std::optional<int> o11;
+    std::optional<std::any> o12{o11}; // o12内含了一个any对象，该对象的值是一个空的optional<int>
     \end{lstlisting}
 \end{itemize}
 注意还有一个快捷函数\texttt{make\_optional<>()}，他可以用单个或多个参数初始化一个可选对象
@@ -219,17 +220,15 @@
     std::multimap<std::string, std::string> englishToGerman;
     ...
     auto pos = englishToGerman.find("wisdom");
-    auto o16 = pos != englishToGerman.end()
-                ? std::optional{pos->second}
-                : std::nullopt;
+    auto o16 = pos != englishToGerman.end() ? std::optional{pos->second} : std::nullopt;
 \end{lstlisting}
-这里，根据\nameref{ch9}，依据\texttt{std::optional{pos->second}}表达式能推导出
+这个例子中，根据\nameref{ch9}，通过表达式\texttt{std::optional\{pos->second\}}能推导出
 \texttt{o16}的类型是\texttt{std::optional<std::string>}。
 类模板参数推导不能对单独的\texttt{std::nullopt}生效，但通过使用运算符\texttt{?:}，
-\texttt{std::nullopt}也会转换成\texttt{optional<string>}类型，因为\texttt{?:}运算符的
-两种可能必须有相同的类型。
+\texttt{std::nullopt}也会转换成\texttt{optional<string>}类型，
+这是因为\texttt{?:}运算符的两个表达式必须有相同的类型。
 
-\subsubsection*{访问值}
+\subsubsection{访问值}
 为了检查一个可选对象是否有值，你可以调用\texttt{has\_value()}或者在bool表达式中使用它：
 \begin{lstlisting}
     std::optional o{42};
@@ -263,8 +262,8 @@
 \begin{lstlisting}
     if (o) std::cout << *o;     // OK（可能输出为空字符串）
 \end{lstlisting}
-或者，你可以使用\texttt{value()}成员函数来访问值，
-当没有内含值时将会抛出一个\texttt{std::bad\_optional\_access}异常：
+或者你可以使用\texttt{value()}成员函数来访问值，
+当内部没有值时将抛出一个\texttt{std::bad\_optional\_access}异常：
 \begin{lstlisting}
     std::cout << o.value();     // OK（无值时会抛出异常）
 \end{lstlisting}
@@ -334,9 +333,9 @@
 \end{lstlisting}
 注意\texttt{value\_or()}是一个能够更清晰地表达意图的接口，但开销可能会更大一点。
 
-\subsubsection*{比较}
+\subsubsection{比较}
 你可以使用通常的比较运算符。操作数可以是可选对象、内含类型的对象、\texttt{std::nullopt}。
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 如果两个操作数都是有值的对象，将会调用内含类型的相应操作符。
     \item 如果两个操作数都是没有值的对象，那么它们相等（\texttt{==、<=、>=}返回\texttt{true}，
     其他比较返回\texttt{false}）。
@@ -386,7 +385,7 @@
 
 注意可选的bool或原生指针类型可能会导致一些\hyperref[ch15.3.1]{奇怪的行为}。
 
-\subsubsection*{修改值}
+\subsubsection{修改值}
 赋值运算和\texttt{emplace()}操作可以用来修改值：
 \begin{lstlisting}
     std::optional<std::complex<double>> o;  // 没有值
@@ -419,7 +418,7 @@
     }
 \end{lstlisting}
 
-\subsubsection*{move语义}
+\subsubsection{move语义}
 \texttt{std::optional<>}也支持move语义。如果你move了整个可选对象，
 那么内部的状态会被拷贝，值会被move。因此，被move的可选对象仍保持原来的状态，但值变为未定义。
 
@@ -468,15 +467,16 @@
     std::string s6 = std::move(os).value(); // OK，move
 \end{lstlisting}
 
-\subsubsection*{哈希}
+\subsubsection{哈希}
 可选对象的哈希值就等于内含值的哈希值（如果有值的话）。
 
 无值的可选对象的哈希值未定义。
 
-\subsection{特殊情况}
+
+\section{特殊情况}
 一些特定的可选类型可能会导致特殊或意料之外的行为。
 
-\subsubsection{bool类型或原生指针的可选对象}\label{ch15.3.1}
+\subsection{bool类型或原生指针的可选对象}\label{ch15.3.1}
 将可选对象用作bool值时使用比较运算符会有特殊的语义。
 如果内含类型是\texttt{bool}或者指针类型的话这可能导致令人迷惑的行为。例如：
 \begin{lstlisting}
@@ -489,16 +489,14 @@
     if (op == nullptr) ...          // 返回true
 \end{lstlisting}
 
-\subsubsection{可选对象的可选对象}
+\subsection{可选对象的可选对象}
 原则上讲，你可以定义可选对象的可选对象：
 \begin{lstlisting}
     std::optional<std::optional<std::string>> oos1;
     std::optional<std::optional<std::string>> oos2 = "hello";
-    std::optional<std::optional<std::string>>
-        oos3{std::in_place, std::in_place, "hello"};
+    std::optional<std::optional<std::string>> oos3{std::in_place, std::in_place, "hello"};
 
-    std::optional<std::optional<std::complex<double>>>
-        ooc{std::in_place, std::in_place, 4.2, 5.3};
+    std::optional<std::optional<std::complex<double>>> ooc{std::in_place, std::in_place, 4.2, 5.3};
 \end{lstlisting}
 你甚至可以通过隐式类型转换直接赋值：
 \begin{lstlisting}
@@ -518,12 +516,13 @@
     if (oos1 && *oos1) std::cout << "value: " << **oos1 << '\n';
 \end{lstlisting}
 然而，从语义上来看，这只是一个有两种状态都代表无值的类型而已。
-因此，带有两个bool值或\hyperref[ch16.2.1]{\texttt{monostate}}的\nameref{ch16}
-将是一个更好的替代。
+因此，带有两个bool值或\hyperref[ch16.2.1]{\texttt{monostate}}的\\
+\nameref{ch16}将是一个更好的替代。
 
-\subsection{后记}
+\section{后记}
 可选对象由Fernando Cacciola于2005年在\url{https://wg21.link/n1878}中首次提出，
-并引用了Boost.Optional作为参考实现。这个类因为Fernando Cacciola和Andrzej Krzemienski
+并指定Boost.Optional\\
+作为参考实现。这个类因为Fernando Cacciola和Andrzej Krzemienski
 在\url{https://wg21.link/n3793}中的提案被Library Fundamentals TS采纳。
 
 这个类因Beman Dawes和Alisdair Meredith发表于\url{https://wg21.link/p0220r1}
@@ -535,5 +534,3 @@ Vicente J. Botet Escriba在发表于\url{https://wg21.link/p0032r3}的提案中�
 \texttt{std::optional}和\texttt{std::variant<>}以及\texttt{std::any}类的API。
 Jonathan Wakely在\url{https://wg21.link/p0504r0}修正了\texttt{in\_place}
 标记类型的行为。
-
-\setcounter{footnote}{0}

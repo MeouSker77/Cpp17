@@ -1,4 +1,4 @@
-\section{\texttt{std::any}}\label{ch17}
+\chapter{\texttt{std::any}}\label{ch17}
 一般来说，C++是一门类型绑定和类型安全的语言。
 值对象被声明为确定的类型，这个类型定义了所有可能的操作、也定义了对象的行为。
 而且，对象不能改变自身的类型。
@@ -20,7 +20,8 @@
 因为可能会使用堆内存，所以拷贝\texttt{std::any}的开销一般都很大。
 更推荐以引用传递对象，或者move值。\texttt{std::any}支持部分move语义。
 
-\subsection{使用\texttt{std::any}}
+
+\section{使用\texttt{std::any}}
 下面的示例演示了\texttt{std::any}的核心能力：
 \begin{lstlisting}
     std::any a;             // a为空
@@ -59,7 +60,8 @@
     }
 \end{lstlisting}
 注意\texttt{std::any\_cast<>}会创建一个指定类型的对象。
-例如这个例子中，如果你用\texttt{std::string}作为\texttt{std::any\_cast<>}的模板参数，
+例如这个例子中，如果你用\texttt{std::string}作为\texttt{std::\\
+any\_cast<>}的模板参数，
 它将创建一个临时的字符串(prvalue)，然后使用临时字符串初始化新的对象\texttt{s}。
 如果不需要初始化其他变量，更推荐转换为引用类型来避免创建临时对象：
 \begin{lstlisting}
@@ -147,10 +149,11 @@
 \end{lstlisting}
 注意你应该总是使用这样的if-else链。这里不能使用\texttt{switch}语句。
 
-\subsection{\texttt{std::any}类型和操作}
+
+\section{\texttt{std::any}类型和操作}
 这一节详细描述\texttt{std::any}的类型和操作。
 
-\subsubsection{Any类型}
+\subsection{Any类型}
 在头文件<any>中，C++标准库以如下方式定义了类\texttt{std::any}：
 \begin{lstlisting}
     namespace std {
@@ -160,17 +163,18 @@
 也就是说，\texttt{std::any}根本就不是模板类。
 
 另外，还定义了下面的类型和对象：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 异常类\texttt{std::bad\_any\_cast}，当转换失败时会抛出这种异常。
     这个类派生自\texttt{std::bad\_cast}，后者又派生自\texttt{std::exception}。。
 \end{itemize}
-\texttt{std::any}类也使用了头文件\texttt{<utility>}中的
-\texttt{std::in\_place\_type}对象（类型是\texttt{std::in\_place\_type\_t}）。
+\texttt{std::any}类也使用了定义在头文件\texttt{<utility>}中的
+\texttt{std::in\_place\_type}对象（类型是\texttt{std::in\_place\\
+\_type\_t}）。
 
-\subsubsection{Any操作}
+\subsection{Any操作}
 表\hyperref[t17.1]{\texttt{std::any}的操作}列出了\texttt{std::any}的所有操作：
 \begin{table}[ht]
-    \begin{tabular}{l|p{0.6\textwidth}}
+    \begin{tabular}{l|p{0.7\textwidth}}
         \hline
         \textbf{操作}             & \textbf{效果}                                            \\
         \hline
@@ -190,7 +194,7 @@
     \label{t17.1}
 \end{table}
 
-\subsubsection*{构造函数}
+\subsubsection{构造函数}
 默认情况下，\texttt{std::any}被初始化为空。
 \begin{lstlisting}
     std::any a1;        // a1是空的
@@ -232,11 +236,10 @@
     auto a10 = std::make_any<float>(3.0);
     auto a11 = std::make_any<std::string>("hello");
     auto a13 = std::make_any<std::complex<double>>(3.0, 4.0);
-    auto a14 = std::make_any<std::set<int, decltype(sc)>>
-            ({4, 8, -7, -2, 0, 5}, sc);
+    auto a14 = std::make_any<std::set<int, decltype(sc)>> ({4, 8, -7, -2, 0, 5}, sc);
 \end{lstlisting}
 
-\subsubsection*{修改值}
+\subsubsection{修改值}
 可以使用赋值操作和\texttt{emplace()}来修改值。例如：
 \begin{lstlisting}
     std::any a;
@@ -247,7 +250,7 @@
     a.emplace<std::complex<double>>(4.4, 5.5); // a含有std::complex<double>类型的值
 \end{lstlisting}
 
-\subsubsection*{访问值}
+\subsubsection{访问值}
 为了访问内含的值，你必须使用\textbf{std::any\_cast<>}将它转换为真实的类型。
 例如为了把值转换成string，你有以下几种方法：
 \begin{lstlisting}
@@ -276,7 +279,7 @@
     std::any_cast<std::string&>(&a);    // 运行时错误
 \end{lstlisting}
 
-\subsubsection*{move语义}
+\subsubsection{move语义}
 \texttt{std::any}也支持move语义。然而，注意前提是底层类型要支持拷贝语义。
 这是因为，\textbf{move-only类型}不支持作为内含的值类型。
 
@@ -294,8 +297,7 @@
 下面的语句将\emph{不会}输出\texttt{"NIL"}，值被移走的字符串一般是空字符串
 （但也可能有其他的值）：
 \begin{lstlisting}
-    std::cout << (a.has_value() ? std::any_cast<std::string>(a) :
-            std::string("NIL"));
+    std::cout << (a.has_value() ? std::any_cast<std::string>(a) : std::string("NIL"));
 \end{lstlisting}
 注意：
 \begin{lstlisting}
@@ -318,7 +320,8 @@
 只有当\texttt{a}已经包含有一个\texttt{std::string}类型的值时这段代码才能工作。
 否则，在我们赋予新值之前，这个转换就会抛出\texttt{std::bad\_any\_cast}异常。
 
-\subsection{后记}
+
+\section{后记}
 Any对象是由Kevlin Henney和Beman Dawes于2006年在\url{https://wg21.link/n1939}
 中首次提出，并指定Boost.Any作为参考实现。这个类因Beman Dawes、Kevlin Henney、
 Daniel Krügler在\url{https://wg21.link/n3804}中的提案被Library Fundamentals TS采纳。
@@ -326,8 +329,7 @@ Daniel Krügler在\url{https://wg21.link/n3804}中的提案被Library Fundamenta
 后来这个类因Beman Dawes和Alisdair Meredith在\url{https://wg21.link/p0220r1}发表
 的提案而和其他组件一起被C++17标准采纳。
 
-Vicente J.Botet Escriba在\url{https://wg21.link/p0032r3}中统一了\texttt{std::\\
-any}和\texttt{std::variant<>}以及\texttt{std::optional<>}的API。Jonathan Wakely在\\
+Vicente J.Botet Escriba在\url{https://wg21.link/p0032r3}中统一了\texttt{std::
+any}和\texttt{std::variant<>}以及\\
+\texttt{std::optional<>}的API。Jonathan Wakely在
 \url{https://wg21.link/p0504r0}中修正了\texttt{in\_place}标记类型的行为。
-
-\setcounter{footnote}{0}

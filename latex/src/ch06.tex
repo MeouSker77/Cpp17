@@ -1,14 +1,15 @@
-\section{lambda表达式扩展}\label{ch6}
+\chapter{lambda表达式扩展}\label{ch6}
 lambda表达式是一个很大的成功，它最早在C++11中引入，在C++14中又引入了泛型lambda。
 它允许我们将函数作为参数传递，这让我们能更轻易的指明一种行为。
 
 C++17扩展了lambda表达式的应用场景：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 在常量表达式中使用（也就是在编译期间使用）
     \item 在需要当前对象的拷贝时使用（例如，当在不同的线程中调用lambda时）
 \end{itemize}
 
-\subsection{\texttt{constexpr} lambda}
+
+\section{\texttt{constexpr} lambda}
 自从C++17起，lambda表达式会尽可能的隐式声明\texttt{constexpr}。
 也就是说，任何只使用有效的编译期上下文
 （例如，只有字面量，没有静态变量，没有虚函数，没有\texttt{try/catch}，
@@ -104,7 +105,7 @@ C++17扩展了lambda表达式的应用场景：
     };
 \end{lstlisting}
 
-\subsubsection{使用\texttt{constexpr} lambda}
+\subsection{使用\texttt{constexpr} lambda}
 这里有一个使用\texttt{constexpr} lambda的例子。
 假设我们有一个字符串的哈希函数，这个函数迭代字符串的每一个字符反复更新哈希值：
 \footnote{djb2算法的源码见\url{http://www.cse.yorku.ca/~oz/hash.html}。}
@@ -159,15 +160,14 @@ C++17扩展了lambda表达式的应用场景：
 \end{lstlisting}
 这个lambda可以像下面这样使用：
 \begin{lstlisting}
-    constexpr std::size_t hv1{
-        hashed("wine"), [](auto h, char c) {return h*33 + c;})};
-    constexpr std::size_t hv2{
-        hashed("wine"), [](auto h, char c) {return h*33 ^ c;})};
+    constexpr std::size_t hv1{hashed("wine"), [](auto h, char c) {return h*33 + c;})};
+    constexpr std::size_t hv2{hashed("wine"), [](auto h, char c) {return h*33 ^ c;})};
 \end{lstlisting}
 这里，我们在编译期通过改变更新逻辑初始化了两个不同的"wine"的哈希值。
 两个\texttt{hashed}都是在编译期调用。
 
-\subsection{向lambda传递\texttt{this}的拷贝}
+
+\section{向lambda传递\texttt{this}的拷贝}
 当在非静态成员函数里使用lambda时，你不能隐式获取对该对象成员的使用权。
 也就是说，如果你不捕获\texttt{this}的话你将不能在lambda里使用该对象的任何成员
 （即使你用\texttt{this->}来访问也不行）：
@@ -213,8 +213,7 @@ C++17扩展了lambda表达式的应用场景：
       public:
         ...
         void foo() {
-            auto l1 = [thisCopy=*this]
-                { std::cout << thisCopy.name << '\n'; };
+            auto l1 = [thisCopy=*this] { std::cout << thisCopy.name << '\n'; };
             ...
         }
     };
@@ -255,13 +254,13 @@ lambda里捕获了\texttt{*this}，因此传递进lambda的是一份拷贝。
 那么新线程将会陷入未定义行为，因为当线程中打印\texttt{name}的时候将会使用一个已经销毁的
 对象的成员。
 
-\subsection{以常量引用捕获}
+
+\section{以常量引用捕获}
 通过使用一个新的库工具，现在也可以\nameref{ch25.2.1}。
 
-\subsection{后记}
-\texttt{constexpr} lambda最早由Faisal Vali、Ville Voutilainen和Gabriel Dos Reis
+
+\section{后记}
+\texttt{constexpr} lambda由Faisal Vali、Ville Voutilainen和Gabriel Dos Reis
 在\url{https://wg21.link/n4487}中首次提出。
 最终被接受的正式提案由Faisal Vali、Jens Maurer、Richard Smith
 发表于\url{https://wg21.link/p0170r1}。
-
-\setcounter{footnote}{0}

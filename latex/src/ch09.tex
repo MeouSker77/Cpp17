@@ -1,4 +1,4 @@
-\section{类模板参数推导}\label{ch9}
+\chapter{类模板参数推导}\label{ch9}
 在C++17之前，你必须明确指出类模板的所有参数。
 例如，你不可以省略下面的\texttt{double}：
 \begin{lstlisting}
@@ -14,7 +14,7 @@
 只要编译器能根据初始值\emph{推导出}所有模板参数，那么就可以不指明参数。
 
 例如：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 你现在可以这么声明：
     \begin{lstlisting}
     std::complex c{5.1, 3.3};   // OK：推导出std::complex<double>
@@ -31,7 +31,7 @@
     \end{lstlisting}
 \end{itemize}
 
-\subsection{使用类模板参数推导}
+\section{使用类模板参数推导}
 只要能根据初始值推导出所有模板参数就可以使用类模板参数推导。
 推导过程支持所有方式的初始化（只要保证初始化是有效的）：
 \begin{lstlisting}
@@ -62,8 +62,7 @@
 并调用。因为两个参数都是\texttt{double}类型，因此编译器会推导出\texttt{T}的就是
 \texttt{double}并生成如下代码：
 \begin{lstlisting}
-    complex<double>::complex(const double& re = double(),
-                             const double& im = double());
+    complex<double>::complex(const double& re = double(), const double& im = double());
 \end{lstlisting}
 注意推导的过程中模板参数必须没有歧义。也就是说，如下初始化代码不能通过编译：
 \begin{lstlisting}
@@ -108,7 +107,7 @@
 你甚至可以推导\hyperref[ch14.1]{用作基类的lambda}来实现重载
 或者推导\hyperref[ch13.1]{\texttt{auto}模板参数}。
 
-\subsubsection{默认以拷贝方式推导}\label{ch9.1.1}
+\subsection{默认以拷贝方式推导}\label{ch9.1.1}
 类模板参数推导过程中会首先尝试以拷贝的方式初始化。
 例如，首先初始化一个只有一个元素的\texttt{std::vector}：
 \begin{lstlisting}
@@ -147,16 +146,14 @@
 \end{lstlisting}
 目前不同的编译器会有不同的行为，这个问题还在讨论之中。
 
-\subsubsection{推导lambda的类型}
+\subsection{推导lambda的类型}
 通过使用类模板参数推导，我们可以用lambda的类型（确切的说是lambda生成的\emph{闭包}的类型）
 作为模板参数来实例化类模板。例如我们可以提供一个泛型类，对一个任意回调函数进行包装并统计调用次数：
 \inputcodefile{tmpl/classarglambda.hpp}
 这里构造函数获取一个回调函数并进行包装，这样在初始化时会把参数的类型推导为\texttt{CB}。
 例如，我们可以使用一个lambda作为参数来初始化一个对象：
 \begin{lstlisting}
-    CountCalls sc{[](auto x, auto y) {
-                    return x > y;
-                }};
+    CountCalls sc{[](auto x, auto y) { return x > y; }};
 \end{lstlisting}
 这意味着排序准则\texttt{sc}的类型将被推导为\texttt{CountCalls<}\emph{TypeOfTheLambda}
 \texttt{>}。这样，我们可以统计出排序准则被调用的次数：
@@ -171,10 +168,9 @@
 然而，我们可以直接把包转后的lambda传递给\texttt{std::for\_each()}，
 因为该算法（非并行版本）最后会返回传入的回调函数，以便于获取回调函数最终的状态：
 \begin{lstlisting}
-    auto fo = std::for_each(v.begin(), v.end(),
-                    CountCalls{[](auto i) {
-                        std::cout << "elem: " << i << '\n';
-                    }});
+    auto fo = std::for_each(v.begin(), v.end(), CountCalls{[](auto i) {
+                                                    std::cout << "elem: " << i << '\n';
+                                                }});
     std::cout << "output with " << fo.count() << " calls\n";
 \end{lstlisting}
 输出将会如下（排序准则调用次数可能会不同，因为\texttt{sort()}的实现可能会不同）：
@@ -196,7 +192,7 @@
     std::sort(std::execution::par, v.begin(), v.end(), std::ref(sc));
 \end{lstlisting}
 
-\subsubsection{没有类模板部分参数推导}
+\subsection{没有类模板部分参数推导}
 注意，不像函数模板，类模板不能只指明一部分模板参数，然后指望编译器去推导剩余的部分参数。
 甚至使用\texttt{<>}指明空模板参数列表也是不允许的。例如：
 \begin{lstlisting}
@@ -252,7 +248,7 @@
 但这在C++17中是不允许的，因为默认构造函数只有编译器才能调用。
 在C++20中如果lambda不需要捕获任何东西的话这将成为可能。
 
-\subsubsection{使用类模板参数推导代替快捷函数}\label{ch9.1.4}
+\subsection{使用类模板参数推导代替快捷函数}\label{ch9.1.4}
 原则上讲，通过使用类模板参数推导，我们可以摆脱已有的几个快捷函数模板，
 这些快捷函数的作用其实就是根据传入的参数实例化相应的类模板。
 
@@ -267,8 +263,7 @@
 \end{lstlisting}
 而不需要写：
 \begin{lstlisting}
-    std::pair<typename std::vector<int>::iterator,
-              typename std::vector<int>::iterator>
+    std::pair<typename std::vector<int>::iterator, typename std::vector<int>::iterator>
         p(v.begin(), v.end());
 \end{lstlisting}
 现在这种场景已经不再需要\texttt{std::make\_pair()}了，我们可以简单的写为：
@@ -342,7 +337,7 @@
 然而你，事实上它能通过编译，因为\texttt{std::pair<>}定义\emph{推导指引}，
 我们将在下一小节讨论它。
 
-\subsection{推导指引}\label{ch9.2}
+\section{推导指引}\label{ch9.2}
 你可以定义特定的\emph{推导指引}来给类模板参数添加新的推导或者修正构造函数定义的推导。
 例如，你可以定义无论何时推导\texttt{Pair3}的模板参数，推导的行为都好像参数是以值传递的：
 \begin{lstlisting}
@@ -372,8 +367,8 @@
 \begin{lstlisting}
     Pair3 p3{"hi", "world"};
 \end{lstlisting}
-参数\texttt{x}的类型是\texttt{const char(\&)[3]}，因此\texttt{T1}是\texttt{char[3]}，
-参数\texttt{y}的类型是\texttt{const char(\&)[6]}，因此\texttt{T2}是\texttt{char[6]}。
+参数\texttt{x}的类型是\texttt{const char(\&)[3]}，因此\texttt{T1}被推导为\texttt{char[3]}，
+参数\texttt{y}的类型是\texttt{const char(\&)[6]}，因此\texttt{T2}被推导为\texttt{char[6]}。
 
 有了推导指引饮后，模板参数就会退化。这意味着传入的数组或者字符串字面量会退化为相应的指针类型。
 现在，如下声明：
@@ -388,7 +383,7 @@
 注意构造函数仍然以引用传参。推导指引只和模板参数的推导相关，
 它与推导出\texttt{T1}和\texttt{T2}之后实际调用的构造函数无关。
 
-\subsubsection{使用推导指引强制类型退化}\label{ch9.2.1}
+\subsection{使用推导指引强制类型退化}\label{ch9.2.1}
 就像上一个例子展示的那样，这种重载的推导规则的一个非常有用的用途就是确保模板参数\texttt{T}
 在推导时发生退化。考虑如下的一个经典的类模板：
 \begin{lstlisting}
@@ -419,7 +414,7 @@
 因为这一点，任何构造函数里传递引用作为参数的模板类都需要一个相应的推导指引。
 C++标准库中为pair和tuple提供了相应的推导指引。
 
-\subsubsection{非模板推导指引}
+\subsection{非模板推导指引}
 推导指引并不一定是模板，也不一定应用于构造函数。例如，为下面的结构体添加的推导指引也是有效的：
 \begin{lstlisting}
     template<typename T>
@@ -447,7 +442,7 @@ C++标准库中为pair和tuple提供了相应的推导指引。
     S s5("hello");  // ERROR：不能不使用花括号初始化聚合体
 \end{lstlisting}
 
-\subsubsection{推导指引与构造函数冲突}
+\subsection{推导指引与构造函数冲突}
 推导指引会和类的构造函数产生竞争。类模板参数推导时会根据重载情况选择最佳匹配的构造函数/推导指引。
 如果一个构造函数和一个推导指引匹配程度相同，那么将会优先使用推导指引。
 
@@ -475,7 +470,7 @@ C++标准库中为pair和tuple提供了相应的推导指引。
 然而在相同匹配度的情况下将优先使用推导指引。
 因此，通常会把推导指引定义为以值传参（这样做\hyperref[ch9.2.1]{还有类型退化的优点}）。
 
-\subsubsection{显式推导指引}
+\subsection{显式推导指引}
 推导指引可以用\texttt{explicit}声明。
 当出现\texttt{explicit}不允许的初始化或转换时这一条推导指引就会被忽略。例如：
 \begin{lstlisting}
@@ -519,7 +514,7 @@ C++标准库中为pair和tuple提供了相应的推导指引。
     Ptr p4 = &i;    // 根据构造函数推导出Ptr<int*>
 \end{lstlisting}
 
-\subsubsection{聚合体的推导指引}
+\subsection{聚合体的推导指引}
 泛型聚合体中也可以使用推导指引，这样才能支持类模板参数推导。例如，对于：
 \begin{lstlisting}
     template<typename T>
@@ -557,10 +552,10 @@ C++标准库中为pair和tuple提供了相应的推导指引。
 \end{lstlisting}
 \hyperref[ch9.2.6.3]{\texttt{std::array}的推导指引}是一个有关聚合体推导指引的进一步的例子。
 
-\subsubsection{标准推导指引}
+\subsection{标准推导指引}
 C++17标准在标准库中引入了很多推导指引。
 
-\subsubsection*{pair和tuple的推导指引}
+\subsubsection{pair和tuple的推导指引}
 正如在\hyperref[ch9.1.4]{推导指引的动机}中介绍的一样，\texttt{std::pair}需要推导指引来确保
 类模板参数推导时会推导出\hyperref[ch9.2.1]{参数的退化类型}：
 \begin{lstlisting}
@@ -602,17 +597,16 @@ C++17标准在标准库中引入了很多推导指引。
 \begin{lstlisting}
     std::tuple t{42, "hello", nullptr};
 \end{lstlisting}
-将会推导出\texttt{t}的类型为\texttt{std::tuple<int, const char*, \\std::nullptr\_t>}。
+将会推导出\texttt{t}的类型为\texttt{std::tuple<int, const char*, std::nullptr\_t>}。
 
-\subsubsection*{从迭代器推导}
+\subsubsection{从迭代器推导}
 为了能够从表示范围的两个迭代器推导出元素的类型，
 所有的容器类例如\texttt{std::vector<>}都有类似于如下的推导指引：
 \begin{lstlisting}
     // 使std::vector<>能根据初始的迭代器推导出元素类型
     namespace std {
         template<typename Iterator>
-        vector(Iterator, Iterator) ->
-        vector<typename iterator_traits<Iterator>::value_type>;
+        vector(Iterator, Iterator) -> vector<typename iterator_traits<Iterator>::value_type>;
     }
 \end{lstlisting}
 下面的例子展示了它的作用：
@@ -653,7 +647,7 @@ C++17标准在标准库中引入了很多推导指引。
 在任何情况下，对于像\texttt{std::vector<>}或其他STL容器一样拥有复杂的构造函数的类模板，
 \textbf{强烈建议\emph{不要}使用类模板参数推导}，而是显式指明类型。
 
-\subsubsection*{\texttt{std::array<>}推导}\label{ch9.2.6.3}
+\subsubsection{\texttt{std::array<>}推导}\label{ch9.2.6.3}
 有一个更有趣的例子是关于\texttt{std::array<>}的。
 为了能够同时推导出元素的类型和数量：
 \begin{lstlisting}
@@ -664,9 +658,7 @@ C++17标准在标准库中引入了很多推导指引。
     // 让std::array<>推导出元素的数量（元素的类型必须相同）：
     namespace std {
         template<typename T, typename... U>
-        array(T, U...)
-            -> array<enable_if_t<(is_same_v<T, U> && ...), T>,
-                (1 + sizeof...(U))>;
+        array(T, U...) -> array<enable_if_t<(is_same_v<T, U> && ...), T>, (1 + sizeof...(U))>;
     }
 \end{lstlisting}
 这个推导指引使用了\nameref{ch11}
@@ -685,10 +677,11 @@ C++17标准在标准库中引入了很多推导指引。
     constexpr std::array arr{0, 8, 15}; // OK，推导出std::array<int, 3>
 \end{lstlisting}
 
-\subsubsection*{(Unordered) Map推导}
-想让推导指引正常工作的复杂度可以通过给关联容器
+\subsubsection{(Unordered) Map推导}
+想让推导指引正常工作是非常困难的。
+可以通过给关联容器
 （\texttt{map}、\texttt{multimap}、\texttt{unordered\_map}、\texttt{unordered\_multimap}）
-定义推导指引来展示。
+定义推导指引来展示其复杂程度。
 
 这些容器里元素的类型是
 \texttt{std::pair<const }\emph{keytype}\texttt{, }\emph{valuetype}\texttt{>}。
@@ -698,8 +691,7 @@ C++17标准在标准库中引入了很多推导指引。
 在C++17标准中为\texttt{std::map}：
 \begin{lstlisting}
     namespace std {
-        template<typename Key, typename T,
-            typename Compare = less<Key>,
+        template<typename Key, typename T, typename Compare = less<Key>,
             typename Allocator = allocator<pair<const Key, T>>>
         class map {
             ...
@@ -708,19 +700,15 @@ C++17标准在标准库中引入了很多推导指引。
 \end{lstlisting}
 想出的第一个解决方案是，为如下构造函数：
 \begin{lstlisting}
-    map(initializer_list<pair<const Key, T>>,
-        const Compare& = Compare(),
+    map(initializer_list<pair<const Key, T>>, const Compare& = Compare(),
         const Allocator& = Allocator());
 \end{lstlisting}
 定义了如下的推导指引：
 \begin{lstlisting}
     namespace std {
-        template<typename Key, typename T,
-            typename Compare = less<Key>,
+        template<typename Key, typename T, typename Compare = less<Key>,
             typename Allocator = allocator<pair<const Key, T>>>
-        map(initializer_list<pair<const Key, T>>,
-            Compare = Compare(),
-            Allocator = Allocator())
+        map(initializer_list<pair<const Key, T>>, Compare = Compare(), Allocator = Allocator())
         -> map<Key, T, Compare, Allocator>;
     }
 \end{lstlisting}
@@ -736,8 +724,8 @@ C++17标准在标准库中引入了很多推导指引。
     ...
     std::map m1{elem1, elem2};  // 原来的C++17推导指引会ERROR
 \end{lstlisting}
-这是因为\texttt{elem1}和\texttt{elem2}被推导为\texttt{std::pair<int, int>}，
-而推导指引需要pair中的第一个元素是\texttt{const}的类型，所以不能成功匹配。
+这是因为\texttt{elem1}和\texttt{elem2}会被推导为\texttt{std::pair<int, int>}，
+而推导指引需要\texttt{pair}中的第一个元素是\texttt{const}的类型，所以不能成功匹配。
 因此，你仍然要像下面这么写：
 \begin{lstlisting}
     std::map<int, int> m1{elem1, elem2};  // OK
@@ -745,12 +733,9 @@ C++17标准在标准库中引入了很多推导指引。
 因此，推导指引中的\texttt{const}必须被删掉：
 \begin{lstlisting}
     namespace std {
-        template<typename Key, typename T,
-            typename Compare = less<Key>,
+        template<typename Key, typename T, typename Compare = less<Key>,
             typename Allocator = allocator<pair<const Key, T>>>
-        map(initializer_list<pair<Key, T>>,
-            Compare = Compare(),
-            Allocator = Allocator())
+        map(initializer_list<pair<Key, T>>, Compare = Compare(), Allocator = Allocator())
         -> map<Key, T, Compare, Allocator>;
     }
 \end{lstlisting}
@@ -758,7 +743,7 @@ C++17标准在标准库中引入了很多推导指引。
 重载版本。否则当传递一个\texttt{const} key类型的参数时将会使用构造函数来推导类型，
 这样会导致传递\texttt{const} key和非\texttt{const} key参数时推导的结果会有细微的不同。
 
-\subsubsection*{智能指针没有推导指引}
+\subsubsection{智能指针没有推导指引}
 注意C++标准库中某些你觉得应该有推导指引的地方实际上没有推导指引。
 
 你可能会希望共享指针和独占指针有推导指引，这样你就不用写：
@@ -817,18 +802,16 @@ C++17标准在标准库中引入了很多推导指引。
     std::shared_ptr<std::string[]> p{new std::string[10]};
 \end{lstlisting}
 
-\subsection{后记}
-类模板参数推导特性由Michael Spertus于2007年在\url{https://wg21.link/n2332}中首次提出。
+\section{后记}
+类模板参数推导由Michael Spertus于2007年在\url{https://wg21.link/n2332}中首次提出。
 2013年Michael Spertus和David Vandevoorde在\url{https://wg21.link/n3602}中再次提出。
 最终被接受的提案由Michael Spertus、Faisal Vali和Richard Smith发表于
-\url{https://wg21.link/p0091r3}，之后Michael Spertus、Faisal Vali和Richard Smith
-在\url{https://wg21.link/p0512r0}中、
-Jason Merrill在\url{https://wg21.link/p0620r0}中、
+\url{https://wg21.link/p0091r3}，之后Michael Spertus、Faisal Vali和
+Richard Smith在\url{https://wg21.link/p0512r0}中、
+Jason Merrill在\url{https://wg21.link/p0620r0}中、\\
 Michael Spertus和Jason Merrill在\url{https://wg21.link/p702r1}（作为C++17的缺陷）中
 提出修改。
 
 标准库中对类模板参数推导特性的支持由Michael Spertus、Walter E.Brown、Stephan T.Lavavej
-在\url{https://wg21.link/p0433r2}和\\
+在\url{https://wg21.link/p0433r2}和
 \url{https://wg21.link/p0739r0}（作为C++17的缺陷）中添加。
-
-\setcounter{footnote}{0}

@@ -1,12 +1,12 @@
-\section{文件系统库}\label{ch20}
+\chapter{文件系统库}\label{ch20}
 直到C++17，Boost.Filesystem库终于被C++标准采纳。
 在这个过程中，这个库用新的语言特性进行了很多调整、改进了和其他库的一致性、
 进行了精简、还扩展了很多确实的功能（例如计算两个文件系统路径之间的相对路径）。
 
-\subsection{基本的例子}
+\section{基本的例子}
 让我们以一些基本的例子开始。
 
-\subsubsection{打印文件系统路径类的属性}
+\subsection{打印文件系统路径类的属性}
 下面的程序允许我们传递一个字符串作为文件系统路径，然后根据给定路径的文件类型打印出一些信息：
 \inputcodefile{filesystem/checkpath1.cpp}
 我们首先把传入的命令行参数转换为了一个文件系统路径：
@@ -14,20 +14,19 @@
     std::filesystem::path p{argv[1]};   // p代表一个文件系统路径（有可能不存在）
 \end{lstlisting}
 然后，我们进行了下列检查：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 如果改路径代表一个普通文件，我们打印出它的大小：
     \begin{lstlisting}
     if (is_regular_file(p)) {   // 路径p是普通文件？
-        std::cout << p << " exists with "
-                  << file_size(p) << " bytes\n";
+        std::cout << p << " exists with " << file_size(p) << " bytes\n";
     }
     \end{lstlisting}
     像下面这样调用程序：
     \begin{lstlisting}
     checkpath checkpath.cpp
     \end{lstlisting}
-    将会由如下输出：
-    \begin{lstlisting}
+    将会有如下输出：
+    \begin{lstlisting}[stringstyle=\color{black}]
     "checkpath.cpp" exists with 907 bytes
     \end{lstlisting}
     注意输出路径时会自动把路径名用双引号括起来输出
@@ -65,26 +64,26 @@
     \end{lstlisting}
 \end{itemize}
 注意根据\emph{参数依赖查找(argument dependent lookup)(ADL)}，
-你不需要使用完全限定的名称来调用\texttt{is\_regular\_file()}、\texttt{file\_size()}、
-\texttt{is\_directory()}、\texttt{exists()}等函数。
-这些函数都属于命名空间\texttt{std::filesystem}，但是因为它们的参数也属于这个命名空间，
+你不需要使用完全限定的名称来调用\texttt{is\_regular\_\\
+file()}、\texttt{file\_size()}、\texttt{is\_directory()}、\texttt{exists()}等函数。
+它们都属于命名空间\texttt{std::filesystem}，但是因为它们的参数也属于这个命名空间，
 所以调用它们时会自动在这个命名空间中进行查找。
 
-\subsubsection*{在Windows下处理路径}\label{ch20.1.1.1}
+\subsubsection{在Windows下处理路径}\label{ch20.1.1.1}
 （译者注：可能是水平有限，完全看不懂作者在这一小节的逻辑，
 所以只能按照自己的理解胡乱翻译，如有错误请见谅。）
 
-默认情况下，输出路径时用双引号括起来并用反斜杠转义反斜杠在Windows\\
+默认情况下，输出路径时用双引号括起来并用反斜杠转义反斜杠在Windows
 下会导致一个问题。在Windows下以如下方式调用程序：
 \begin{lstlisting}
     checkpath C:\
 \end{lstlisting}
 将会有如下输出：
-\begin{lstlisting}
-    "C:\\" is a directory containing:
+\begin{lstlisting}[stringstyle=\color{black}]
+    "C:" is a directory containing:
       ...
-      "C:\\Users"
-      "C:\\Windows"
+      "C:Users"
+      "C:Windows"
 \end{lstlisting}
 用双引号括起来输出路径可以确保输出的文件名可以被直接复制粘贴到其他程序里，
 并且经过转义之后还会恢复为原本的文件名。
@@ -98,7 +97,7 @@
     checkpath C:\
 \end{lstlisting}
 将会有如下输出：
-\begin{lstlisting}
+\begin{lstlisting}[stringstyle=\color{black}]
     "C:\" is a directory containing:
       ...
       "C:\Users"
@@ -106,11 +105,11 @@
 \end{lstlisting}
 通用字符串格式还提供了\hyperref[ch20.3.4]{其他转换}来把string转换为本地编码。
 
-\subsubsection{用\texttt{switch}语句处理不同的文件系统类型}
+\subsection{用\texttt{switch}语句处理不同的文件系统类型}
 我们可以像下面这样修改并改进上面的例子：
 \inputcodefile{filesystem/checkpath3.cpp}
 
-\subsubsection*{命名空间\texttt{fs}}
+\subsubsection{命名空间\texttt{fs}}
 首先，我们做了一个非常普遍的操作：我们定义了\texttt{fs}作为命名空间
 \texttt{std::filesystem}的缩写：
 \begin{lstlisting}
@@ -138,13 +137,13 @@
 Windows就提供了\hyperref[junction]{特殊的文件类型\texttt{junction}}。
 然而，使用了它的代码是不可移植的。
 
-\subsubsection{创建不同类型的文件}
+\subsection{创建不同类型的文件}
 在介绍了文件系统的只读操作之后，让我们给出首个进行修改的例子。
 下面的程序在一个子目录\texttt{tmp}中创建了不同类型的文件：
 \inputcodefile{filesystem/createfiles.cpp}
 让我们一步步来分析这段程序。
 
-\subsubsection*{命名空间\texttt{fs}}
+\subsubsection{命名空间\texttt{fs}}
 首先，我们又一次定义了\texttt{fs}作为命名空间\texttt{std::filesystem}的缩写：
 \begin{lstlisting}
     namespace fs = std::filesystem;
@@ -154,13 +153,14 @@ Windows就提供了\hyperref[junction]{特殊的文件类型\texttt{junction}}�
     fs::path testDir{"tmp/test"};
 \end{lstlisting}
 
-\subsubsection*{创建目录}
+\subsubsection{创建目录}
 当我们尝试创建子目录时：
 \begin{lstlisting}
     create_directories(testDir);
 \end{lstlisting}
 通过使用\texttt{create\_directories()}我们可以递归创建整个路径中所有缺少的目录
-（还有一个\texttt{create\_directory()}只在已存在的目录中创建目录）。
+（还有一个\texttt{create\_\\
+directory()}只在已存在的目录中创建目录）。
 
 当目标目录已经存在时这个调用并不会返回错误。
 然而，其他的问题会导致错误病抛出一个相应的异常。
@@ -173,14 +173,13 @@ Windows就提供了\hyperref[junction]{特殊的文件类型\texttt{junction}}�
     }
 \end{lstlisting}
 
-\subsubsection*{创建普通文件}
+\subsubsection{创建普通文件}
 之后我们用一些内容创建了一个新文件\texttt{tmp/test/data.txt}：
 \begin{lstlisting}
     auto testFile = testDir / "data.txt";
     std::ofstream dataFile{testFile};
     if (!dataFile) {
-        std::cerr << "OOPS, can't open \""
-                  << testFile.string() << "\"\n";
+        std::cerr << "OOPS, can't open \"" << testFile.string() << "\"\n";
         std::exit(EXIT_FAILURE);  // 失败退出程序
     }
     dataFile << "The answer is 42\n";
@@ -193,7 +192,7 @@ Windows就提供了\hyperref[junction]{特殊的文件类型\texttt{junction}}�
 注意你仍然应该总是检查创建/打开文件的操作是否成功了。
 这里有很多种可能发生的错误（\hyperref[ch20.1.3.6]{见下文}）。
 
-\subsubsection*{创建符号链接}
+\subsubsection{创建符号链接}
 接下来的语句尝试尝试创建符号链接\texttt{tmp/slink}指向目录\texttt{tmp/test}：
 \begin{lstlisting}
     create_directory_symlink("test", testDir.parent_path() / "slink");
@@ -206,25 +205,24 @@ Windows就提供了\hyperref[junction]{特殊的文件类型\texttt{junction}}�
 \end{lstlisting}
 你将会高效的创建符号链接\texttt{tmp/slink}，然而它会指向\texttt{tmp/tmp/test}。
 
-注意通常情况下，也可以调用\texttt{create\_symlink()}代替\texttt{create\_\\
+注意通常情况下，也可以调用\texttt{create\_symlink()}代替\texttt{create\_
 directory\_symlink()}来创建目录的符号链接。
 然而，一些操作系统可能对目录的符号链接有特殊处理或者当知道要创建的符号链接指向目录时会有优化，
-因此，当你想创建指向目录的符号链接时你应该使用\texttt{create\_directory\_\\
+因此，当你想创建指向目录的符号链接时你应该使用\texttt{create\_directory\_
 symlink()}。
 
 最后，注意这个调用在Windows上可能会失败并导致\hyperref[创建链接失败]{错误处理}，
 因为创建符号链接可能需要管理员权限。
 
-\subsubsection*{递归遍历目录}
+\subsubsection{递归遍历目录}
 最后，我们递归的遍历了当前目录：
 \begin{lstlisting}
     auto iterOpts = fs::directory_options::follow_directory_symlink;
     for (auto& e : fs::recursive_directory_iterator(".", iterOpts)) {
-        std::cout << "  " << e.path().lexically_normal().string()
-                  << '\n';
+        std::cout << "  " << e.path().lexically_normal().string() << '\n';
     }
 \end{lstlisting}
-注意我们使用了一个递归目录迭代器并传递了选项\texttt{follow\_directory\_\\
+注意我们使用了一个递归目录迭代器并传递了选项\texttt{follow\_directory\_
 symlink}来遍历符号链接。因此，我们在POSIX兼容系统上可能会得到类似于如下输出：
 \begin{lstlisting}
     /home/nico:
@@ -258,7 +256,7 @@ symlink}来遍历符号链接。因此，我们在POSIX兼容系统上可能会�
     }
 \end{lstlisting}
 将会在POSIX兼容系统上有如下输出：
-\begin{lstlisting}
+\begin{lstlisting}[stringstyle=\color{black}]
     all files:
       ...
       "./testdir"
@@ -268,14 +266,14 @@ symlink}来遍历符号链接。因此，我们在POSIX兼容系统上可能会�
       "./tmp/test/data.txt"
 \end{lstlisting}
 在Windows上，输出将是：
-\begin{lstlisting}
+\begin{lstlisting}[stringstyle=\color{black}]
     all files:
       ...
-      ".\\testdir"
-      ".\\testdir\\data.txt"
-      ".\\tmp"
-      ".\\tmp\\test"
-      ".\\tmp\\test\\data.txt"
+      ".testdir"
+      ".testdirdata.txt"
+      ".tmp"
+      ".tmptest"
+      ".tmptestdata.txt"
 \end{lstlisting}
 通过调用\texttt{lexically\_normal()}我们可以得到正规化的路径，
 它移除了前导的代表当前路径的点。还有，\hyperref[ch20.1.1.1]{如上文所述}，
@@ -283,7 +281,7 @@ symlink}来遍历符号链接。因此，我们在POSIX兼容系统上可能会�
 这里没有调用\texttt{string()}的输出结果在POSIX兼容的系统上看起来OK（只是路径两端有双引号），
 但在Windows上的结果看起来就很奇怪（因为每一个反斜杠都需要反斜杠转义）。
 
-\subsubsection*{错误处理}\label{ch20.1.3.6}
+\subsubsection{错误处理}\label{ch20.1.3.6}
 文件系统往往是麻烦的根源。你可能因为在文件名中使用了无效的字符而导致操作失败，
 或者当你正在访问文件系统时它已经被其他程序修改了。
 因此，根据平台和权限的不同，这个程序中可能会有很多问题。
@@ -300,20 +298,20 @@ symlink}来遍历符号链接。因此，我们在POSIX兼容系统上可能会�
     }
 \end{lstlisting}
 例如，如果我们不能创建目录，将会打印出类似于如下消息：
-\begin{lstlisting}
+\begin{lstlisting}[stringstyle=\color{black}]
     EXCEPTION: filesystem error: cannot create directory: [tmp/test]
         path1: "tmp/test"
 \end{lstlisting}
 如果我们不能创建符号链接可能是因为它已经存在了，
 或者我们可能需要特殊权限，这些情况下你可能会得到如下消息：\label{创建链接失败}
-\begin{lstlisting}[]
+\begin{lstlisting}[stringstyle=\color{black}]
     EXCEPTION: create_directory_symlink: Can't create a file when it
                                          already exists: "tmp\test\
                                          data.txt", "testdir"
         path1: "tmp\test\data.txt"
 \end{lstlisting}
 或者：
-\begin{lstlisting}
+\begin{lstlisting}[stringstyle=\color{black}, keywordstyle=\color{black}]
     EXCEPTION: create_directory_symlink: A requied privilege is not
                                          held by the client.: "test
                                          ", "tmp\slink"
@@ -335,25 +333,26 @@ symlink}来遍历符号链接。因此，我们在POSIX兼容系统上可能会�
 
 再强调一次：文件系统并不保证进行处理之前的检查的结果直到你进行处理时仍然有效。
 
-\subsubsection{使用并行算法处理文件系统}
+\subsection{使用并行算法处理文件系统}
 参见\hyperref[ch22.6.1.4]{dirsize.cpp}
 查看另一个使用并行算法计算目录树中所有文件大小之和的例子。
 
-\subsection{原则和术语}
+
+\section{原则和术语}
 在讨论文件系统库的细节之前，我们不得不继续介绍一些设计原则和术语。
 这是必须的，因为标准库要覆盖不同的操作系统并把系统提供的接口映射为公共的API。
 
-\subsubsection{通用的可移植的分隔符}
+\subsection{通用的可移植的分隔符}
 C++标准库不仅标准化了所有操作系统的文件系统中公共的部分，在很多情况下，
 C++标准还尽可能的遵循POSIX标准的要求来实现。
 对于一些操作，只要是合理的就应该能正确执行，如果操作是不合理的，实现应该报错。
 这些错误可能是：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 特殊的字符不能被用作文件名
     \item 文件系统的某些元素不支持创建（例如，符号链接）
 \end{itemize}
 不同文件系统的差异也应该纳入考虑：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 大小写敏感：
     \texttt{"hello.txt"}和\texttt{"Hello.txt"}和\texttt{"hello.TXT"}可能指向
     同一个文件（Windows上）也可能指向三个不同的文件（POSIX兼容系统）。
@@ -362,13 +361,13 @@ C++标准还尽可能的遵循POSIX标准的要求来实现。
     然而在某些系统上不是（Windows）。
 \end{itemize}
 
-\subsubsection{命名空间}
+\subsection{命名空间}
 文件系统库在\texttt{std}里有自己的子命名空间\texttt{filesystem}。
 一个很常见的操作是定义缩写\texttt{fs}：
 \begin{lstlisting}
     namespace fs = std::filesystem;
 \end{lstlisting}
-这允许我们使用\texttt{fs::current\_path()}代替\texttt{std::filesystem::\\
+这允许我们使用\texttt{fs::current\_path()}代替\texttt{std::filesystem::
 current\_path()}。
 
 这一章的示例代码中将经常使用\texttt{fs}作为缩写。
@@ -377,13 +376,13 @@ current\_path()}。
 \emph{参数依赖查找(argument dependent lookup)(ADL)}也能够工作。
 但如果不用命名空间限定有时可能\hyperref[ADL导致意外行为]{导致意外的行为}。
 
-\subsubsection{文件系统路径}\label{ch20.2.3}
+\subsection{文件系统路径}\label{ch20.2.3}
 文件系统库的一个关键元素是\texttt{path}。它代表文件系统中某一个文件的名字。
 它由可选的根名称、可选的根目录、和一些以目录分隔符分隔的文件名组成。
 路径可以是相对的（此时文件的位置依赖于当前的工作目录）或者是绝对的。
 
 路径可能有不同的格式：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 通过格式，这是可移植的
     \item 本地格式，这是底层文件系统特定的
 \end{itemize}
@@ -394,7 +393,7 @@ current\_path()}。
 是同一个路径的两种本地版本）。在OPenVMS上，相应的本地格式将是\texttt{[tmp]test.txt}。
 
 也有一些特殊的文件名：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item "."代表当前mulu
     \item ".."代表父目录
 \end{itemize}
@@ -403,7 +402,7 @@ current\_path()}。
     [rootname] [rootdir] [relativepath]
 \end{lstlisting}
 这里：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 可选的根名称是实现特定的（例如，在POSIX系统上可以是\texttt{//host}，而在Windows上可以是C:）
     \item 可选的根目录是一个目录分隔符
     \item 相对路径是若干目录分隔符分隔的文件名
@@ -424,9 +423,9 @@ current\_path()}。
 但在POSIX系统上是一个相对路径（目录"C:"下的子目录"bin"）。
 
 在Windows系统上，反斜杠是实现特定的目录分隔符，
-因次上面的路径\emph{也}可以使用反斜杠作为目录分隔符：
+因此上面的路径\emph{也}可以使用反斜杠作为目录分隔符：
 \begin{lstlisting}
-    \\host1\bin\hello.txt
+    host1\bin\hello.txt
     .
     tmp\
     \a\b\..\c
@@ -436,9 +435,9 @@ current\_path()}。
 一个\texttt{path}可能为空，这意味着没有定义路径。
 这种状态的含义\emph{不}需要和\texttt{"."}一样。它的含义依赖于上下文。
 
-\subsubsection{正规化}
+\subsection{正规化}
 路径可以进行正规化，在正规化的路径中：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 文件名由单个推荐的目录分隔符分隔。
     \item 除非整个路径就是\texttt{"."}（代表当前目录），否则路径中不会使用\texttt{"."}。
     \item 路径中除了开头以外的地方不会包含\texttt{".."}（不能在路径中上下徘徊）。
@@ -473,9 +472,9 @@ current\_path()}。
 文件系统库同时提供了\hyperref[ch20.3.3]{词法正规化}（不考虑文件系统）
 和\hyperref[ch20.4.5]{依赖文件系统的正规化}两种方式的相关函数。
 
-\subsubsection{成员函数VS独立函数}
+\subsection{成员函数VS独立函数}
 文件系统库提供了一些函数，有些是成员函数有些是独立函数。这么做的目的是：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item \textbf{成员函数开销较小}。这是因为它们是纯词法的操作，并不会考虑实际的文件系统，
     这意味着它们不需要进行操作系统调用。例如：
     \begin{lstlisting}
@@ -521,7 +520,7 @@ current\_path()}。
     fs::remove("tmpdir");   // OK：调用C++文件系统库函数remove()
 \end{lstlisting}
 
-\subsubsection{错误处理}
+\subsection{错误处理}
 \hyperref[ch20.1.3.6]{如上文所述}，文件系统是错误的根据。
 你必须考虑相应的文件是否存在、文件的操作是否被允许、该操作是否会违背资源限制。
 另外，当程序运行时其它进程可能创建、修改、或者移除了某些文件，这意味着事先检查
@@ -536,23 +535,21 @@ current\_path()}。
 
 因为并不是所有情况下都适合抛出异常（例如当一个文件系统调用失败时你想直接处理），
 所以文件系统库使用了混合的异常处理方式：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item 默认情况下，文件系统错误会作为异常处理。
     \item 然而，如果你想的话可以在本地处理具体的某一个错误。
 \end{itemize}
 因此，文件系统库通常为每个操作提供两个重载版本：
-\begin{enumerate}[leftmargin=*]
-    \item 默认情况下（没有额外的错误处理参数），出现错误时抛出\texttt{filesystem\_\\
-    error}异常。
+\begin{enumerate}
+    \item 默认情况下（没有额外的错误处理参数），出现错误时抛出\texttt{filesystem\_error}异常。
     \item 传递额外的输出参数时，可以得到一个错误码或错误信息，而不是异常。
 \end{enumerate}
 注意在第二种情况下，你可能会得到一个特殊的返回值来表示特定的错误。
 
-\subsubsection*{使用\texttt{filesystem\_error}异常}
+\subsubsection{使用\texttt{filesystem\_error}异常}
 例如，你可以尝试像下面这样创建一个目录：
 \begin{lstlisting}
-    if (!create_directory(p)) { // 发生错误时抛出异常
-                                // （除非错误是该路径已经存在）
+    if (!create_directory(p)) { // 发生错误时抛出异常（除非错误是该路径已经存在）
         std::cout << p << " already exists\n";  // 该路径已经存在
     }
 \end{lstlisting}
@@ -561,14 +558,12 @@ current\_path()}。
 因此，只有当其他错误例如没有权限创建目录、路径\texttt{p}无效、
 违反了文件系统限制（例如路径长度超过上限）时才会抛出异常。
 
-这样的代码可以直接或间接的用\texttt{try-catch}语句块包含，
-然后处理\texttt{std::\\
-filesystem::filesystem\_error}异常：
+可以直接或间接的用\texttt{try-catch}包含这段代码，
+然后处理\texttt{std::filesystem::filesystem\_error}异常：
 \begin{lstlisting}
     try {
         ...
-        if (!create_directory(p)) { // 错误时抛出异常
-                                    // （除非错误是该路径已经存在）
+        if (!create_directory(p)) { // 错误时抛出异常（除非错误是该路径已经存在）
             std::cout << p << " already exists\n"; // 该路径已经存在
         }
         ...
@@ -582,7 +577,7 @@ filesystem::filesystem\_error}异常：
 实现特定的错误信息。然而，API还提供了\texttt{path1()}来获取错误相关的第一个路径，
 和\texttt{path2()}来获取相关的第二个路径。
 
-\subsubsection*{使用\texttt{error\_code}参数}
+\subsubsection{使用\texttt{error\_code}参数}
 另一种创建目录的方式如下所示：
 \begin{lstlisting}
     std::error_code ec;
@@ -609,10 +604,11 @@ filesystem::filesystem\_error}异常：
 然而，并不是所有的文件系统操作都提供这种能力（因为它们在正常情况下会返回一些值）。
 
 类型\texttt{error\_code}由C++11引入，它包含了一系列可移植的错误条件例如
-\texttt{std::errc::read\_only\_filesystem}。在POSIX兼容的系统上这些被
+\texttt{std::errc::read\_only\_\\
+filesystem}。在POSIX兼容的系统上这些被
 映射为\texttt{errno}的值。
 
-\subsubsection{文件类型}
+\subsection{文件类型}
 不同的操作系统支持不同的文件类型。标准文件系统库中也考虑到了这一点，它定义了一个
 枚举类型\texttt{file\_type}，标准中定义了如下的值：
 \begin{lstlisting}
@@ -665,61 +661,62 @@ filesystem::filesystem\_error}异常：
 如你所见，有一些特殊的值来表示文件不存在或者类型未知或者无法探测出类型。
 
 在这一章的剩余部分我将使用两种广义的类型来代表相应的若干文件类型：
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
     \item \emph{其他文件}：除了普通文件、目录、符号链接之外的所有类型的文件。
     库函数\texttt{is\_other()}和这个术语相匹配。
     \item \emph{特殊文件}：下列类型的文件：字符特殊文件、块特殊文件、FIFO、套接字。
 \end{itemize}
 另外，\emph{特殊}文件类型加上实现定义的文件类型就构成了\emph{其他}文件类型。
 
-\subsection{路径操作}
+\section{路径操作}
 
-\subsubsection{创建路径}
+\subsection{创建路径}
 
-\subsubsection{检查路径}
+\subsection{检查路径}
 
-\subsubsection*{迭代路径}
+\subsubsection{迭代路径}
 
-\subsubsection{路径I/O和转换}\label{ch20.3.3}
-\subsubsection*{路径I/O}
-\subsubsection*{正规化}
-\subsubsection*{相对路径}
-\subsubsection*{转换为字符串}
+\subsection{路径I/O和转换}\label{ch20.3.3}
+\subsubsection{路径I/O}
+\subsubsection{正规化}
+\subsubsection{相对路径}
+\subsubsection{转换为字符串}
 
-\subsubsection{本地和通用格式的转换}\label{ch20.3.4}
+\subsection{本地和通用格式的转换}\label{ch20.3.4}
 
-\subsubsection{修改路径}
+\subsection{修改路径}
 
-\subsubsection{比较路径}
+\subsection{比较路径}
 
-\subsubsection{其他路径操作}
+\subsection{其他路径操作}
 
-\subsection{文件系统操作}
 
-\subsubsection{文件属性}
-\subsubsection*{检查文件是否存在}\label{ch20.4.1.1}
-\subsubsection*{其他文件属性}
-\subsubsection*{处理最后修改的时间}
+\section{文件系统操作}
 
-\subsubsection{文件状态}
+\subsection{文件属性}
+\subsubsection{检查文件是否存在}\label{ch20.4.1.1}
+\subsubsection{其他文件属性}
+\subsubsection{处理最后修改的时间}
 
-\subsubsection{权限}
+\subsection{文件状态}
 
-\subsubsection{修改文件系统}
-\subsubsection*{创建和删除文件}
-\subsubsection*{修改已存在的文件}
+\subsection{权限}
 
-\subsubsection{符号链接和依赖文件系统的路径的转换}\label{ch20.4.5}
+\subsection{修改文件系统}
+\subsubsection{创建和删除文件}
+\subsubsection{修改已存在的文件}
 
-\subsubsection{其他文件系统操作}
+\subsection{符号链接和依赖文件系统的路径的转换}\label{ch20.4.5}
 
-\subsection{迭代目录}
-\subsubsection*{目录迭代器表示一个范围}
-\subsubsection*{目录迭代器选项}
+\subsection{其他文件系统操作}
 
-\subsubsection{目录项}
-\subsubsection*{目录项缓存}
 
-\subsection{后记}
+\section{迭代目录}
+\subsubsection{目录迭代器表示一个范围}
+\subsubsection{目录迭代器选项}
 
-\setcounter{footnote}{0}
+\subsection{目录项}
+\subsubsection{目录项缓存}
+
+
+\section{后记}
