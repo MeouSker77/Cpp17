@@ -16,15 +16,23 @@
 \usepackage[font={it}]{caption}     % 设置图表和代码文件标题
 \usepackage[numbered]{bookmark}     % 设置书签
 \usepackage[pagestyles, clearempty]{titlesec}   % 设置页眉和\part格式
-\usepackage[a4paper, left=2cm, right=2cm, bottom=3.7cm]{geometry} % 设置页边距
+\usepackage[a4paper, left=2cm, right=2cm, bottom=3.67cm]{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{xcolor}
+\usepackage{xcolor}
+\usepackage{xcolor}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{hyperref} % 设置页边距
 
 \setCJKmainfont[ItalicFont=楷体, BoldItalicFont=楷体]{宋体}   % 设置中文正文字体
 \setCJKmonofont{宋体}                                        % 设置中文等宽字体
 \setmainfont{Times New Roman}                               % 设置英文正文字体
 \setmonofont[ItalicFont={Noto Sans Mono}]{Noto Sans Mono}   % 设置英文等宽字体
-\linespread{1.3}    % 设置行距
+\linespread{1.4}    % 设置行距
 \CJKsetecglue{\,}   % 设置中英文间的空格
-\setlist{noitemsep} % 设置列表项间垂直间距为0
+\setlist{nosep}     % 设置列表垂直间距为0
 \setlist[enumerate,itemize]{leftmargin=*, listparindent=1em}   % 设置列表项缩进
 \titleclass{\part}{top}     % Part后不换页
 \titleformat{\part}{\raggedright\Huge\bfseries}{Part \thepart}{1em}{\\[0.7em]} % 设置Part标题格式
@@ -62,7 +70,7 @@ title = #1,             % 标题格式
 ]{../code/#1}           % 文件路径
 }
 
-%\includeonly{ch20}
+\includeonly{ch20}
 
 % Document
 \begin{document}
@@ -116,7 +124,7 @@ title = #1,             % 标题格式
 
 
     \part{已有标准库的拓展和修改}\label{part4}
-    这一部分介绍C++17对已有标准库组件的拓展和修改
+    这一部分介绍C++17对已有标准库组件的拓展和修改。
 
     \include{ch21}
     \include{ch22}

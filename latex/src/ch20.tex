@@ -3,8 +3,9 @@
 在这个过程中，这个库用新的语言特性进行了很多调整、改进了和其他库的一致性、
 进行了精简、还扩展了很多确实的功能（例如计算两个文件系统路径之间的相对路径）。
 
-\section{基本的例子}
-让我们以一些基本的例子开始。
+
+\section{基本的示例}
+让我们以一些基本的示例开始。
 
 \subsection{打印文件系统路径类的属性}
 下面的程序允许我们传递一个字符串作为文件系统路径，然后根据给定路径的文件类型打印出一些信息：
@@ -451,7 +452,8 @@ current\_path()}。
 对路径进行正规化的例子。注意再重复一次，在POSIX系统上，\texttt{C:bar}和\texttt{C:}只是
 把冒号作为文件名的一部分的单个文件名，并没有特殊的含义，而在Windows上，它们指定了一个分区。
 \begin{table}[ht]
-    \begin{tabular}{l|l|p{0.35\textwidth}}
+    \centering
+    \begin{tabular}{l|l|l}
         \hline
         \textbf{路径}                                    & \textbf{POSIX正规化}                              & \textbf{Windows正规化}                                               \\
         \hline
@@ -469,24 +471,24 @@ current\_path()}。
     \label{t20.1}
 \end{table}
 
-文件系统库同时提供了\hyperref[ch20.3.3]{词法正规化}（不考虑文件系统）
+文件系统库同时提供了\hyperref[ch20.3.3]{词法正规化}（不访问文件系统）
 和\hyperref[ch20.4.5]{依赖文件系统的正规化}两种方式的相关函数。
 
 \subsection{成员函数VS独立函数}
 文件系统库提供了一些函数，有些是成员函数有些是独立函数。这么做的目的是：
 \begin{itemize}
-    \item \textbf{成员函数开销较小}。这是因为它们是纯词法的操作，并不会考虑实际的文件系统，
+    \item \textbf{成员函数开销较小}。这是因为它们是纯词法的操作，并不会访问实际的文件系统，
     这意味着它们不需要进行操作系统调用。例如：
     \begin{lstlisting}
         mypath.is_absolute()        // 检查路径是否是绝对的
     \end{lstlisting}
-    \item \textbf{独立函数开销较大}。因为它们通常会考虑实际的文件系统，
+    \item \textbf{独立函数开销较大}。因为它们通常会访问实际的文件系统，
     这意味着需要进行操作系统调用。例如：
     \begin{lstlisting}
         equivalent(path1, path2);   // 如果两个路径指向同一个文件则返回true
     \end{lstlisting}
 \end{itemize}
-有时，文件系统库甚至为同一个功能既提供根据词法的版本又提供考虑实际文件系统的版本：
+有时，文件系统库甚至为同一个功能既提供根据词法的版本又提供访问实际文件系统的版本：
 \begin{lstlisting}
     std::filesystem::path fromP, toP;
     ...
@@ -623,7 +625,8 @@ filesystem}。在POSIX兼容的系统上这些被
 \end{lstlisting}
 表\hyperref[t20.2]{\texttt{file\_type}的值}列出了这些值的含义。
 \begin{table}[ht]
-    \begin{tabular}{l|p{0.7\textwidth}}
+    \centering
+    \begin{tabular}{l|l}
         \hline
         \textbf{值}          & \textbf{含义}   \\
         \hline
@@ -668,23 +671,563 @@ filesystem}。在POSIX兼容的系统上这些被
 \end{itemize}
 另外，\emph{特殊}文件类型加上实现定义的文件类型就构成了\emph{其他}文件类型。
 
+
 \section{路径操作}
+有很多处理文件系统的操作。这些操作的关键是一个类型\texttt{std::filesystem::path}，
+它表示一个可能存在也可能不存在的文件的绝对或相对的路径。
+
+你可以创建路径、检查路径、修改路径、比较路径。
+因为这些操作一般都不会访问实际的文件系统（例如不会检查文件是否存在，也不会解析符号链接），
+所以它们的开销很小。因此，它们通常被定义为成员函数（如果这些操作既不是构造函数也不是运算符的话）。
 
 \subsection{创建路径}
+表\hyperref[t20.3]{创建路径}列出了创建新的路径对象的方法。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l|l}
+        \hline
+        \textbf{调用}                      & \textbf{效果}      \\
+        \hline
+        \texttt{path\{charseq\}}         & 用一个字符序列初始化路径     \\
+        \texttt{path\{beg, end\}}        & 用一个范围初始化路径       \\
+        \texttt{u8path\{u8string\}}      & 用一个UTF-8字符串初始化路径 \\
+        \texttt{current\_path()}         & 返回当前工作目录的路径      \\
+        \texttt{temp\_directory\_path()} & 返回临时文件的路径        \\
+        \hline
+    \end{tabular}
+    \caption{创建路径}
+    \label{t20.3}
+\end{table}
+
+第一个构造函数以字符序列为参数，这里的字符序列代表一系列有效的方式：
+\begin{itemize}
+    \item 一个\texttt{string}
+    \item 一个\texttt{string\_view}
+    \item 一个以空字符结尾的字符数组
+    \item 一个以空字符结尾的字符输入迭代器（指针）
+\end{itemize}
+注意\texttt{current\_path()}和\texttt{temp\_directory\_path()}都是开销较大的操作，
+因为它们依赖于系统调用。如果给\texttt{current\_path()}传递一个参数，它也可以用来
+\hyperref[ch20.4.6]{修改当前工作目录}。
+
+通过\texttt{u8path()}你可以使用UTF-8字符串创建可移植的路径。例如：
+\begin{lstlisting}
+    // 将路径p初始化为"Köln"（Cologne的德语名）
+    std::filesystem::path p{std::filesystem::u8path(u8"K\u00F6ln")};
+    ...
+
+    // 用UTF-8字符串创建目录
+    std::string utf8String = readUTF8String(...);
+    create_directory(std::filesystem::u8path(utf8String));
+\end{lstlisting}
 
 \subsection{检查路径}
+表\hyperref[t20.4]{检查路径}列出了检查路径\texttt{p}时可以调用的函数。
+注意这些操作都不会访问底层的操作系统，因此都是\texttt{path}类的成员函数。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l|l}
+        \hline
+        \textbf{调用}                       & \textbf{效果}                 \\
+        \hline
+        \texttt{p.empty()}                & 返回路径是否为空                    \\
+        \texttt{p.is\_absolute()}         & 返回路径是否是绝对的                  \\
+        \texttt{p.is\_relative()}         & 返回路径是否是相对的                  \\
+        \texttt{p.has\_filename()}        & 返回路径是否既不是目录也不是根名称           \\
+        \texttt{p.has\_stem()}            & 和\texttt{has\_filename()}一样 \\
+        \texttt{p.has\_extension()}       & 返回路径是否有扩展名                  \\
+        \texttt{p.has\_root\_name()}      & 返回路径是否包含根名称                 \\
+        \texttt{p.has\_root\_directory()} & 返回路径是否包含根目录                 \\
+        \texttt{p.has\_root\_path()}      & 返回路径是否包含根名称或根目录             \\
+        \texttt{p.has\_parent\_path()}    & 返回路径是否包含父路径                 \\
+        \texttt{p.has\_relative\_path()}  & 返回路径是否不止包含根元素               \\
+        \texttt{p.filename()}             & 返回文件名（或者空路径）                \\
+        \texttt{p.stem()}                 & 返回没有扩展名的文件名（或者空路径）          \\
+        \texttt{p.extension()}            & 返回扩展名（或者空路径）                \\
+        \texttt{p.root\_name()}           & 返回根名称（或者空路径）                \\
+        \texttt{p.root\_directory()}      & 返回根目录（或者空路径）                \\
+        \texttt{p.root\_path()}           & 返回根元素（或者空路径）                \\
+        \texttt{p.parent\_path()}         & 返回父路径（或者空路径）                \\
+        \texttt{p.relative\_path()}       & 返回不带根元素的路径（或者空路径）           \\
+        \texttt{p.begin()}                & 返回路径元素的起点                   \\
+        \texttt{p.end()}                  & 返回路径元素的终点                   \\
+        \hline
+    \end{tabular}
+    \caption{检查路径}
+    \label{t20.4}
+\end{table}
+
+每一个路径要么是绝对的要么是相对的。如果没有根目录那么路径就是相对的
+（相对路径也可能包含根名称；例如，\texttt{C:hello.txt}就是Windows下的一个相对路径）。
+
+\texttt{has\_...()}函数等价于检查相应的没有\texttt{has\_}前缀的函数返回值是否为空路径。
+
+注意下面几点：
+\begin{itemize}
+    \item 如果路径含有根元素或者目录分隔符那么就包含父路径。如果路径只由根元素组成
+    （也就是说相对路径为空），\texttt{parent\_path()}的返回值就是整个路径。
+    也就是说，路径\texttt{"/"}的父路径还是\texttt{"/"}。只有纯文件名的路径例如
+    \texttt{"hello.txt"}的父路径是空。
+    \item 如果一个路径包含文件名那么一定包含stem（文件名中不带扩展名的部分）。
+    \footnote{从C++17才开始这样，因为以前文件名可以只包含扩展名。}
+    \item 空路径是相对路径（除了\texttt{is\_empty()}和\texttt{is\_relative()}
+    之外的操作都返回\texttt{false}或者空路径）。
+\end{itemize}
+这些操作的结果可能会依赖于操作系统。例如，路径
+\texttt{C:/hello.txt}
+\begin{itemize}
+    \item 在Unix系统上
+    \begin{itemize}
+        \item 是相对路径
+        \item 没有根元素（既没有根名称也没有根目录），因为\texttt{C:}只是一个文件名
+        \item 有父路径\texttt{C:}
+        \item 有相对路径\texttt{C:/hello.txt}
+    \end{itemize}
+    \item 在Windows系统上
+    \begin{itemize}
+        \item 是绝对的
+        \item 有根名称\texttt{C:}和根目录\texttt{/}
+        \item 沒有父路径
+        \item 有相对路径\texttt{hello.txt}
+    \end{itemize}
+\end{itemize}
 
 \subsubsection{迭代路径}
+你可以迭代一个路径，这将会返回路径的所有元素：根名称（如果有的话）、根目录（如果有的话）、
+所有的文件名。如果路径以目录分隔符结尾，最后的元素将是空文件名。
+\footnote{在C++17之前，文件系统库使用\texttt{.}来表示结尾的目录分隔符。
+更改这个行为是为了区分以路径分隔符结尾的路径和以路径分隔符后还有一个点结尾的路径。}
+
+路径迭代器是双向迭代器，所以你可以递减它。迭代器的值的类型是\texttt{path}。
+然而，两个在同一个路径上路径上迭代的迭代器可能\emph{不}指向同一个\texttt{path}对象，
+即使它们迭代到了相同的路径元素。
+
+例如，考虑：
+\begin{lstlisting}
+    void printPath(const std::filesystem::path& p)
+    {
+        std::cout << "path elements of \"" << p.string() << "\":\n";
+        for (std::filesystem::path elem : p) {
+            std::cout << "  \"" << elem.string() << '"';
+        }
+        std::cout << '\n';
+    }
+\end{lstlisting}
+和如下代码效果相同：
+\begin{lstlisting}
+    void printPath(const std::filesystem::path& p)
+    {
+        std::cout << "path elements of \"" << p.string() << "\":\n";
+        for (auto pos = p.begin(); pos != p.end(); ++pos) {
+            std::filesystem::path elem = *pos;
+            std::cout << "  \"" << elem.string() << '"';
+        }
+        std::cout << '\n';
+    }
+\end{lstlisting}
+如果像下面这样调用这个函数：
+\begin{lstlisting}
+    printPath("../sub/file.txt");
+    printPath("/usr/tmp/test/dir/");
+    printPath("C:\\usr\\tmp\\test\\dir\\");
+\end{lstlisting}
+在POSIX兼容系统上的输出将会是：
+\begin{lstlisting}[stringstyle=\color{black}]
+    path elements of "../sub/file.txt":
+      ".."  "sub"  "file.txt"
+    path elements of "/usr/tmp/test/dir/":
+      "/"  "usr"  "tmp"  "test"  "dir"  ""
+    path elements of "C:\\usr\\tmp\\test\\dir\\":
+      "C:\\usr\\tmp\\test\\dir\\"
+\end{lstlisting}
+注意最后一个路径只是一个文件名，因为在POSIX兼容系统上\texttt{C:}不是有效的根名称，
+反斜杠也不是有效的目录分隔符。
+
+在Windows上的输出将是：
+\begin{lstlisting}[stringstyle=\color{black}]
+    path elements of "../sub/file.txt":
+      ".."  "sub"  "file.txt"
+    path elements of "/usr/tmp/test/dir/":
+      "/"  "usr"  "tmp"  "test"  "dir"  ""
+    path elements of "C:\usr\tmp\test\dir\":
+      "C:"  "\"  "usr"  "tmp"  "test"  "dir"  ""
+\end{lstlisting}
+为了检查路径\texttt{p}是否以目录分隔符结尾，你可以这么写：
+\begin{lstlisting}
+    if (!p.empty() && (--p.end())->empty()) {
+        std::cout << p << " has a trailing separator\n";
+    }
+\end{lstlisting}
 
 \subsection{路径I/O和转换}\label{ch20.3.3}
+表\hyperref[t20.5]{路径I/O和转换}列出了路径的读写操作和转换操作。
+这些函数也不会访问实际的文件系统。如果你必须要处理符号链接，你可能要使用
+\hyperref[ch20.4.5]{依赖文件系统的路径转换}。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l|l}
+        \hline
+        \textbf{调用}                         & \textbf{效果}                                     \\
+        \hline
+        \texttt{strm << p}                  & 用双引号括起来输出路径                                     \\
+        \texttt{strm >> p}                  & 读取用双引号括起来的路径                                    \\
+        \texttt{p.string()}                 & 以\texttt{std::string}返回路径                       \\
+        \texttt{p.wstring()}                & 以\texttt{std::wstring}返回路径                      \\
+        \texttt{p.u8string()}               & 以类型为\texttt{std::u8string}的UTF-8字符串返回路径         \\
+        \texttt{p.u16string()}              & 以类型为\texttt{std::u16string}的UTF-16字符串返回路径       \\
+        \texttt{p.u32string()}              & 以类型为\texttt{std::u32string}的UTF-32字符串返回路径       \\
+        \texttt{p.string<...>()}            & 以\texttt{std::basic\_string返回路径}                \\
+        \texttt{p.lexically\_normal()}      & 返回正规化的路径                                        \\
+        \texttt{p.lexically\_relative(p2)}  & 返回从\texttt{p2}到\texttt{p}的相对路径（如果没有则返回空路径）      \\
+        \texttt{p.lexically\_proximate(p2)} & 返回从\texttt{p2}到\texttt{p}的路径（如果没有则返回\texttt{p}） \\
+        \hline
+    \end{tabular}
+    \caption{路径I/O和转换}
+    \label{t20.5}
+\end{table}
+
+\texttt{lexically\_...()}函数会返回一个新的路径，而其他的转换函数将返回相应的字符串类型。
+所有这些函数都不会修改调用者的路径。
+
+例如，下面的代码：
+\begin{lstlisting}
+    std::filesystem::path p{"/dir/./sub//sub1/../sub2"};
+    std::cout <<  "path:               " << p << '\n';
+    std::cout <<  "string():           " << p.string() << '\n';
+    std::wcout << "wstring():          " << p.wstring() << '\n';
+    std::cout <<  "lexically_normal(): " << p.lexically_normal() << '\n';
+\end{lstlisting}
+前三行的输出是相同的：
+\begin{lstlisting}[stringstyle=\color{black}]
+    path                "/dir/./sub//sub1/../sub2"
+    string():           /dir/./sub//sub1/../sub2
+    wstring():          /dir/./sub//sub1/../sub2
+\end{lstlisting}
+但最后一行的输出就依赖于目录分隔符了。在POSIX兼容系统上输出是：
+\begin{lstlisting}[stringstyle=\color{black}]
+    lexically_normal(): "/dir/sub/sub2"
+\end{lstlisting}
+而在Windows上输出是：
+\begin{lstlisting}
+    lexically_normal(): "\\dir\\sub\\sub2"
+\end{lstlisting}
+
 \subsubsection{路径I/O}
+首先，注意I/O运算符以双引号括起来的字符串方式读写路径。
+你可以把它们转换为字符串来避免双引号：
+\begin{lstlisting}
+    std::filesystem::path file{"test.txt"};
+    std::cout << file << '\n';          // 输出："test.txt"
+    std::cout << file.string() << '\n'; // 输出：test.txt
+\end{lstlisting}
+在Windows上，情况可能会更糟糕。下面的代码：
+\begin{lstlisting}
+    std::filesystem::path tmp{"C:\\Windows\\Temp"};
+    std::cout << tmp << '\n';
+    std::cout << tmp.string() << '\n';
+    std::cout << '"' << tmp.string() << "\"\n";
+\end{lstlisting}
+将会有如下输出：
+\begin{lstlisting}[stringstyle=\color{black}]
+    "C:\\Windows\\Temp"
+    C:\Windows\Temp
+    "C:\Windows\Temp"
+\end{lstlisting}
+注意读取路径时既支持带双引号的字符串也支持不带双引号的字符串。
+因此，所有的输出形式都能使用输入运算符再读取回来：
+\begin{lstlisting}
+    std::filesystem::path tmp;
+    std::cin >> tmp;    // 读取有双引号和无双引号的路径
+\end{lstlisting}
+
 \subsubsection{正规化}
+当你处理可移植代码时正规化可能会导致更多令人惊奇的结果。例如：
+\begin{lstlisting}
+    std::filesystem::path p2{"//host\\dir/sub\\/./\\"};
+    // 译者注：此处原文是
+    // std::filesystem::path p2{"//dir\\subdir/subsubdir\\/./\\"};
+    // 应是作者笔误
+
+    std::cout << "p2:                 " << p2 << '\n';
+    std::cout << "lexically_normal(): " << p2.lexically_normal() << '\n';
+\end{lstlisting}
+在Windows系统上可能会有如下输出：
+\begin{lstlisting}[stringstyle=\color{black}]
+    p2:                 "//host\\dir/sub\\/./\\"
+    lexically_normal(): "\\\\host\\dir\\sub\\"
+\end{lstlisting}
+然而，在POSIX兼容系统上，输出将是：
+\begin{lstlisting}[stringstyle=\color{black}]
+    p2:                 "//host\\dir/sub\\/./\\"
+    lexically_normal(): "/host\\dir/sub\\/\\"
+\end{lstlisting}
+原因是对于POSIX兼容系统来说反斜杠既不是路径分隔符也不是有效的根名称，
+这意味着我们得到了一个有三个文件名的绝对路径，三个文件名分别是\texttt{host\textbackslash dir}、
+\texttt{sub\textbackslash}、\texttt{\textbackslash}。
+在POSIX兼容系统上，没有办法把反斜杠作为目录分隔符处理
+（\hyperref[ch20.3.4]{\texttt{generic\_string()}和\texttt{make\_preferred()}}也没有用）。
+因此，对于可移植的代码，当处理路径时你应该总是使用通用路径格式。
+
+但是，当\hyperref[迭代.]{迭代当前路径}时使用\texttt{lexically\_normal()}
+移除开头的点是个好方法。
+
 \subsubsection{相对路径}
+\texttt{lexically\_relative()}和\texttt{lexically\_proximate()}都可以被用来计算
+两个路径间的相对路径。不同之处在于如果没有相对路径时的行为，
+只有当一个是相对路径一个是绝对路径或者两个路径的根名称不同时才会发生这种情况。
+这种情况下：
+\begin{itemize}
+    \item 对于\texttt{p.lexically\_relative(p2)}，如果没有从\texttt{p2}到\texttt{p}
+    的相对路径，会返回空路径。
+    \item 对于\texttt{p.lexically\_proximate(p2)}，如果没有从\texttt{p2}到\texttt{p}
+    的相对路径，会返回\texttt{p}。
+\end{itemize}
+因为这两个操作都是词法操作，所以不会考虑实际的文件系统（可能会有符号链接）和\texttt{current\_path()}。
+如果两个路径相同，相对路径将是\texttt{"."}。例如：
+\begin{lstlisting}
+    fs::path{"/a/d"}.lexically_relative("/a/b/c");      // "../../d"
+    fs::path{"/a/b/c"}.lexically_relative("/a/d");      // "../b/c"
+    fs::path{"/a/b"}.lexically_relative("/a/b");        // "."
+    fs::path{"/a/b"}.lexically_relative("/a/b/");       // "."
+    fs::path{"/a/b"}.lexically_relative("/a/b\\");      // "."
+    fs::path{"/a/b"}.lexically_relative("/a/d/../c");   // "../b"
+    fs::path{"a/d/../b"}.lexically_relative("a/c");     // "../d/../b"
+    fs::path{"a//d/..//b"}.lexically_relative("a/c");   // "../d/../b"
+\end{lstlisting}
+在Windows平台上，将会有：
+\begin{lstlisting}
+    fs::path{"C:/a/b"}.lexically_relative("c:/c/d");    // ""
+    fs::path{"C:/a/b"}.lexically_relative("D:/c/d");    // ""
+    fs::path{"C:/a/b"}.lexically_proximate("D:/c/d");   // "C:/a/b"
+\end{lstlisting}
+
 \subsubsection{转换为字符串}
+通过\texttt{u8string()}你可以将路径用作\texttt{UTF-8}字符串，
+这是当前存储数据的通用格式。例如：
+\begin{lstlisting}
+    // 把路径存储为UTF-8字符串：
+    std::vector<std::string> utf8paths; // 自从C++20起将改为std::u8string
+    for (const auto& entry : fs::directory_iterator(p)) {
+        utf8paths.push_back(entry.path().u8string());
+    }
+\end{lstlisting}
+注意自从C++20起\texttt{u8string()}的返回值可能会从\texttt{std::string}改为
+\texttt{std::u8string()}（新的UTF-8字符串类型和存储UTF-8字符的\texttt{char8\_t}
+类型的提案在\url{https://wg21.link/p0482}）。
+\footnote{感谢Tom Honermann指出这一点，并做出这个改进（C++开始提供真正的UTF-8支持是非常重要的）。}
+
+成员模板\texttt{string<>()}可以用来转换成特殊的字符串类型，例如一个大小写无关的字符串类型：
+\begin{lstlisting}
+    struct ignoreCaseTraits : public std::char_traits<char> {
+        // 大小写不敏感的比较两个字符：
+        static bool eq(const char& c1, const char& c2) {
+            return std::toupper(c1) == std::toupper(c2);
+        }
+        static bool lt(const char& c1, const char& c2) {
+            return std::toupper(c1) < std::toupper(c2);
+        }
+        // 比较s1和s2的至多前n个字符：
+        static int compare(const char* s1, const char* s2, std::size_t n);
+        // 搜索s中的字符c：
+        static const char* find(const char* s, std::size_t n, const char& c);
+    };
+
+    // 定义一个这种类型的字符串：
+    using icstring = std::basic_string<char, ignoreCaseTraits>;
+
+    std::filesystem::path p{"/dir\\subdir/subsubdir\\/./\\"};
+    icstring s2 = p.string<char, ignoreCaseTraits>();
+\end{lstlisting}
+注意你\emph{不}应该使用函数\texttt{c\_str()}，因为它会转换为\emph{本地}字符串格式，
+例如可能会使用\texttt{wchar\_t}，因此你需要使用\texttt{std::wcout}代替\texttt{std::cout}
+来输出到输出流。
 
 \subsection{本地和通用格式的转换}\label{ch20.3.4}
+表\hyperref[t20.6]{本地和通用格式的转换}列出了在\hyperref[ch20.2.3]{通用路径格式}
+和实际平台特定实现的格式之间转换的方法。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l|l}
+        \hline
+        \textbf{调用}                       & \textbf{效果}                                    \\
+        \hline
+        \texttt{p.generic\_string()}      & 返回\texttt{std::string}类型的通用路径                  \\
+        \texttt{p.generic\_wstring()}     & 返回\texttt{std::wstring}类型的通用路径                 \\
+        \texttt{p.generic\_u8string()}    & 返回\texttt{std::u8string}类型的通用路径                \\
+        \texttt{p.generic\_u16string()}   & 返回\texttt{std::u16string}类型的通用路径               \\
+        \texttt{p.generic\_u32string()}   & 返回\texttt{std::u32string}类型的通用路径               \\
+        \texttt{p.generic\_string<...>()} & 返回\texttt{std::basic\_string<...>()}类型的通用路径    \\
+        \texttt{p.native()}               & 返回\texttt{path::string\_type}类型的本地路径格式         \\
+        \emph{到本地路径的转换}                   & 到本地字符类型的隐式转换                                   \\
+        \texttt{p.c\_str()}               & 返回本地字符串格式的字符序列形式的路径                            \\
+        \texttt{p.make\_preferred()}      & 把\texttt{p}中的目录分隔符替换为本地格式的分隔符并返回修改后的\texttt{p} \\
+        \hline
+    \end{tabular}
+    \caption{本地和通用格式的转换}
+    \label{t20.6}
+\end{table}
+
+这些函数在POSIX兼容系统上没有效果，因为这些系统的本地格式和通用格式没有区别。
+在其他平台上调用这些函数可能会有效果：
+\begin{itemize}
+    \item \texttt{generic...()}函数返回转换为\hyperref[ch20.2.3]{通用格式}之后的相应类型的字符串。
+    \item \texttt{native()}返回用本地字符串编码的路径，其类型为\texttt{std::filesystem::path::string\_type}。
+    这个类型在Windows下是\texttt{std::wstring}，这意味着你需要使用\texttt{std::wcout}
+    代替\texttt{std::cout}来输出。新的重载允许我们向文件流传递本地字符串。
+    \item \texttt{c\_str()}以空字符结尾的字符序列形式返回结果。注意使用这个函数是不可移植的，
+    因为使用\texttt{std::cout}打印字符序列在Windows上的输出不正确。你应该使用\texttt{std::wcout}。
+    \item \texttt{make\_preferred()}会使用本地的目录分隔符替换除了根名称之外的所有的目录分隔符。
+    注意这是唯一一个会修改调用者的函数。因此，严格来讲，这个函数应该属于下一节的修改路径的函数，
+    但是因为它是处理本地格式的转换，所以也在这里列出。
+\end{itemize}
+例如，在Windows上，下列代码：
+\begin{lstlisting}
+    std::filesystem::path p{"/dir\\subdir/subsubdir\\/./\\"};
+    std::cout <<  "p:                  " << p << '\n';
+    std::cout <<  "string():           " << p.string() << '\n';
+    std::wcout << "wstring():          " << p.wstring() << '\n';
+    std::cout <<  "lexically_normal(): " << p.lexically_normal() << '\n';
+    std::cout <<  "generic_string():   " << p.generic_string() << '\n';
+    std::wcout << "generic_wstring():  " << p.generic_wstring() << '\n';
+    // 因为这是在Windows下，相应的本地字符串类型是wstring：
+    std::wcout << "native():           " << p.native() << '\n'; // Windows!
+    std::wcout << "c_str():            " << p.c_str() << '\n';
+    std::cout <<  "make_preferred():   " << p.make_preferred() << '\n';
+    std::cout <<  "p:                  " << p << '\n';
+\end{lstlisting}
+将会有如下输出：
+\begin{lstlisting}[stringstyle=\color{black}, commentstyle=\color{black}]
+    p:                  "/dir\\subdir/subsubdir\\/./\\"
+    string():           /dir\subdir/subsubdir\/./\
+    wstring():          /dir\subdir/subsubdir\/./\
+    lexically_normal(): "\\dir\\subdir\\subsubdir\\"
+    generic_string():   /dir/subdir/subsubdir//.//
+    generic_wstring():  /dir/subdir/subsubdir//.//
+    native():           /dir\subdir/subsubdir\/./\
+    c_str():            /dir\subdir/subsubdir\/./\
+    make_preferred():   "\\dir\\subdir\\subsubdir\\\\.\\\\"
+    p:                  "\\dir\\subdir\\subsubdir\\\\.\\\\"
+\end{lstlisting}
+再次注意：
+\begin{itemize}
+    \item 本地字符串格式是不可移植的。在Windows上是\texttt{wstring}，而在POSIX兼容系统上是\texttt{string}，
+    这意味着你要使用\texttt{cout}而不是\texttt{wcout}来打印\texttt{native()}的结果。
+    \item 只有\texttt{make\_preferred()}会修改调用者。其他的调用都会保持\texttt{p}不变。
+\end{itemize}
 
 \subsection{修改路径}
+表\hyperref[t20.7]{修改路径}列出了可以直接修改路径的操作。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l|l}
+        \hline
+        \textbf{调用}                         & \textbf{效果}                                            \\
+        \hline
+        \texttt{p = p2}                     & 赋予一个新路径                                                \\
+        \texttt{p = sv}                     & 赋予一个字符串（视图）作为新路径                                       \\
+        \texttt{p.assign(p2)}               & 赋予一个新路径                                                \\
+        \texttt{p.assign(sv)}               & 赋予一个字符串（视图）作为新路径                                       \\
+        \texttt{p.assign(beg, end)}         & 赋予从\texttt{beg}到\texttt{end}的元素组成的路径                   \\
+        \texttt{p1 / p2}                    & 返回把\texttt{p2}作为子路径附加到\texttt{p1}之后的结果                 \\
+        \texttt{p /= sub}                   & 把\texttt{sub}作为子路径附加到路径\texttt{p}之后                    \\
+        \texttt{p.append(sub)}              & 把\texttt{sub}作为子路径附加到路径\texttt{p}之后                    \\
+        \texttt{p.append(beg, end)}         & 把从\texttt{beg}到\texttt{end}之间的元素作为子路径附加到路径\texttt{p}之后 \\
+        \texttt{p += str}                   & 把\texttt{str}里的字符添加到路径\texttt{p}之后                     \\
+        \texttt{p.concat(str)}              & 把\texttt{str}里的字符添加到路径\texttt{p}之后                     \\
+        \texttt{p.concat(beg, end)}         & 把从\texttt{beg}到\texttt{end}之间的元素附加到路径\texttt{p}之后      \\
+        \texttt{p.remove\_filename()}       & 移除路径末尾的文件名                                             \\
+        \texttt{p.replace\_filename(repl)}  & 替换末尾的文件名（如果有的话）                                        \\
+        \texttt{p.replace\_extension()}     & 移除末尾的文件的扩展名                                            \\
+        \texttt{p.replace\_extension(repl)} & 替换末尾的文件的扩展名（如果有的话）                                     \\
+        \texttt{p.clear()}                  & 清空路径                                                   \\
+        \texttt{p.swap(p2)}                 & 交换两个路径                                                 \\
+        \texttt{swap(p1, p2)}               & 交换两个路径                                                 \\
+        \texttt{p.make\_preferred()}        & 把\texttt{p}中的目录分隔符替换为本地格式的分隔符并返回修改后的\texttt{p}         \\
+        \hline
+    \end{tabular}
+    \caption{修改路径}
+    \label{t20.7}
+\end{table}
+
+注意\texttt{+=}和\texttt{concat()}简单的把字符添加到路径后，\texttt{/}、\texttt{/=}、
+\texttt{append()}则是在路径后用目录分隔符添加一个子路径：
+\begin{lstlisting}
+    std::filesystem::path p{"myfile"};
+    p += ".git";        // p:myfile.git
+    p /= ".git";        // p:myfile.git/.git
+    p.concat("1");      // p:myfile.git/.git1
+    p.append("1");      // P:myfile.git/.git1/1
+    std::cout << p << '\n';
+    std::cout << p / p << '\n';
+\end{lstlisting}
+在POSIX兼容系统上输出将是：
+\begin{lstlisting}[stringstyle=\color{black}]
+    "myfile.git/.git1/1"
+    "myfile.git/.git1/1/myfile.git/.git1/1"
+\end{lstlisting}
+在Windows系统上输出将是：
+\begin{lstlisting}[stringstyle=\color{black}]
+    "myfile.git\\.git1\\1"
+    "myfile.git\\.git1\\1\\myfile.git\\.git1\\1"
+\end{lstlisting}
+注意如果添加一个绝对路径子路径意味着替换原本的路径。例如，如下操作之后：
+\begin{lstlisting}
+    namespace fs = std::filesystem;
+    auto p1 = fs::path("/usr") / "tmp";     // 路径是/usr/tmp或者/usr\tmp
+    auto p2 = fs::path("/usr/") / "tmp";    // 路径是/usr/tmp
+    auto p3 = fs::path("/usr") / "/tmp";    // 路径是/tmp
+    auto p4 = fs::path("/usr/") / "/tmp";   // 路径是/tmp
+\end{lstlisting}
+我们有了四个指向两个不同文件的路径：
+\begin{itemize}
+    \item \texttt{p1}和\texttt{p2}相等，都指向文件\texttt{/usr/tmp}（注意在Windows上
+    它们相等，但\texttt{p1}将是\texttt{/usr\textbackslash tmp}。
+    \item \texttt{p3}和\texttt{p4}相等，指向文件\texttt{/tmp}，因为附加的子路径是绝对路径。
+\end{itemize}
+对于根元素，是否赋予新的根元素的结果将不同。例如，在Windows上，结果将是：
+\begin{lstlisting}
+    auto p1 = fs::path("usr") / "C:/tmp";   // 路径是C:/tmp
+    auto p2 = fs::path("usr") / "C:";       // 路径是C:
+    auto p3 = fs::path("C:") / "":          // 路径是C:
+    auto p4 = fs::path("C:usr") / "/tmp";   // 路径是C:/tmp
+    auto p5 = fs::path("C:usr") / "C:tmp";  // 路径是C:usr\tmp
+    auto p6 = fs::path("C:usr") / "c:tmp";  // 路径是c:tmp
+    auto p7 = fs::path("C:usr") / "D:tmp";  // 路径是D:tmp
+\end{lstlisting}
+函数\texttt{make\_preferred()}在一个\texttt{path}内部把目录分隔符替换成本地格式。
+例如：
+\begin{lstlisting}
+    std::filesystem::path p{"//server/dir//subdir///file.txt"};
+    p.make_preferred();
+    std::cout << p << '\n';
+\end{lstlisting}
+在POSIX兼容系统上输出将是：
+\begin{lstlisting}[stringstyle=\color{black}]
+    "//server/dir/subdir/file.txt"
+\end{lstlisting}
+在Windows系统上输出将是：
+\begin{lstlisting}[stringstyle=\color{black}]
+    "\\\\server\\dir\\\\subdir\\\\\\file.txt"
+\end{lstlisting}
+注意开头的根名称没有被修改，因为它由两个斜杠或者反斜杠组成。
+也注意这个函数在POSIX兼容系统上也不会把反斜杠转换成斜杠，因为反斜杠不被识别为目录分隔符。
+\texttt{replace\_extension()}可以替换、添加、或者删除扩展名：
+\begin{itemize}
+    \item 如果文件已经有扩展名了，它会进行替换。
+    \item 如果文件没有扩展名，会添加新的扩展名。
+    \item 如果你跳过了新的扩展名参数或者新扩展名参数为空，它会移除已有的扩展名。
+\end{itemize}
+替换时是否有前导的点没有影响。函数会确保文件名和扩展名之间有且只有一个点。例如：
+\begin{lstlisting}
+    fs::path{"file.txt"}.replace_extension("tmp")   // file.tmp
+    fs::path{"file.txt"}.replace_extension(".tmp")  // file.tmp
+    fs::path{"file.txt"}.replace_extension("")      // file
+    fs::path{"file.txt"}.replace_extension()        // file
+    fs::path{"dir"}.replace_extension("tmp")        // dir.tmp
+    fs::path{".git"}.replace_extension("tmp")       // .git.tmp
+\end{lstlisting}
+注意“纯扩展名”的文件名（例如\texttt{.git}）不会被当作扩展名。
+\footnote{自从C++17起才改成这样。在C++17之前，最后一条语句的结果将是\texttt{.tmp}。}
 
 \subsection{比较路径}
 
@@ -694,8 +1237,11 @@ filesystem}。在POSIX兼容的系统上这些被
 \section{文件系统操作}
 
 \subsection{文件属性}
+
 \subsubsection{检查文件是否存在}\label{ch20.4.1.1}
+
 \subsubsection{其他文件属性}
+
 \subsubsection{处理最后修改的时间}
 
 \subsection{文件状态}
@@ -703,19 +1249,27 @@ filesystem}。在POSIX兼容的系统上这些被
 \subsection{权限}
 
 \subsection{修改文件系统}
+
 \subsubsection{创建和删除文件}
+
 \subsubsection{修改已存在的文件}
 
-\subsection{符号链接和依赖文件系统的路径的转换}\label{ch20.4.5}
+\subsection{符号链接和依赖文件系统的路径转换}\label{ch20.4.5}
 
-\subsection{其他文件系统操作}
+\subsection{其他文件系统操作}\label{ch20.4.6}
 
 
 \section{迭代目录}
+
+传入的参数\texttt{dir}可以是一个\texttt{path}也可以是其他可以隐式转换为路径的类型
+（特指各种形式的字符串）。\label{迭代.}
+
 \subsubsection{目录迭代器表示一个范围}
+
 \subsubsection{目录迭代器选项}
 
 \subsection{目录项}
+
 \subsubsection{目录项缓存}
 
 
