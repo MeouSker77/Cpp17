@@ -1,6 +1,328 @@
 \chapter{类型特征扩展}\label{ch21}
+C++17扩展了类型特征（标准类型函数）的通用能力并引入了一些新的类型特征。
+
 
 \section{类型特征后缀\texttt{\_v}}\label{ch21.1}
+自从C++17起，你可以对所有返回值的类型特征使用后缀\texttt{\_v}
+（就像你可以为所有返回类型的类型特征使用\texttt{\_t}一样）。
+例如，对于任何类型\texttt{T}，你现在可以写：
+\begin{lstlisting}
+    std::is_const_v<T>      // 自从C++17起
+\end{lstlisting}
+来代替：
+\begin{lstlisting}
+    std::is_const<T>::value // 自从C++11起
+\end{lstlisting}
+这适用于所有返回值的类型特征。方法是为每一个标准类型特征定义一个相应的新的变量模板。例如：
+\begin{lstlisting}
+    namespace std {
+        template<typename T>
+        constexpr bool is_const_v = is_const<T>::value;
+    }
+\end{lstlisting}
+这样一个类型特征可以也用做运行时的条件表达式：
+\begin{lstlisting}
+    if (std::is_signed_v<char>) {
+        ...
+    }
+\end{lstlisting}
+然而，因为这些类型特征是在编译期求值，所以你也可以在编译期使用它们
+（例如，在一个\nameref{ch10}中）：
+\begin{lstlisting}
+    if constexpr (std::is_signed_v<char) {
+        ...
+    }
+\end{lstlisting}
+另一个应用是用来支持不同的模板实例化：
+\begin{lstlisting}
+    // 类C<T>的主模板
+    template<typename T, bool = std::is_pointer_v<T>>
+    class C {
+        ...
+    };
+
+    // 指针类型的偏特化版本：
+    template<typename T>
+    class C<T, true> {
+        ...
+    };
+\end{lstlisting}
+这里，类\texttt{C}为指针类型提供了一个偏特化版本。
+
+后缀\texttt{\_v}也可以用于返回非bool类型的类型特征，例如\texttt{std::extent<>}，
+返回原生数组的某一个维度的大小：
+\begin{lstlisting}
+    int a[5][7];
+    std::cout << std::extent_v<decltype(a)> << '\n';    // 打印出5
+    std::cout << std::extent_v<decltepe(a), 1> << '\n'; // 打印出7
+\end{lstlisting}
+
 
 \section{新的类型特征}
+表\hyperref[t21.1]{新类型特征}列出了C++17引入的新类型特征。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l|p{0.45\textwidth}}
+        \hline
+        \textbf{特征}                                        & \textbf{效果}                                   \\
+        \hline
+        \texttt{is\_aggregate<T>}                          & 是否是聚合体类型                                      \\
+        \texttt{is\_swappable<T>}                          & 该类型是否能调用\texttt{swap()}                      \\
+        \texttt{is\_nothrow\_swappable<T>}                 & 该类型是否能调用\texttt{swap()}并且该操作不会抛出异常           \\
+        \texttt{is\_swappable\_with<T,T2>}                 & 特定值类型的这两种类型是否能调用\texttt{swap()}              \\
+        \texttt{is\_nothrow\_swappable\_with<T, T2>}       & 特定值类型的这两种类型是否能调用\texttt{swap()}并且该操作不会抛出异常   \\
+        \texttt{has\_unique\_object\_representations<T>}   & 是否该类型的两个值相等的对象在内存中的表示也一样                      \\
+        \texttt{is\_invocable<T, Args...>}                 & 该类型是否可以用\emph{Args...}调用                      \\
+        \texttt{is\_nothrow\_invocable<T, Args...>}        & 该类型是否可以用\emph{Args...}调用，并且该操作不会抛出异常          \\
+        \texttt{is\_invocable\_r<RT, T, Args...>}          & 该类型是否可以用\emph{Args...}调用并返回\emph{RT}类型        \\
+        \texttt{is\_nothrow\_invocable\_r<RT, T, Args...>} & 该类型是否可以用\emph{Args...}调用并返回\emph{RT}类型且不会抛出异常 \\
+        \texttt{invoke\_result<T, Args...>}                & 用\emph{Args}作为实参进行调用会返回的类型                    \\
+        \texttt{conjunction<B...>}                         & 对bool特征\emph{B...}进行逻辑与运算                     \\
+        \texttt{disjunction<B...>}                         & 对bool特征\emph{B...}进行逻辑或运算                     \\
+        \texttt{negation<B>}                               & 对bool特征B进行非运算                                 \\
+        \texttt{is\_execution\_policy<T>}                  & 是否是\nameref{ch22.2}类型                         \\
+        \hline
+    \end{tabular}
+    \caption{新类型特征}
+    \label{t21.1}
+\end{table}
+
+另外，\texttt{is\_litera\_type<>}和\texttt{result\_of<>}自从C++17起被废弃。
+下面的段落将详细讨论这些特征。
+
 \subsubsection{类型特征\texttt{is\_aggregate<>}}\label{ch21.2.1}
+\begin{itemize}
+    \item[] \texttt{std::\textbf{is\_aggregate<T>}::value}
+\end{itemize}
+返回\emph{T}是否是\hyperref[ch4.3]{聚合体类型}：
+\begin{lstlisting}
+    template<typename T>
+    struct D : std::string, std::complex<T> {
+        std::string data;
+    };
+
+    D<float> s{{"hello"}, {4.5, 6.7}, "world"};         // 自从C++17起OK
+    std::cout << std::is_aggregate<decltype(s)>::value; // 输出：1（true）
+\end{lstlisting}
+
+\subsubsection{类型特征\texttt{is\_swappable<>}和\texttt{is\_swappable\_with<>}}
+\begin{itemize}
+    \item[] \texttt{std::\textbf{is\_swappable<T>}::value}
+    \item[] \texttt{std::\textbf{is\_nothrow\_swappable<T>}::value}
+    \item[] \texttt{std::\textbf{is\_swappable\_with<T1, T2>}::value}
+    \item[] \texttt{std::\textbf{is\_nothrow\_swappable\_with<T1, T2>}::value}
+\end{itemize}
+在以下情况下返回true：
+\begin{itemize}
+    \item 类型\texttt{T}的左值可以被交换，或者
+    \item 类型\texttt{T1}和\texttt{T2}的值类型可以交换
+\end{itemize}
+（使用\texttt{nothrow}形式时还要保证不会抛出异常）。
+
+注意\texttt{is\_swappable<>}或\texttt{is\_nothrow\_swappable<>}检查你是否
+可以交换某个指定类型的值（检查该类型的左值）。
+相反，\texttt{is\_swappable\_with<>}和\texttt{is\_nothrow\_swappable\_with<>}还
+会考虑值类型。也就是说：
+\begin{lstlisting}
+    is_swappable_v<int>             // 返回true
+\end{lstlisting}
+等价于
+\begin{lstlisting}
+    is_swappable_with_v<int&, int&> // 返回true（和上边等价）
+\end{lstlisting}
+而：
+\begin{lstlisting}
+    is_swappable_with_v<int, int>   // 返回false
+\end{lstlisting}
+将会返回false，因为你不能调用\texttt{std::swap(42, 77)}。
+
+例如：
+\begin{lstlisting}
+    is_swappable_v<std::string>     // 返回true
+    is_swappable_v<std::string&>    // 返回true
+    is_swappable_v<std::string&&>   // 返回true
+    is_swappable_v<void>            // 返回false
+    is_swappable_v<void*>           // 返回true
+    is_swappable_v<char[]>          // 返回false
+
+    is_swappable_with_v<std::string, std::string>       // 返回false
+    is_swappable_with_v<std::string&, std::string&>     // 返回true
+    is_swappable_with_v<std::string&&, std::string&&>   // 返回false
+\end{lstlisting}
+
+\subsubsection{类型特征\texttt{has\_unique\_object\_representations<>}}
+\begin{itemize}
+    \item[] \texttt{std::\textbf{has\_unique\_object\_representations<T>}::value}
+\end{itemize}
+当任意两个值相同的类型\texttt{T}的对象在内存中的表示都相同时返回true。
+也就是说，两个相同的值在内存中总是有相同的字节序列。
+
+有这种属性的对象可以通过对字节序列哈希来得到对象的哈希值
+（不用担心某些不参与比较的位可能不同的情况）。
+
+\subsubsection{类型特征\texttt{is\_invocable<>}和\texttt{is\_invocable\_r<>}}
+\begin{itemize}
+    \item[] \texttt{std::\textbf{is\_invocable<T, Args...>}::value}
+    \item[] \texttt{std::\textbf{is\_nothrow\_invocable<T, Args...>}::value}
+    \item[] \texttt{std::\textbf{is\_invocable\_r<Ret, T, Args...>}::value}
+    \item[] \texttt{std::\textbf{is\_nothrow\_invocable\_r<Ret, T, Args...>}::value}
+\end{itemize}
+当你能以\texttt{Args...}为实参调用\texttt{T}类型的对象并且返回值可以转换为\texttt{Ret}
+类型（并且保证不抛出异常）时返回true。
+也就是说，我们可以使用这些特征来测试我们是否可以用\texttt{Args...}为实参调用
+（直接调用或者通过\hyperref[ch33.1]{\texttt{std::invoke()}}）
+\texttt{T}类型的可调用对象并返回\texttt{Ret}类型的值。
+
+例如，如下定义：
+\begin{lstlisting}
+    struct C {
+        bool operator() (int) const {
+            return true;
+        }
+    };
+\end{lstlisting}
+会有如下结果：
+\begin{lstlisting}
+    std::is_invocable<C>::value                             // false
+    std::is_invocable<C, int>::value                        // true
+    std::is_invocable<int*>::value                          // false
+    std::is_invocable<int(*)()>::value                      // true
+
+    std::is_invocable_r<bool, C, int>::value                // true
+    std::is_invocable_r<int, C, long>::value                // true
+    std::is_invocable_r<void, C, int>::value                // true
+    std::is_invocable_r<char*, C, int>::value               // false
+    std::is_invocable_r<long, int(*)(int)>::value           // false
+    std::is_invocable_r<long, int(*)(int), int>::value      // true
+    std::is_invocable_r<long, int(*)(int), double>::value   // true
+\end{lstlisting}
+
+\subsubsection{类型特征\texttt{invoke\_result<>}}
+\begin{itemize}
+    \item[] \texttt{std::\textbf{invoke\_result<T, Args...>}::type}
+\end{itemize}
+返回当使用实参\texttt{Args...}调用\texttt{T}类型的对象时会返回的类型。
+也就是说，我们可以使用这个特征来获知如果使用\texttt{Args...}调用\texttt{T}类型的对象时
+将会返回的类型。
+
+这个类型特征替换了\texttt{result\_of<>}，后者现在不应该再使用。
+
+例如：
+\begin{lstlisting}
+    std::string foo(int);
+
+    using T1 = std::invoke_result_t<decltype(foo), int>;   // T1是std::string
+
+    struct ABC {
+        virtual ~ABC() = 0;
+        void operator() (int) const {
+        }
+    };
+
+    using T2 = typename std::invoke_result<ABC, int>::type; // T2是void
+\end{lstlisting}
+
+\subsubsection{bool类型特征的逻辑操作}
+表\hyperref[t21.2]{组合其他类型特征的类型特征}列出了对bool类型类征（几乎所有的返回bool类型值的标准类型特征）
+进行逻辑组合的类型特征。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l|l}
+        \hline
+        \textbf{特征}                & \textbf{效果}               \\
+        \hline
+        \texttt{conjunction<B...>} & 对bool特征\emph{B...}进行逻辑\emph{与}运算 \\
+        \texttt{disjunction<B...>} & 对bool特征\emph{B...}进行逻辑\emph{或}运算 \\
+        \texttt{negation<B>}       & 对bool特征B进行\emph{非}运算             \\
+        \hline
+    \end{tabular}
+    \caption{组合其他类型特征的类型特征}
+    \label{t21.2}
+\end{table}
+
+它们的一大应用就是通过组合现有类型特征来定义新的类型特征。
+例如，你可以轻松的定义一个检查某个类型是否是“指针”（原生指针，成员函数指针，或者空指针）的特征：
+\begin{lstlisting}
+    template<typename T>
+    struct IsPtr : std::disjunction<std::is_null_pointer<T>,
+                                      std::is_member_pointer<T>,
+                                      std::is_pointer<T>> {
+    };
+\end{lstlisting}
+
+现在我们在一个\nameref{ch10}中使用这个新的特征：
+\begin{lstlisting}
+    template<typename T>
+    void foo(T x)
+    {
+        if constexpr(IsPtr<T>) {
+            ... // 处理是指针的情况
+        }
+        else {
+            ... // 处理不是指针的情况
+        }
+    }
+\end{lstlisting}
+作为另一个例子，我们可以定义一个检查指定类型是否是整数或者枚举但又不是bool的类型特征：
+\begin{lstlisting}
+    template<typename T>
+    struct IsIntegralOrEnum : std::conjunction<std::disjunction<std::is_integral<T>,
+                                                                std::is_enum<T>>,
+                              std::negation<std::is_same<T, bool>>> {
+    };
+\end{lstlisting}
+这里，类似于计算
+\begin{lstlisting}
+    (is_integral<T> || is_enum<T>) && !is_same<T, bool>
+\end{lstlisting}
+这么写的一个好处是\texttt{std::conjunction<>}和\texttt{std::disjunction<>}会
+\emph{短路求值}bool表达式，这意味着当\emph{conjunction}出现第一个\texttt{false}或者
+\emph{disjunction}出现第一个\texttt{true}时就会停止计算。
+这节省了编译时间，甚至因为短路求值可以在某些情况下使原本无效的代码变得有效。
+\footnote{感谢Howard Hinnant指出这一点。}
+例如，如果像下面这样使用不完全类型：
+\begin{lstlisting}
+    struct X {
+        X(int);     // 从int转换而来
+    };
+
+    struct Y;       // 不完全类型
+\end{lstlisting}
+下面的静态断言会失败，因为对于不完全类型\texttt{is\_constructible}会陷入未定义行为
+（尽管有些编译器接受这样的代码）：
+\begin{lstlisting}
+    // 未定义行为
+    static_assert(std::is_constructible<X, int>{} || std::is_constructible<Y, int>{},
+                  "can't init X or Y from int");
+\end{lstlisting}
+下面使用\texttt{std::disjunction}的替代版保证不会失败，
+因为当\texttt{is\_constructible<X, int>}返回\texttt{true}后求值就会停止：
+\begin{lstlisting}
+    // OK：
+    static_assert(std::disjunction<std::is_constructible<X, int>,
+                                   std::is_constructible<Y, int>>{},
+                  "can't init X or Y from int");
+\end{lstlisting}
+
+\section{后记}
+标准类型特征的变量模板由Stephan T. Lavavej于2014年在\url{https://wg21.link/n3854}
+中首次提出。它们最终因Alisdair Meredith发表于\url{https://wg21.link/p0006r0}
+的提案而被Library Fundamentals TS采纳。
+
+类型特征\texttt{std::is\_aggregate<>}在C++17标准中作为美国国家机构对的注释
+引入（见\url{https://wg21.link/lwg2911}）。
+
+\texttt{is\_swappable}特征家族由Andrew Morrow在\url{https://wg21.link/n3619}
+中首次提出。最终被接受的提案由Daniel Krügler发表于\url{https://wg21.link/p0185r1}。
+
+\texttt{std::has\_unique\_object\_representations<>}由Michael Spencer在\\
+\url{https://wg21.link/p0258r0}中首次提出，当时的名称为\texttt{is\_contiguous\_layout}。
+最终被接受的提案由Michael Spencer发表于\url{https://wg21.link/p0258r2}。
+
+\texttt{is\_invocable}特征家族由Agustin Berge在\url{https://wg21.link/n4446}中
+首次提出。和\texttt{std::\\
+invoke\_result\_t<>}一起被接受的提案由Daniel Krügler、
+Pablo Halpern、Jonathan Wakely发表于\url{https://wg21.link/p0604r0}。
+
+bool类型特征的逻辑操作由Jonathan Wakely在\url{https://wg21.link/p0013r0}中首次提出。
+最终被接受的提案由Jonathan Wakely发表于\url{https://wg21.link/p0013r1}。
