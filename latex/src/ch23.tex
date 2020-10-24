@@ -1,23 +1,352 @@
 \chapter{新的STL算法详解}\label{ch23}
+C++17引入了一些新的STL算法。主要目的是为了支持\hyperref[ch22]{并行化}，
+不过你也可以串行的使用这些算法。
 
 
 \section{\texttt{std::for\_each\_n()}}
+作为\nameref{ch22}的一部分，原本就有的\texttt{for\_each\_n()}又提出了一个新的并行版本。
+类似于\texttt{copy\_n()}、\texttt{fill\_n()}、\texttt{generate\_n()}，这个算法需要
+一个整数参数指出要对范围内多少个元素进行操作。
+\begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
+    InputIterator
+    `\textbf{for\_each\_n}` (ExecutionPolicy&& pol,  // 可选的
+                InputIterator beg,
+                Size count,
+                UnaryProc op)
+\end{lstlisting}
+\begin{itemize}
+    \item 对以\emph{beg}为起点的范围中前\emph{count}个元素调用\emph{op(elem)}。
+    \item 返回最后一个调用了\emph{op}()的元素的的下一个位置。
+    \item 调用者必须保证以\emph{beg}为起点的范围内包含足够多的元素。
+    \item \emph{op}返回的任何都会被忽略。
+    \item 如果没有传递执行策略，\texttt{for\_each\_n()}保证传入的可调用对象按照顺序对每个元素进行调用。
+    \item 如果传入了第一个可选的\nameref{ch22.2}参数：
+    \begin{itemize}
+        \item 对所有元素调用\emph{op}的顺序没有任何保证。
+        \item 调用者要保证并行操作不会产生数据竞争。
+        \item 迭代器必须至少是前向迭代器。
+    \end{itemize}
+    \item 复杂度：线性（\emph{op}()调用的\emph{count}）
+\end{itemize}
+例如：
+\inputcodefile{lib/foreachn.cpp}
+我们首先用足够数量的string初始化了一个vector，之后我们先是修改了前5个string：
+\begin{lstlisting}
+    for_each_n(coll.begin(), 5,
+               [] (auto& elem) {
+                   elem = "value" + elem;
+               });
+\end{lstlisting}
+然后又打印出前10个string：
+\begin{lstlisting}
+    for_each_n(coll.begin(), 10,
+               [] (const auto& elem) {
+                   std::cout << elem << '\n';
+               });
+\end{lstlisting}
+因此，程序将会有如下输出：
+\begin{lstlisting}
+    value0
+    value1
+    value2
+    value3
+    value4
+    5
+    6
+    7
+    8
+    9
+\end{lstlisting}
 
 
 \section{新的数学STL算法}
+这一节中列出了定义在头文件\texttt{<numeric>}中的新STL算法。
+注意这些新算法的动机\hyperref[ch22.6]{之前就已经讨论过}。
 
 \subsection{\texttt{std::reduce()}}\label{ch23.2.1}
+\begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
+    typename iterator_traits<InputIterator>::value_type
+    `\textbf{reduce}` (ExecutionPolicy&& pol,   // 可选的
+            InputIterator beg, InputIterator end)
+
+    T
+    `\textbf{reduce}` (ExecutionPolicy&& pol,   // 可选的
+            InputIterator beg, InputIterator end,
+            T initVal)
+
+    T
+    `\textbf{reduce}` (ExecutionPolicy&& opl,   // 可选的
+            InputIterator beg, InputIterator end,
+            T initVal,
+            BinaryOp op)
+\end{lstlisting}
+\begin{itemize}
+    \item 前两个形式返回范围\texttt{[}\emph{beg}\texttt{,}\emph{end}\texttt{)}内
+    所有元素和初始值之和。因此，在如下初始化后：\\
+    \hspace*{2em}\emph{result = initVal}\\
+    将会对每个元素调用如下语句：\\
+    \hspace*{2em}\emph{result = result + elem}
+    \begin{itemize}
+        \item 对于第一种形式，初始值是元素类型的“默认值”（默认构造函数构造出的值或者是
+        \texttt{0、0.0、false、nullptr}等。
+        \item 对于第二种形式，初始值是\emph{initVal}。
+    \end{itemize}
+    \item 因此，对于值\\
+    \hspace*{2em}\texttt{a1 a2 a3 a4 \ldots}\\
+    前两种形式会计算并返回：\\
+    \hspace*{2em}\emph{initVal\texttt{ + a1 + a2 + a3 + }\ldots}
+    \item 第三种形式计算并返回对范围\texttt{[}\emph{beg}\texttt{,}\emph{end}\texttt{)}内
+    所有元素和\emph{initVal}调用\emph{op}的结果。它会对每一个元素进行如下调用：\\
+    \hspace*{2em}\emph{result = op(result, elem)}\\
+    因此，对于值\\
+    \hspace*{2em}\texttt{a1 a2 a3 a4 \ldots}\\
+    前两种形式会计算并返回：\\
+    \hspace*{2em}\emph{initVal op\texttt{ a1 }op\texttt{ a2 }op\texttt{ a3 }op \ldots}
+    \item 如果范围为空（\emph{beg==end}），所有形式都返回初始值。
+    \item \emph{op}不能修改传入的参数。
+    \item 复杂度：线性（\texttt{+}或者\emph{op}()调用\emph{numElems}次）。
+    \item 对于\hyperref[ch22.6.1.1]{可结合}的操作来说这个算法就相当于\hyperref[ch22]{并行}版
+    本的\texttt{std::accumulate()}。如果传递了第一个可选的\nameref{ch22.2}参数：
+    \begin{itemize}
+        \item 调用\emph{op}的顺序并没有任何保证，所以\emph{op}必须是\hyperref[ch22.6.1.1]{可交换可结合的}。
+        \item 调用者需要保证并行进行操作不会导致数据竞争。
+        \item 迭代器必须是前向迭代器。
+    \end{itemize}
+\end{itemize}
+例如，下面的程序：
+\inputcodefile{lib/reduce.cpp}
+将会有如下输出：
+\begin{lstlisting}
+    sum: 30
+    sum: 30
+    product: 7560
+    product: 0
+\end{lstlisting}
+参见并行算法的动机小节来了解关于这个算法的\hyperref[ch22.6.1]{更详细的动机}。
 
 \subsection{\texttt{std::transform\_reduce()}}\label{ch23.2.2}
+\texttt{std::transform\_reduce()}有两种变体：
 
 \subsubsection{单范围的\texttt{std::transform\_reduce()}}
+\begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
+    T
+    `\textbf{transform\_reduce}` (ExecutionPolicy&& pol,    // 可选的
+                      InputIterator beg, InputIterator end,
+                      T initVal,
+                      BinaryOp op2, UnaryOp op1)
+
+\end{lstlisting}
+\begin{itemize}
+    \item 计算并返回范围\texttt{[}\emph{beg}\texttt{,}\emph{end}\texttt{)}内所有
+    元素变换之后再和初始值一起进行结合/累积之后的结果。
+    \item 因此，对于值\\
+    \hspace*{2em}\texttt{a1 a2 a3 a4 \ldots}\\
+    它会计算并返回\\
+    \hspace*{2em}\emph{initVal op2 op1\texttt{(a1)} op2 op1\texttt{(a2)} op2 op1\texttt{(a3)} op2 \ldots}
+    \item 如果范围是空的（\emph{beg==end}），它会返回\emph{initVal}。
+    \item \emph{op1}和\emph{op2}不能修改传入的参数。
+    \item 复杂度：线性（\emph{op1}和\emph{op2}调用\emph{numElems}次）。
+    \item 对于\hyperref[ch22.6.1.3]{不可结合}的操作来说这个算法就相当于\hyperref[ch22]{并行}版
+    本的\texttt{std::accumulate()}。如果传递了第一个可选的\nameref{ch22.2}参数：
+    \begin{itemize}
+        \item 调用\emph{op2}的顺序并没有任何保证，所以\emph{op2}必须是\hyperref[ch22.6.1.1]{可交换可结合的}。
+        \item 调用者需要保证并行进行操作不会导致数据竞争。
+        \item 迭代器必须是前向迭代器。
+    \end{itemize}
+\end{itemize}
+例如，下面的程序：
+\inputcodefile{lib/transformreduce1.cpp}
+会有如下输出：
+\begin{lstlisting}
+    sum of doubles: 60
+    sum of squared: 146
+\end{lstlisting}
+参见并行算法的动机小节来了解关于这个算法的\hyperref[transform动机]{更详细的动机}
+和\hyperref[ch22.6.1.4]{一些其他的例子}。
 
 \subsubsection{双范围的\texttt{std::transform\_reduce()}}\label{ch23.2.2.2}
+\begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
+    T
+    `\textbf{transform\_reduce}` (ExecutionPolicy&& pol,    // 可选的
+                      InputIterator1 beg1, InputIterator1 end1,
+                      InputIterator2 beg2,
+                      T initVal)
+
+    T
+    `\textbf{transform\_reduce}` (ExecutionPolicy&& pol,    // 可选的
+                      InputIterator1 beg1, InputIterator1 end1,
+                      InputIterator2 beg2,
+                      T initVal,
+                      BinaryOp1 op1, BinaryOp2 op2)
+\end{lstlisting}
+\begin{itemize}
+    \item 第一个形式计算范围\texttt{[}\emph{beg1}\texttt{,}\emph{end1}\texttt{)}和
+    以\emph{beg2}开头的范围内元素的内积再加上\emph{initVal}。特别地，它对每两个相应的元素进行如下操作：\\
+    \hspace*{2em}\emph{initVal = initVal + elem1 * elem2}
+    \item 第二个形式计算并返回首先对范围\texttt{[}\emph{beg1}\texttt{,}\emph{end1}\texttt{)}和
+    以\emph{beg2}开头的范围内每两个相应的元素调用\emph{op2}，再对\emph{initVal}和所有上一步结果调用\emph{op1}的结。
+    特别地，它对每两个相应的元素进行如下操作：\\
+    \hspace*{2em}\emph{initVal = op1\texttt{(}initVal, op2\texttt{(}elem1, elem2\texttt{))}}
+    \item 因此，对于值\\
+    \hspace*{2em}\texttt{a1 a2 a3 \ldots}\\
+    \hspace*{2em}\texttt{b1 b2 b3 \ldots}\\
+    这个形式会计算并返回\\
+    \hspace*{2em}\emph{initVal\texttt{ + (a1 * b1) + (a2 * b2) + (a3 * b3) + \ldots}}\\
+    或者\\
+    \hspace*{2em}\emph{initVal op1\texttt{ (a1 }op2\texttt{ b1) }op1\texttt{ (a2 }op2\texttt{ b2) }op1\texttt{ (a3 }op2\texttt{ b3) }op1 \ldots}
+    \item 如果范围为空（\emph{beg1==end1}），所有形式都会返回\emph{initVal}。
+    \item 调用者必须保证以\emph{beg2}开头的范围含有足够数量的元素（至少要和
+    范围\texttt{[}\emph{beg1}\texttt{,}\emph{end1}\texttt{)}的元素数量一样多）。
+    \item \emph{op1}和\emph{op2}不能修改传入的参数。
+    \item 复杂度：线性（\emph{op1}和\emph{op2}调用\emph{numElems}次）。
+    \item 对于\hyperref[ch22.6.1.1]{可结合}的操作来说这个算法就相当于\hyperref[ch22]{并行}版
+    本的\texttt{std::inner\_product()}。如果传递了第一个可选的\nameref{ch22.2}参数：
+    \begin{itemize}
+        \item 调用\emph{op1}的顺序并没有任何保证，所以\emph{op1}必须是\hyperref[ch22.6.1.1]{可交换可结合的}。
+        \item 调用者需要保证并行进行操作不会导致数据竞争。
+        \item 迭代器必须是前向迭代器。
+    \end{itemize}
+\end{itemize}
+例如，下面的程序：
+\inputcodefile{lib/transformreduce2.cpp}
+将会有如下输出：
+\begin{lstlisting}
+    sum of squared:         146
+    product of differences: -200
+    sum of combined digits: 31 12 73 54 45 16 67 38
+\end{lstlisting}
 
 \subsection{\texttt{std::inclusive\_scan()}和\texttt{std::exclusive\_scan()}}\label{ch23.2.3}
+\begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
+    OutputIterator
+    `\textbf{inclusive\_scan}` (ExcutionPolicy&& pol,   // 可选的
+                    InputIterator inBeg, InputIterator inEnd,
+                    OutputIterator outBeg,
+                    BinaryOp op,            // 可选的
+                    T initVal)              // 可选的
+
+    OutputIterator
+    `\textbf{exclusive\_scan}` (ExcutionPolicy&& pol,   // 可选的
+                    InputIterator inBeg, InputIterator inEnd,
+                    OutputIterator outBeg,
+                    T initVal,              // 必须的
+                    BinaryOp op)            // 可选的
+\end{lstlisting}
+\begin{itemize}
+    \item 所有的形式都计算范围\texttt{[}\emph{inBeg}\texttt{,}\emph{inEnd}\texttt{)}内每个
+    元素和之前所有元素组合之后的值并写入以\emph{outBeg}开头的目标范围。
+    \item \texttt{inclusive\_scan()}和\texttt{exclusive\_scan()}的区别在
+    于\texttt{exclusive\_scan()}的结果以初始值开始并排除输入的最后一个元素。
+    注意两种形式函数参数和初始值参数的顺序不同。另外\texttt{exclusive\_scan()}中初始值参数是必须的。
+    \item 因此，对于值\\
+    \hspace*{2em}\texttt{a1 a2 a3 \ldots\ aN}\\
+    \texttt{inclusive\_scan()}会计算\\
+    \hspace*{2em}\emph{initVal op\texttt{ a1, }initVal op\texttt{ a1 }op\texttt{ a2, }initVal op\texttt{ a1 }op\texttt{ a2 }op\texttt{ a3, \ldots\ aN}}\\
+    而\texttt{exclusive\_scan()}会计算\\
+    \hspace*{2em}\emph{initVal\texttt{, }initVal op\texttt{ a1, }initVal op\texttt{ a1 }op\texttt{ a2, \ldots\ }op\texttt{ aN-1}}\\
+    这意味着对于\texttt{inclusive\_scan()}来说，\emph{initVal}充当每个输出值的偏移量，
+    而对于\texttt{exclusive\_scan()}来说，它充当第一个输出的值（尽管如果输入区间为空时它并不会被写入到输出区间）。
+    \item 所有的形式都返回最后一个被写入的位置的下一个位置（第一个还未被写入的位置）。
+    \item 如果没有传递\emph{op}，将会使用\texttt{std::plus}，因此会计算所有元素的和。
+    \item 如果没有传递\texttt{initVal}（只有\texttt{inclusive\_scan()}会出现这种情况），
+    将不会添加初始值。因此，第一个输出的值将直接是第一个输入的值。
+    \item 如果范围为空（\emph{inBeg==inEnd}），所有形式都不会写入任何值。
+    \item 调用者必须保证以\emph{outBeg}开头的区间有足够数量的元素可以写入（事实上，
+    至少要和输入区间里的元素一样多），或者直接使用插入迭代器。
+    \item \emph{op}不能修改传入的参数。
+    \item 复杂度：线性（\emph{op}会调用\emph{numElems}次）。
+    \item 对于\hyperref[ch22.6.1.1]{可结合}的操作来说这个算法就相当于\hyperref[ch22]{并行}版
+    本的\texttt{std::partial\_sum()}。如果传递了第一个可选的\nameref{ch22.2}参数：
+    \begin{itemize}
+        \item 调用\emph{op1}的顺序并没有任何保证，所以\emph{op1}必须是\hyperref[ch22.6.1.1]{可交换可结合的}。
+        \item 调用者需要保证并行进行操作不会导致数据竞争。
+        \item 迭代器必须是前向迭代器。
+    \end{itemize}
+\end{itemize}
+例如，如下程序
+\inputcodefile{lib/scan.cpp}
+将会有如下输出：
+\begin{lstlisting}
+    inclusive_scan():   3 4 11 11 15 16 22 25
+    exclusive_scan(): 0 3 4 11 11 15 16 22
+    exclusive_scan(): 100 103 104 111 111 115 116 122
+    inclusive_scan():     103 104 111 111 115 116 122 125
+    exclusive_scan(): 100 103 104 111 111 115 116 122
+\end{lstlisting}
+注意两个算法输出的值的数量都和输入区间内的元素数量相同。然而，当使用\texttt{inclusive\_scan()}时，
+我们以第一个元素开始，以所有元素组合的结果结尾（加上传递的初始值作为偏移量），
+当使用\texttt{exclusive\_scan()}时，我们以初始值开始，以除了最后一个元素之外的所有元素的组合结果结尾。
 
 \subsection{\texorpdfstring{\texttt{std::transform\_inclusive\_scan()}和\\
 \texttt{std::transform\_exclusive\_scan()}}{}}
+\begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
+    OutputIterator
+    `\textbf{transform\_inclusive\_scan}` (ExcutionPolicy&& pol,    // 可选的
+                              InputIterator inBeg, InputIterator inEnd,
+                              OutputIterator outBeg,
+                              BinaryOp op2,         // 必须的
+                              UnaryOp op1,          // 必须的
+                              T initVal)            // 可选的
 
+    OutputIterator
+    `\textbf{transform\_exclusive\_scan}` (ExcutionPolicy&& pol,    // 可选的
+                              InputIterator inBeg, InputIterator inEnd,
+                              OutputIterator outBeg,
+                              T initVal,            // 必须的
+                              BinaryOp op2,         // 必须的
+                              UnaryOp op1)          // 必须的
+\end{lstlisting}
+\begin{itemize}
+    \item 所有的形式都先对范围\texttt{[}\emph{inBeg}\texttt{,}\emph{inEnd}\texttt{)}内每个
+    元素进行变换，再把每个元素变换后的值和之前所有元素变换后的值组合之后的值写入以\emph{outBeg}开头的目标范围。
+    \item \texttt{transform\_inclusive\_scan()}和\texttt{transform\_exclusive\_scan()}的区别在于
+    后者以初始值开始并且会排除最后一个输出元素。注意这两个函数最后几个参数的顺序不同，另外\texttt{exclusive\_scan()}的
+    初始值参数是必须的。
+    \item 因此，对于值\\
+    \hspace*{2em}\texttt{a1 a2 a3 \ldots\ aN}\\
+    \texttt{transform\_inclusive\_scan()}会计算\\
+    \hspace*{2em}\emph{initVal\ op2  op1\texttt{(a1), }initVal op2 op1\texttt{(a1)} op2 op1\texttt{(a2), \ldots\ }op2 op1\texttt{(aN)}}\\
+    而\texttt{transform\_exclusive\_scan()}会计算\\
+    \hspace*{2em}\emph{initVal, initVal op2 op1\texttt{(a1), }initVal op2 op1\texttt{(a1)} op2 op1\texttt{(a2), \ldots\ }op2 op1\texttt{(aN-1)}}\\
+    这意味着对于\texttt{transform\_inclusive\_scan()}，\emph{initVal}作为每一个输出值的偏移量，而对于\texttt{transform\_\\
+    exclusive\_scan()}，
+    它将作为第一个输出的值（尽管如果输入区间为空时不会输出任何值）。
+    \item 所有的形式都返回最后一个被写入的位置的下一个位置（第一个还未被写入的位置）。
+    \item 如果没有传递\texttt{initVal}（只有\texttt{transform\_inclusive\_scan()}会出现这种情况），
+    将不会添加初始值。因此，第一个输出的值将直接是第一个输入的值。
+    \item 如果输入范围为空（\emph{inBeg==inEnd}），所有形式都不会写入任何值。
+    \item 调用者必须保证以\emph{outBeg}开头的区间有足够数量的元素可以写入（事实上，
+    至少要和输入区间里的元素一样多），或者直接使用插入迭代器。
+    \item \emph{op1}和\emph{op2}不能修改传入的参数。
+    \item 复杂度：线性（\emph{op1}和\emph{op2}会调用\emph{numElems}次）。
+    \item 如果传递了第一个可选的\nameref{ch22.2}参数：
+    \begin{itemize}
+        \item 调用\emph{op2}的顺序并没有任何保证，所以\emph{op2}必须是\hyperref[ch22.6.1.1]{可交换可结合的}。
+        \item 调用者需要保证并行进行操作不会导致数据竞争。
+        \item 迭代器必须是前向迭代器。
+    \end{itemize}
+\end{itemize}
+例如，下面的程序：
+\inputcodefile{lib/transformscan.cpp}
+将会有如下输出：
+\begin{lstlisting}
+    source:                      3 1 7 0 4 1 6 3
+    transform_inclusive_scan():      6 8 22 22 30 32 44 50
+    transform_inclusive_scan():      106 108 122 122 130 132 144 150
+    transform_exclusive_scan():  100 106 108 122 122 130 132 144
+\end{lstlisting}
+注意两个算法输出的值的数量都和输入区间内的元素数量相同。然而，当使用\texttt{transform\_inclusive\_\\
+scan()}时，我们以第一个元素变换后的值开始，以所有元素变换后的值的组合结尾（加上传入的初始值作为偏移量），
+然而当使用\texttt{transform\_exclusive\_scan()}时，我们以初始值开始，以除了最后一个元素
+之外的所有元素变换后的值的组合结尾。
 
 \section{后记}
+\texttt{for\_each\_n()}、\texttt{...reduce()}、\texttt{...scan()}算法最早由Jared Hoberock、
+Michael Garland、Olivier Giroux、Vinod Grover、Ujval Kapasi、Jaydeep Marathe于2012年
+在\url{https://wg21.link/n3408}中和STL算法并行化一起提出。
+之后它变为了一个测试标准：Technical Specification for C++ Extensions for Parallelism
+（见\url{https://wg21.link/n3850)}）。
+额外的\texttt{transform...scan()}形式由Jared Hoberock、Grant Mercer、Agustin Berge、Harmut Kaiser
+在\url{https://wg21.link/n4276}中添加。因为Jared Hoberock在\url{https://wg21.link/p0024r2}中的提案，
+Technical Specification for C++ Extensions for Parallelism被标准库采纳。
+关于异常处理，JF Bastien和Bryce Adelstein Lelbach在\url{https://wg21.link/p0394r4}中的提案最终被接受。

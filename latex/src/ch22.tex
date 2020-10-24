@@ -356,10 +356,10 @@ policy<>}来在泛型编程中检查模板参数是否是执行策略。
 \end{table}
 
 
-\section{并行编程的新算法的动机}
+\section{并行编程的新算法的动机}\label{ch22.6}
 C++17还引入了一些补充的算法来实现那些从C++98就可用的标准算法的并行执行。
 
-\subsection{\texttt{reduce()}}
+\subsection{\texttt{reduce()}}\label{ch22.6.1}
 例如，\texttt{reduce()}作为\texttt{accumulate()}的并行版本引入，
 后者会“累积”所有的元素（你可以自定义“累积”的具体行为）。
 例如，考虑下面对\texttt{accumulate()}的使用：
@@ -372,7 +372,7 @@ C++17还引入了一些补充的算法来实现那些从C++98就可用的标准�
     accumulate(): 100000000
 \end{lstlisting}
 
-\subsubsection{可结合可交换操作的并行化}
+\subsubsection{可结合可交换操作的并行化}\label{ch22.6.1.1}
 上文的示例程序可以替换成\texttt{reduce()}来实现并行化：
 \inputcodefile{lib/parreduce.cpp}
 输出基本相同，程序可能会变得更快也可能会变得更慢
@@ -424,7 +424,7 @@ C++17还引入了一些补充的算法来实现那些从C++98就可用的标准�
 
 要想了解更多关于\texttt{reduce()}的细节，可以参见\hyperref[ch23.2.1]{它的参考小节}。
 
-\subsubsection{不可结合操作的并行化}
+\subsubsection{不可结合操作的并行化}\label{ch22.6.1.3}
 让我们把操作改为累积时加上每个值的平方：
 \inputcodefile{lib/accumulate2.cpp}
 这里，我们传递了一个lambda，把没新的元素的值的平方加到当前的和上：
@@ -449,7 +449,7 @@ C++17还引入了一些补充的算法来实现那些从C++98就可用的标准�
     reduce():     -425251612
     reduce():     705991074
 \end{lstlisting}
-没错，结果\emph{有时}有可能是错的。问题在于这个操作是不可结合的。
+没错，结果\emph{有时}有可能是错的。问题在于这个操作是不可结合的。\label{transform动机}
 （译者注：此处可结合指的是最后的结果与结合的方式无关（即满足结合律的），即如果\texttt{op(arg1, op(arg2, arg3))}和
 \texttt{op(op(arg1, arg2), arg3)}的结果相同，则\texttt{op}是可结合的。）
 如果我们并行的将这个操作应用于元素1、2、3，那么我们可能会首先计算\texttt{0+1*1}和\texttt{2+3*3}，

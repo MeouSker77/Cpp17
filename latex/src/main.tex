@@ -22,10 +22,13 @@
 \setCJKmonofont{宋体}                                        % 设置中文等宽字体
 \setmainfont{Times New Roman}                               % 设置英文正文字体
 \setmonofont[ItalicFont={Noto Sans Mono}]{Noto Sans Mono}   % 设置英文等宽字体
+
 \linespread{1.4}    % 设置行距
 \CJKsetecglue{\,}   % 设置中英文间的空格
+
 \setlist{nosep}     % 设置列表垂直间距为0
 \setlist[enumerate,itemize]{leftmargin=*,listparindent=1em} % 设置列表项缩进
+
 \titleclass{\part}{top}     % Part后不换页
 \titleformat{\part}{\raggedright\Huge\bfseries}{Part \thepart}{1em}{\\[0.7em]} % 设置Part标题格式
 \titlespacing*{\part}{0pt}{0pt}{40pt}   % 设置Part后间距
@@ -46,26 +49,27 @@
 \definecolor{stringcolor}{RGB}{255, 77, 156}    % 定义代码字符串颜色
 
 \lstset{    % 设置代码环境格式
-basicstyle = \ttfamily\footnotesize, % 字体大小
-breaklines = true,                   % 允许折行
-keywordstyle=\color{blue},           % 关键字样式
-language = [11]C++,                  % 编程语言
-stringstyle=\color{stringcolor},     % 字符串样式
-commentstyle = \color{gray}\itshape, % 注释样式
-frameround=tttt,                     % 圆角边框
-rulecolor=\color{lightgray},         % 边框颜色
+basicstyle  =   \ttfamily\footnotesize, % 字体大小
+breaklines  =   true,                   % 允许折行
+keywordstyle=   \color{blue},           % 关键字样式
+language    =   [11]C++,                % 编程语言
+stringstyle =   \color{stringcolor},    % 字符串样式
+commentstyle=   \color{gray}\itshape,   % 注释样式
+frameround  =   tttt,                   % 圆角边框
+rulecolor   =   \color{lightgray},      % 边框颜色
+escapechar  =   `,                      % 逃逸字符
 }
 
 \newcommand\inputcodefile[1]{        % 自定义代码文件格式
 \lstinputlisting[
-frame = single,         % 单边框
+frame       = single,   % 单边框
 xleftmargin = 13pt,     % 左侧缩进
-xrightmargin = 13pt,    % 右侧缩进
-title = #1,             % 标题格式
+xrightmargin= 13pt,     % 右侧缩进
+title       = #1,       % 标题格式
 ]{../code/#1}           % 文件路径
 }
 
-%\includeonly{ch24}
+%\includeonly{ch23}
 
 % Document
 \begin{document}
@@ -75,7 +79,6 @@ title = #1,             % 标题格式
 
     \mainmatter
     \pagestyle{main}
-
 
     \part{基本语言特性}\label{part1}
     这一部分介绍了C++17中新的核心语言特性，但不包括那些专为泛型编程（即template）设计的特性。
