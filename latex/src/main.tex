@@ -2,7 +2,7 @@
 %! Date = 2020/9/23
 
 % Preamble
-\documentclass[twoside, 10pt, AutoFakeBold, AutoFakeSlant]{book}
+\documentclass[twoside,10pt,AutoFakeBold,AutoFakeSlant]{book}
 
 % Packages
 \usepackage{xeCJK}       % 中文支持
@@ -11,43 +11,46 @@
 \usepackage{enumitem}    % 列表环境
 \usepackage{graphicx}    % 插图
 \usepackage{amsmath}     % 某个包依赖
-\usepackage[colorlinks, linkcolor=black, breaklinks=true]{hyperref} % 交叉引用
+\usepackage[colorlinks,breaklinks,linktoc=page,allcolors=linkcolor]{hyperref} % 交叉引用
 \usepackage{xcolor}      % 颜色
 \usepackage[font={it}]{caption}     % 设置图表和代码文件标题
 \usepackage[numbered]{bookmark}     % 设置书签
-\usepackage[pagestyles, clearempty]{titlesec}   % 设置页眉和\part格式
-\usepackage[a4paper, left=2cm, right=2cm, bottom=3.67cm]{geometry}  % 设置页边距
+\usepackage[pagestyles,clearempty]{titlesec}   % 设置页眉和\part格式
+\usepackage[a4paper,left=2cm,right=2cm,bottom=3.67cm]{geometry}  % 设置页边距
 
-\setCJKmainfont[ItalicFont=楷体, BoldItalicFont=楷体]{宋体}   % 设置中文正文字体
+\setCJKmainfont[ItalicFont=楷体,BoldItalicFont=楷体]{宋体}    % 设置中文正文字体
 \setCJKmonofont{宋体}                                        % 设置中文等宽字体
 \setmainfont{Times New Roman}                               % 设置英文正文字体
 \setmonofont[ItalicFont={Noto Sans Mono}]{Noto Sans Mono}   % 设置英文等宽字体
 \linespread{1.4}    % 设置行距
 \CJKsetecglue{\,}   % 设置中英文间的空格
 \setlist{nosep}     % 设置列表垂直间距为0
-\setlist[enumerate,itemize]{leftmargin=*, listparindent=1em}   % 设置列表项缩进
+\setlist[enumerate,itemize]{leftmargin=*,listparindent=1em} % 设置列表项缩进
 \titleclass{\part}{top}     % Part后不换页
 \titleformat{\part}{\raggedright\Huge\bfseries}{Part \thepart}{1em}{\\[0.7em]} % 设置Part标题格式
 \titlespacing*{\part}{0pt}{0pt}{40pt}   % 设置Part后间距
 
-\newpagestyle{front}{       % 自定义页眉格式
+\newpagestyle{front}{               % 自定义页眉格式
 \sethead[\thepage][][\chaptertitle] % 偶数页页眉格式
-{\chaptertitle}{}{\thepage} % 奇数页页眉格式
-\headrule                   % 页眉下水平分隔线
+{\chaptertitle}{}{\thepage}         % 奇数页页眉格式
+\headrule                           % 页眉下水平分隔线
 }
 
 \newpagestyle{main}{        % 自定义页眉格式
 \sethead[\thepage][][Chapter \thechapter: \quad \chaptertitle] % 偶数页页眉格式
-{\thesection \quad \sectiontitle}{}{\thepage} % 奇数页页眉格式
+{\thesection \quad \sectiontitle}{}{\thepage}   % 奇数页页眉格式
 \headrule                   % 页眉下水平分隔线
 }
+
+\definecolor{linkcolor}{RGB}{187, 92, 226}      % 定义链接颜色
+\definecolor{stringcolor}{RGB}{255, 77, 156}    % 定义代码字符串颜色
 
 \lstset{    % 设置代码环境格式
 basicstyle = \ttfamily\footnotesize, % 字体大小
 breaklines = true,                   % 允许折行
 keywordstyle=\color{blue},           % 关键字样式
 language = [11]C++,                  % 编程语言
-stringstyle=\color{magenta},         % 字符串样式
+stringstyle=\color{stringcolor},     % 字符串样式
 commentstyle = \color{gray}\itshape, % 注释样式
 frameround=tttt,                     % 圆角边框
 rulecolor=\color{lightgray},         % 边框颜色
@@ -62,7 +65,7 @@ title = #1,             % 标题格式
 ]{../code/#1}           % 文件路径
 }
 
-%\includeonly{ch21}
+%\includeonly{ch24}
 
 % Document
 \begin{document}

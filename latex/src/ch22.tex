@@ -1,39 +1,534 @@
 \chapter{并行STL算法}\label{ch22}
+\emph{本章的并行算法如果在linux上使用gcc或者clang进行编译的话，会有以下几种情况：
+\begin{itemize}
+    \item 没有安装tbb库，链接时没有指定-ltbb选项：正常编译，但并行算法会串行化，变得和串行算法一样。
+    \item 安装了tbb库，链接时没有指定-ltbb选项：编译错误。
+    \item 安装了tbb库，链接时指定了-ltbb选项：正常编译，并行算法并行执行。
+\end{itemize}
+显然第三种情况才能正常使用并行算法，遇到第一种情况的读者不要奇怪为什么并行算法和串行算法的性能一样。
+正确编译选项示例：\\
+\hspace*{2em} \texttt{g++ -std=c++17 -ltbb lib/parreduce.cpp -o prog}
+\begin{flushright}
+    ——译者注
+\end{flushright}}
 
-\subsubsection{一个简单的计时器辅助类}
+为了从现代的多核体系中受益，C++17标准库引入了并行STL算法来使用多个线程并行处理元素。
+
+许多算法扩展了一个新的参数来指明是否要并行运行算法（当然，没有这个参数的以前的版本仍然受支持）。
+另外，还多了一些专为并行编程补充的新算法。
+
+\subsubsection{一个简单的计时器辅助类}\label{ch22.0.0.1}
+对于这一章中的示例，有时我们需要一个计时器来测量算法的速度。因此，我们使用了一个简单的辅助类，
+它会初始化一个计时器并提供\texttt{printDiff()}来打印出消耗的毫秒数并重新初始化计时器：
+\inputcodefile{lib/timer.hpp}
 
 
 \section{使用并行算法}
+让我们从一些示例算法开始，这些算法演示了怎么让现有算法并行运行和使用新的并行算法。
 
 \subsection{使用并行\texttt{for\_each()}}
+这是第一个例子，简单地演示了并行运行标准算法\texttt{for\_each()}：
+\inputcodefile{lib/parforeach.cpp}
+如你所见，使用并行算法是很简单的：
+\begin{itemize}
+    \item 包含头文件\texttt{<execution>}
+    \item 像通常调用算法一样进行调用，只不过需要添加一个第一个参数\texttt{std::execution::par}，
+    这样我们就可以要求算法在并行模式下运行：
+    \begin{lstlisting}
+    #include <algorithm>
+    #include <execution>
+    ...
+    for_each(std::execution::par,
+             coll.begin(), coll.end(),
+             [](auto& val) {
+                 val.sqrt = std::sqrt(val.value);
+             });
+    \end{lstlisting}
+\end{itemize}
+像通常一样，这里的\texttt{coll}可以是任何范围。然而，注意所有的并行算法要求迭代器至少是
+前向迭代器（我们会在不同的线程中迭代范围内的元素，如果两个迭代器不能迭代相同的值这将毫无意义）
+（译者注：括号里的内容怪怪的，实际上是针对输入迭代器和前向迭代器的不同来进行说明）。
+
+并行算法实际运行的方式是实现特定的。当然，使用多线程不一定能加快速度，
+因为启动和控制多线程也会消耗时间。
 
 \subsubsection{性能提升}
+为了查明是否应该使用和应该在什么时候使用并行算法，让我们把示例修改为下面这样：
+\inputcodefile{lib/parforeachloop.cpp}
+关键的修改点在于：
+\begin{itemize}
+    \item 通过命令行参数，我们可以传递要操作的元素的数量。
+    \item 我们使用了\hyperref[ch22.0.0.1]{类\texttt{Timer}}来测量算法运行的时间。
+    \item 我们在循环中重复了多次测量，可以让结果更准确。
+\end{itemize}
+结果主要依赖于硬件、使用的C++编译器、使用的C++库。
+在我的笔记本上（使用Visual C++，CPU是2核心超线程的Intel i7），可以得到如下结果：
+\begin{itemize}
+    \item 只有100个元素时，串行算法明显快的多（快10倍以上）。这是因为启动和管理线程占用了太多时间，对于这么少的元素来说完全不值得。
+    \item 10,000个元素时基本相当。
+    \item 1,000,000个元素时并行执行快了接近3倍。
+\end{itemize}
+再强调一次，没有通用的方法来判断什么场景什么时间值得使用并行算法，
+但这个示例演示了即使只是非平凡的数字操作，也可能值得使用它们。
+
+值得使用并行算法的关键在于：
+\begin{itemize}
+    \item 操作很长（复杂）
+    \item 有很多很多元素
+\end{itemize}
+例如，使用算法\texttt{count\_if()}的并行版本来统计vector中偶数的数量
+永远都不值得，即使有1,000,000,000个元素：
+\begin{lstlisting}
+    auto num = std::count_if(std::execution::par,       // 执行策略
+                             coll.begin(), coll.end(),  // 范围
+                             [](int elem) {             // 判断准则
+                                return elem % 2 == 0;
+                             });
+\end{lstlisting}
+事实上，对于一个只有快速的判断式的简单算法（比如这个例子），并行执行永远会更慢。
+适合使用并行算法的场景应该是：对每个元素的处理需要消耗很多的时间并且处理过程需要独立于其他元素的处理。
+
+然而，你并不能事先想好一切，因为什么时候如何使用并行线程取决于C++标准库的实现。
+事实上，你不能控制使用多少个线程，具体的实现也可能只对一定数量的元素使用多线程。
+
+请在你的目标平台上自行测试适合的场景。
 
 \subsection{使用并行\texttt{sort()}}
+排序是另一个使用并行算法的例子。
+因为排序准则对每个元素都会调用不止一次，所以你可以节省很多时间。
+（译者注：没看明白这句话什么意思）
+
+考虑像下面这样初始化一个string的vector：
+\begin{lstlisting}
+    std::vector<std::string> coll;
+    for (int i = 0; i < numElems / 2; ++i) {
+        coll.emplace_back("id" + std::to_string(i));
+        coll.emplace_back("ID" + std::to_string(i));
+    }
+\end{lstlisting}
+也就是说，我们创建了一个vector，其元素为以\texttt{"id"}或\texttt{"ID"}开头之后紧跟一个整数的字符串：
+\begin{lstlisting}
+    id0 ID0 id1 ID1 id2 ID2 id3 ... id99 ID99 id100 ID100 ...
+\end{lstlisting}
+像通常一样，我们可以以如下方式顺序排序元素：
+\begin{lstlisting}
+    sort(coll.begin(), coll.end());
+\end{lstlisting}
+现在也可以显式传递一个“顺序”执行策略：
+\begin{lstlisting}
+    sort(std::execution::seq,
+         coll.begin(), coll.end());
+\end{lstlisting}
+传递顺序执行策略的好处是，如果要在运行时决定是顺序执行还是并行执行的话你不需要再修改调用方式。
+
+想要并行排序也很简单：
+\begin{lstlisting}
+    sort(std::execution::par,
+         coll.begin(), coll.end());
+\end{lstlisting}
+注意还有另一个并行执行策略：
+\begin{lstlisting}
+    sort(std::execution::par_unseq,
+         coll.begin(), coll.end());
+\end{lstlisting}
+我会在后文解释其中的不同。
+
+因此，问题又一次变成了（什么时候）使用并行排序会更好？
+在我的笔记本上10,000个字符串时并行排序只需要顺序排序一半的时间。
+即使只排序1000个字符串时并行排序也稍微更快一点。
 
 \subsubsection{结合其他的改进}\label{ch22.1.2.1}
+注意还可以进一步修改来提升性能。例如，如果我们只根据数字进行排序，
+那么我们可以在排序准则中获取不包含前两个字母的子字符串来进行比较，
+这样可以再一次看到使用并行算法的双重改进：
+\begin{lstlisting}
+    sort(std::execution::par,
+         coll.begin(), coll.end(),
+         [] (const auto& a, const auto& b) {
+            return a.substr(2) < b.substr(2);
+         });
+\end{lstlisting}
+然而，\texttt{substr()}是一个开销很大的成员函数，因为它会创建并返回一个新的临时字符串。
+通过使用\nameref{ch19}，即使顺序执行也能看到三重改进：
+\begin{lstlisting}
+    sort(coll.begin(), coll.end(),
+         [] (const auto& a, const auto& b) {
+            return std::string_view{a}.substr(2) < std::string_view{b}.substr(2);
+         });
+\end{lstlisting}
+我们也可以轻松的把并行算法和字符串视图结合起来：
+\begin{lstlisting}
+    sort(std::execution::par,
+         coll.begin(), coll.end(),
+         [] (const auto& a, const auto& b) {
+            return std::string_view{a}.substr(2) < std::string_view{b}.substr(2);
+         });
+\end{lstlisting}
+最后，这种方式可能比直接使用\texttt{string}的\texttt{substr()}成员然后顺序执行快10倍：
+\begin{lstlisting}
+    sort(coll.begin(), coll.end(),
+         [] (const auto& a, const auto& b) {
+            return a.substr(2) < b.substr(2);
+         });
+\end{lstlisting}
 
 
 \section{执行策略}\label{ch22.2}
+你也可以向并行STL算法传递不同的\emph{执行策略(execution policies)}作为第一个参数。
+它们定义在头文件\texttt{<execution>}中。
+表\nameref{t22.1}列出了所有标准的\emph{执行策略}。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l|l}
+        \hline
+        \textbf{策略}                         & \textbf{含义}  \\
+        \hline
+        \texttt{std::execution::seq}        & 顺序执行         \\
+        \texttt{std::execution::par}        & 并行化顺序执行      \\
+        \texttt{std::execution::par\_unseq} & 并行化乱序（矢量化）执行 \\
+        \hline
+    \end{tabular}
+    \caption{执行策略}
+    \label{t22.1}
+\end{table}
+
+让我们仔细讨论这些执行策略：
+\begin{itemize}
+    \item 使用\texttt{seq}指定\textbf{顺序执行}
+
+    这意味着，像非并行化算法一样，当前线程会一个一个的对所有元素执行操作。
+    使用这个选项和使用不接受执行策略参数的非并行化版本的效果类似，
+    然而，这种形式将比非并行化版本多一些约束条件，例如\texttt{for\_each()}不能返回值，
+    所有的迭代器必须至少是前向迭代器。
+
+    提供这个策略的目的是让你可以通过修改一个参数来要求顺序执行，而不是修改调用的函数来做到这一点。
+    然而，注意使用这个策略的并行算法的行为和相应的非并行版本\hyperref[ch22.4]{可能有些细微的不同}。
+
+    \item 使用\texttt{par}指定\textbf{并行化顺序执行}
+
+    这意味着多个线程将会顺序的对元素执行操作。
+    当某个线程对一个新的元素进行操作之前，它会先处理完它之前处理过的其他元素。
+
+    与\texttt{par\_unseq}不同，这个策略可以保证在以下情况下不会出现问题或者死锁：
+    执行了某个元素的第一步处理后必须在执行另一个元素的第一步处理之前执行这个元素接下来的处理步骤。
+    \item 使用\texttt{par\_unseq}指定\textbf{并行化乱序执行}
+
+    这意味着多个线程执行时不需要保证某一个线程在执行完某一个元素的处理之前不会切换到其他的元素。
+    特别地，这允许矢量化执行，一个线程可以先执行完多个元素的第一步处理，然后再执行下一步处理。
+\end{itemize}
+
+并行化乱序执行需要编译器/硬件的特殊支持来检测哪些操作如何矢量化。
+\footnote{例如，如果一个CPU支持512位的寄存器，编译器可能同时加载8个64的值或者4个128位的值到寄存器里
+然后对这些值同时进行计算。}
+
+所有的执行策略都是定义在命名空间\texttt{std}中的新类
+（\texttt{sequenced\_policy}、\texttt{parallel\_policy}、\\
+\texttt{parallel\_unsequenced\_policy}）的\texttt{constexpr}对象。
+还提供了新的类型特征\texttt{std::is\_execution\_\\
+policy<>}来在泛型编程中检查模板参数是否是执行策略。
 
 
 \section{异常处理}
+当处理元素的函数因为未捕获的异常而退出时所有的并行算法会调用\texttt{std::terminate()}。
+
+注意即使选择了顺序执行策略也会这样。
+如果觉得这样不能接受，使用非并行化版本的算法将是更好的选择。
+
+注意并行算法本身也可能抛出异常。如果它们申请并行执行所需的临时内存资源时失败了，
+可能会抛出\texttt{std::bad\_alloc}异常。然而，不会有别的异常被抛出。
 
 
-\section{不使用并行算法的好处}
+\section{不使用并行算法的好处}\label{ch22.4}
+既然已经有了并行算法并且还可以给并行算法指定顺序执行的策略，
+那么我们是否还需要原本的非并行算法呢？
+
+事实上，除了向后的兼容性之外，使用非并行算法还可以提供以下好处：
+\begin{itemize}
+    \item 可以使用输入和输出迭代器。
+    \item 算法不会在遇到异常时\texttt{terminate()}。
+    \item 算法可以避免因为意外使用元素导致的副作用。
+    \item 算法可以提供额外的功能，例如\texttt{for\_each()}会返回传入的可调用对象，我们可能会需要该对象最终的状态。
+\end{itemize}
 
 
 \section{并行算法概述}
+表\nameref{t22.2}列出了标准中支持的所有不需要修改就可以并行运行的算法。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l}
+        \hline
+        \textbf{无限制的并行算法}                                              \\
+        \hline
+        \texttt{find\_end(), adjacent\_find()}                         \\
+        \texttt{search(), search\_n()}（和\hyperref[ch24]{“搜索器”}一起使用时除外） \\
+        \texttt{swap\_ranges()}                                        \\
+        \texttt{replace(), replace\_if()}                              \\
+        \texttt{fill()}                                                \\
+        \texttt{generate()}                                            \\
+        \texttt{remove(), remove\_if(), unique()}                      \\
+        \texttt{reverse(), rotate()}                                   \\
+        \texttt{partition(), stable\_partition()}                      \\
+        \texttt{sort(), stable\_sort(), partial\_sort()}               \\
+        \texttt{is\_sorted(), is\_sorted\_until()}                     \\
+        \texttt{nth\_element()}                                        \\
+        \texttt{inplace\_merge()}                                      \\
+        \texttt{is\_heap(), is\_heap\_until()}                         \\
+        \texttt{min\_element(), max\_element(), min\_max\_element()}   \\
+        \hline
+    \end{tabular}
+    \caption{无限制的并行STL算法}
+    \label{t22.2}
+\end{table}
+
+表\nameref{t22.3}列出了还不支持并行运行的算法：
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l}
+        \hline
+        \textbf{无并行版本的算法}                                              \\
+        \hline
+        \texttt{accumulate()}                                          \\
+        \texttt{partial\_sum()}                                        \\
+        \texttt{inner\_product()}                                      \\
+        \texttt{search()}（和\hyperref[ch24]{“搜索器”}一起使用时）                \\
+        \texttt{copy\_backward() move\_backward()}                     \\
+        \texttt{sample(), shuffle()}                                   \\
+        \texttt{partition\_point()}                                    \\
+        \texttt{lower\_bound(), upper\_bound(), equal\_range()}        \\
+        \texttt{binary\_search()}                                      \\
+        \texttt{is\_permutation()}                                     \\
+        \texttt{next\_permutation(), prev\_permutation()}              \\
+        \texttt{push\_heap(), pop\_heap(), make\_heap(), sort\_heap()} \\
+        \hline
+    \end{tabular}
+    \caption{无并行版本的STL算法}
+    \label{t22.3}
+\end{table}
+
+注意对于\texttt{accumulate()}、\texttt{partial\_sum()}、\texttt{inner\_product()}，
+提供了新的要求更宽松的并行算法来代替（如下所示）：
+\begin{itemize}
+    \item 为了并行地运行\texttt{accumulate()}，使用\hyperref[ch23.2.1]{\texttt{reduce()}}
+    或者\hyperref[ch23.2.2]{\texttt{transform\_reduce()}}。
+    \item 为了并行地运行\texttt{partial\_sum()}，使用\hyperref[ch23.2.3]{\texttt{...scan()}算法}。
+    \item 为了并行地运行\texttt{inner\_product()}，使用\hyperref[ch23.2.2.2]{\texttt{transform\_reduce()}}。
+\end{itemize}
+
+表\nameref{t22.4}列出了标准支持的所有只需要进行一些修改就可以并行运行的算法。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l|l}
+        \hline
+        \textbf{算法}                                                         & \textbf{限制}             \\
+        \hline
+        \texttt{for\_each()}                                                & 返回类型\texttt{void}、前向迭代器 \\
+        \texttt{for\_each\_n()}                                             & 前向迭代器（新）                \\
+        \texttt{all\_of(), and\_of(), none\_of()}                           & 前向迭代器                   \\
+        \texttt{find(), find\_if(), find\_if\_not()}                        & 前向迭代器                   \\
+        \texttt{find\_first\_of()}                                          & 前向迭代器                   \\
+        \texttt{count(), count\_if()}                                       & 前向迭代器                   \\
+        \texttt{mismatch()}                                                 & 前向迭代器                   \\
+        \texttt{equal()}                                                    & 前向迭代器                   \\
+        \texttt{is\_partitioned()}                                          & 前向迭代器                   \\
+        \texttt{partial\_sort\_copy()}                                      & 前向迭代器                   \\
+        \texttt{includes()}                                                 & 前向迭代器                   \\
+        \texttt{lexicographical\_compare()}                                 & 前向迭代器                   \\
+        \texttt{fill\_n()}                                                  & 前向迭代器                   \\
+        \texttt{generate\_n()}                                              & 前向迭代器                   \\
+        \texttt{reverse\_copy()}                                            & 前向迭代器                   \\
+        \texttt{rotate\_copy()}                                             & 前向迭代器                   \\
+        \texttt{copy(), copy\_n(), copy\_if()}                              & 前向迭代器                   \\
+        \texttt{move()}                                                     & 前向迭代器                   \\
+        \texttt{transform()}                                                & 前向迭代器                   \\
+        \texttt{replace\_copy(), replace\_copy\_if()}                       & 前向迭代器                   \\
+        \texttt{remove\_copy(), remove\_copy\_if()}                         & 前向迭代器                   \\
+        \texttt{unique\_copy()}                                             & 前向迭代器                   \\
+        \texttt{partition\_copy()}                                          & 前向迭代器                   \\
+        \texttt{merge()}                                                    & 前向迭代器                   \\
+        \texttt{set\_union(), set\_intersection()}                          & 前向迭代器                   \\
+        \texttt{set\_differrnce(), set\_symmetric\_difference()}            & 前向迭代器                   \\
+        \texttt{inclusive\_scan(), exclusive\_scan()}                       & 前向迭代器（新）                \\
+        \texttt{transform\_inclusive\_scan(), transform\_exclusive\_scan()} & 前向迭代器（新）                \\
+        \hline
+    \end{tabular}
+    \caption{有限制的并行STL算法}
+    \label{t22.4}
+\end{table}
 
 
 \section{并行编程的新算法的动机}
+C++17还引入了一些补充的算法来实现那些从C++98就可用的标准算法的并行执行。
 
 \subsection{\texttt{reduce()}}
+例如，\texttt{reduce()}作为\texttt{accumulate()}的并行版本引入，
+后者会“累积”所有的元素（你可以自定义“累积”的具体行为）。
+例如，考虑下面对\texttt{accumulate()}的使用：
+\inputcodefile{lib/accumulate.cpp}
+我们计算出了所有元素的和，输出为：
+\begin{lstlisting}
+    accumulate(): 10
+    accumulate(): 10000
+    accumulate(): 10000000
+    accumulate(): 100000000
+\end{lstlisting}
 
-\subsubsection{相关无序操作的并行化}
+\subsubsection{可结合可交换操作的并行化}
+上文的示例程序可以替换成\texttt{reduce()}来实现并行化：
+\inputcodefile{lib/parreduce.cpp}
+输出基本相同，程序可能会变得更快也可能会变得更慢
+（根据是否支持启动多个线程、启动线程的时间大于还是小于并行运行节省的时间）。
 
-\subsubsection{有序操作的并行化}
+这里使用的操作是\texttt{+}，这个操作是可结合可交换的，因为整型元素相加的顺序并不会影响结果。
 
-\subsubsection{无关操作的并行化}
+\subsubsection{不可交换操作的并行化}
+然而，对于浮点数来说相加的顺序不同结果也可能不同，像下面的程序演示的一样：
+\inputcodefile{lib/parreducefloat.cpp}
+这里我们同时使用了\texttt{accumulate()}和\texttt{reduce()}来计算结果。
+一个可能的输出是：
+\begin{lstlisting}
+    accumulate(): 0.40001
+    reduce():     0.40001
+    equal
+    accumulate(): 400.01
+    reduce():     400.01
+    differ
+    accumulate(): 400010
+    reduce():     400010
+    differ
+    accumulate(): 4.0001e+06
+    reduce():     4.0001e+06
+    differ
+\end{lstlisting}
+尽管结果看起来一样，但实际上可能是不同的。这是用不同顺序相加浮点数的可能导致的结果。
+
+如果我们改变输出的浮点数精度：
+\begin{lstlisting}
+    std::cout << std::setprecision(20);
+\end{lstlisting}
+我们可以看到下面的结果有一些不同：
+\begin{lstlisting}
+    accumulate(): 0.40001000000000003221
+    reduce():     0.40001000000000003221
+    equal
+    accumulate(): 400.01000000000533419
+    reduce():     400.01000000000010459
+    differ
+    accumulate(): 400009.99999085225863
+    reduce():     400009.9999999878346
+    differ
+    accumulate(): 4000100.0004483023658
+    reduce():     4000100.0000019222498
+\end{lstlisting}
+因为没有是否使用、何时使用、怎么使用并行算法的保证，
+某些平台上的结果可能看起来是相同的（当元素数量不超过一定值时）。
+
+要想了解更多关于\texttt{reduce()}的细节，可以参见\hyperref[ch23.2.1]{它的参考小节}。
+
+\subsubsection{不可结合操作的并行化}
+让我们把操作改为累积时加上每个值的平方：
+\inputcodefile{lib/accumulate2.cpp}
+这里，我们传递了一个lambda，把没新的元素的值的平方加到当前的和上：
+\begin{lstlisting}
+    auto squaredSum = [] (auto sum, auto val) {
+                        return sum + val * val;
+                      };
+\end{lstlisting}
+使用\texttt{accumulate()}的输出将是：
+\begin{lstlisting}
+    accumulate(): 30
+    accumulate(): 30000
+    accumulate(): 30000000
+    accumulate(): 300000000
+\end{lstlisting}
+然而，让我们切换到\texttt{reduce()}并行执行：
+\inputcodefile{lib/parreduce2.cpp}
+输出可能是这样的：
+\begin{lstlisting}
+    reduce():     30
+    reduce():     30000
+    reduce():     -425251612
+    reduce():     705991074
+\end{lstlisting}
+没错，结果\emph{有时}有可能是错的。问题在于这个操作是不可结合的。
+（译者注：此处可结合指的是最后的结果与结合的方式无关（即满足结合律的），即如果\texttt{op(arg1, op(arg2, arg3))}和
+\texttt{op(op(arg1, arg2), arg3)}的结果相同，则\texttt{op}是可结合的。）
+如果我们并行的将这个操作应用于元素1、2、3，那么我们可能会首先计算\texttt{0+1*1}和\texttt{2+3*3}，
+但是当我们组合中间结果时，我们把后者作为了第二个参数，实质上是计算了：
+\begin{lstlisting}
+    (0+1*1) + (2+3*3) * (2+3*3)
+\end{lstlisting}
+但是为什么这里的结果有时候是正确的呢？好吧，看起来是在这个平台上，
+只有当元素达到一定数量时\texttt{reduce()}才会并行运行。
+而这个行为是完全符合标准的。因此，需要像这里一样使用足够多的元素作为测试用例。
+
+解决这个问题的方法是使用另一个新算法\texttt{transform\_reduce()}。
+它把我们对每一个元素的操作（这个过程可以并行化）和可交换的结果的累加
+（这个过程也可以并行化）分离开来。
+\inputcodefile{lib/partransformreduce.cpp}
+当调用\texttt{transform\_reduce()}时，我们传递了
+\begin{itemize}
+    \item 允许并行执行的执行策略
+    \item 要处理的值范围
+    \item 外层累积的初始值\texttt{0L}
+    \item 外层累积的操作\texttt{+}
+    \item 在累加之前处理每个值的lambda
+\end{itemize}
+
+\texttt{transform\_reduce()}可能是到目前为止最重要的并行算法，
+因为我们经常在组合值之前先修改它们（也被称为\emph{map reduce}原理）。
+
+更多关于\texttt{transform\_reduce()}的细节，参见\hyperref[ch23.2.2]{它的参考小节}。
 
 \subsubsection{使用\texttt{transform\_reduce}进行文件系统操作}\label{ch22.6.1.4}
+这里有另一个并行运行\texttt{transform\_reduce()}的例子：
+\inputcodefile{lib/dirsize.cpp}
+首先，我们递归收集了命令行参数中给出的目录中的所有文件的\nameref{ch20.2.3}：
+\begin{lstlisting}
+    std::filesystem::path root{argv[1]};
+
+    std::vector<std::filesystem::path> paths;
+    std::filesystem::recursive_directory_iterator dirpos{root};
+    std::copy(begin(dirpos), end(dirpos), std::back_inserter(paths));
+\end{lstlisting}
+注意因为我们可能会传递无效的路径，可能会有（文件系统）异常抛出并被处理。
+
+之后，我们遍历文件系统路径的集合来累加普通文件的大小：
+\begin{lstlisting}
+    auto sz = std::transform_reduce(
+                    std::execution::par,                    // 并行执行
+                    paths.cbegin(), paths.cend(),           // 范围
+                    std::uintmax_t{0},                      // 初始值
+                    std::plus<>,                            // 累加...
+                    [](const std::filesystem::path& p) {    // 如果是普通文件返回文件大小
+                        return is_regular_file(p) ? file_size(p) : std::uintmax_t{0};
+                    });
+\end{lstlisting}
+新的标准算法\texttt{transform\_reduce()}以如下方式执行：
+\begin{itemize}
+    \item 最后一个参数会作用于每一个元素。这里，传入的lambda会对每个元素调用，
+    如果是常规文件的话会返回它的大小。
+    \item 倒数第二个参数用来把所有大小组合起来。因为我们想要累加大小，所以使用了标准函数对象\texttt{std::plus<>}。
+    \item 倒数第三个参数是组合操作的初始值。这个值的类型也是整个算法的返回值类型。我们把\texttt{0}转换为
+    \texttt{file\_size()}的返回值类型\texttt{std::uintmax\_t}。否则，如果我们简单的传递一个\texttt{0}，我们
+    会得到窄化为\texttt{int}类型的结果。因此，如果路径集合是空的，那么整个调用会返回\texttt{0}。
+\end{itemize}
+注意查询一个文件的大小是一个开销很大的操作，因为它需要操作系统调用。
+因此，使用并行算法来通过多个线程并行调用这个转换函数（从路径到大小的转换）并计算大小的总和会快很多。
+之前第一个测试结果就已经显示出并行算法的明显优势了（最多能快两倍）。
+
+注意你不能直接向并行算法传递指定目录的迭代器，因为目录迭代器是输入迭代器，
+而并行算法要求至少是前向迭代器。
+
+最后，注意\texttt{transform\_reduce()}定义在头文件\texttt{numeric}而不是\texttt{algorithm}
+（和\texttt{accumulate()}一样，后者作为数值算法来进行计算）。
+
+
+\section{后记}
+并行STL算法由Jared Hoberock、Michael Garland、Olivier Giroux、Vinod Grover、Ujval Kapasi、Jaydeep Marathe于
+2012年在\url{https://wg21.link/n3408}中首次提出。当时它成为了一个正式的测试标准：
+\emph{Technical Specification for C++ Extensions for Parallelism}
+（见\url{https://wg21.link/n3850}）。Jared Hoberock、Grant Mercer、Agustin Berge、Harmut Kaiser
+又在\url{https://wg21.link/n4276}中添加了额外的算法。
+最终因Jared Hoberock在\url{https://wg21.link/p0024r2}中的提案，
+\emph{Technical Specification for C++ Extensions for Parallelism}被标准库接纳。
+关于异常处理，JF Bastien和Bryce Adelstein Lelbach在\url{https://wg21.link/p0394r4}中的提案最终被接受。
