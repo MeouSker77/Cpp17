@@ -8,11 +8,11 @@ C++17引入了一些新的STL算法。主要目的是为了支持\hyperref[ch22]
 类似于\texttt{copy\_n()}、\texttt{fill\_n()}、\texttt{generate\_n()}，这个算法需要
 一个整数参数指出要对范围内多少个元素进行操作。
 \begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
-    InputIterator
-    `\textbf{for\_each\_n}` (ExecutionPolicy&& pol,  // 可选的
-                InputIterator beg,
-                Size count,
-                UnaryProc op)
+InputIterator
+`\textbf{for\_each\_n}` (ExecutionPolicy&& pol,  // 可选的
+            InputIterator beg,
+            Size count,
+            UnaryProc op)
 \end{lstlisting}
 \begin{itemize}
     \item 对以\emph{beg}为起点的范围中前\emph{count}个元素调用\emph{op(elem)}。
@@ -65,20 +65,20 @@ C++17引入了一些新的STL算法。主要目的是为了支持\hyperref[ch22]
 
 \subsection{\texttt{std::reduce()}}\label{ch23.2.1}
 \begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
-    typename iterator_traits<InputIterator>::value_type
-    `\textbf{reduce}` (ExecutionPolicy&& pol,   // 可选的
-            InputIterator beg, InputIterator end)
+typename iterator_traits<InputIterator>::value_type
+`\textbf{reduce}` (ExecutionPolicy&& pol,   // 可选的
+        InputIterator beg, InputIterator end)
 
-    T
-    `\textbf{reduce}` (ExecutionPolicy&& pol,   // 可选的
-            InputIterator beg, InputIterator end,
-            T initVal)
+T
+`\textbf{reduce}` (ExecutionPolicy&& pol,   // 可选的
+        InputIterator beg, InputIterator end,
+        T initVal)
 
-    T
-    `\textbf{reduce}` (ExecutionPolicy&& opl,   // 可选的
-            InputIterator beg, InputIterator end,
-            T initVal,
-            BinaryOp op)
+T
+`\textbf{reduce}` (ExecutionPolicy&& opl,   // 可选的
+        InputIterator beg, InputIterator end,
+        T initVal,
+        BinaryOp op)
 \end{lstlisting}
 \begin{itemize}
     \item 前两个形式返回范围\texttt{[}\emph{beg}\texttt{,}\emph{end}\texttt{)}内
@@ -129,12 +129,11 @@ C++17引入了一些新的STL算法。主要目的是为了支持\hyperref[ch22]
 
 \subsubsection{单范围的\texttt{std::transform\_reduce()}}
 \begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
-    T
-    `\textbf{transform\_reduce}` (ExecutionPolicy&& pol,    // 可选的
-                      InputIterator beg, InputIterator end,
-                      T initVal,
-                      BinaryOp op2, UnaryOp op1)
-
+T
+`\textbf{transform\_reduce}` (ExecutionPolicy&& pol,    // 可选的
+                  InputIterator beg, InputIterator end,
+                  T initVal,
+                  BinaryOp op2, UnaryOp op1)
 \end{lstlisting}
 \begin{itemize}
     \item 计算并返回范围\texttt{[}\emph{beg}\texttt{,}\emph{end}\texttt{)}内所有
@@ -166,18 +165,18 @@ C++17引入了一些新的STL算法。主要目的是为了支持\hyperref[ch22]
 
 \subsubsection{双范围的\texttt{std::transform\_reduce()}}\label{ch23.2.2.2}
 \begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
-    T
-    `\textbf{transform\_reduce}` (ExecutionPolicy&& pol,    // 可选的
-                      InputIterator1 beg1, InputIterator1 end1,
-                      InputIterator2 beg2,
-                      T initVal)
+T
+`\textbf{transform\_reduce}` (ExecutionPolicy&& pol,    // 可选的
+                  InputIterator1 beg1, InputIterator1 end1,
+                  InputIterator2 beg2,
+                  T initVal)
 
-    T
-    `\textbf{transform\_reduce}` (ExecutionPolicy&& pol,    // 可选的
-                      InputIterator1 beg1, InputIterator1 end1,
-                      InputIterator2 beg2,
-                      T initVal,
-                      BinaryOp1 op1, BinaryOp2 op2)
+T
+`\textbf{transform\_reduce}` (ExecutionPolicy&& pol,    // 可选的
+                  InputIterator1 beg1, InputIterator1 end1,
+                  InputIterator2 beg2,
+                  T initVal,
+                  BinaryOp1 op1, BinaryOp2 op2)
 \end{lstlisting}
 \begin{itemize}
     \item 第一个形式计算范围\texttt{[}\emph{beg1}\texttt{,}\emph{end1}\texttt{)}和
@@ -218,19 +217,19 @@ C++17引入了一些新的STL算法。主要目的是为了支持\hyperref[ch22]
 
 \subsection{\texttt{std::inclusive\_scan()}和\texttt{std::exclusive\_scan()}}\label{ch23.2.3}
 \begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
-    OutputIterator
-    `\textbf{inclusive\_scan}` (ExcutionPolicy&& pol,   // 可选的
-                    InputIterator inBeg, InputIterator inEnd,
-                    OutputIterator outBeg,
-                    BinaryOp op,            // 可选的
-                    T initVal)              // 可选的
+OutputIterator
+`\textbf{inclusive\_scan}` (ExcutionPolicy&& pol,   // 可选的
+                InputIterator inBeg, InputIterator inEnd,
+                OutputIterator outBeg,
+                BinaryOp op,            // 可选的
+                T initVal)              // 可选的
 
-    OutputIterator
-    `\textbf{exclusive\_scan}` (ExcutionPolicy&& pol,   // 可选的
-                    InputIterator inBeg, InputIterator inEnd,
-                    OutputIterator outBeg,
-                    T initVal,              // 必须的
-                    BinaryOp op)            // 可选的
+OutputIterator
+`\textbf{exclusive\_scan}` (ExcutionPolicy&& pol,   // 可选的
+                InputIterator inBeg, InputIterator inEnd,
+                OutputIterator outBeg,
+                T initVal,              // 必须的
+                BinaryOp op)            // 可选的
 \end{lstlisting}
 \begin{itemize}
     \item 所有的形式都计算范围\texttt{[}\emph{inBeg}\texttt{,}\emph{inEnd}\texttt{)}内每个
@@ -280,21 +279,21 @@ C++17引入了一些新的STL算法。主要目的是为了支持\hyperref[ch22]
 \subsection{\texorpdfstring{\texttt{std::transform\_inclusive\_scan()}和\\
 \texttt{std::transform\_exclusive\_scan()}}{}}
 \begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
-    OutputIterator
-    `\textbf{transform\_inclusive\_scan}` (ExcutionPolicy&& pol,    // 可选的
-                              InputIterator inBeg, InputIterator inEnd,
-                              OutputIterator outBeg,
-                              BinaryOp op2,         // 必须的
-                              UnaryOp op1,          // 必须的
-                              T initVal)            // 可选的
+OutputIterator
+`\textbf{transform\_inclusive\_scan}` (ExcutionPolicy&& pol,    // 可选的
+                          InputIterator inBeg, InputIterator inEnd,
+                          OutputIterator outBeg,
+                          BinaryOp op2,         // 必须的
+                          UnaryOp op1,          // 必须的
+                          T initVal)            // 可选的
 
-    OutputIterator
-    `\textbf{transform\_exclusive\_scan}` (ExcutionPolicy&& pol,    // 可选的
-                              InputIterator inBeg, InputIterator inEnd,
-                              OutputIterator outBeg,
-                              T initVal,            // 必须的
-                              BinaryOp op2,         // 必须的
-                              UnaryOp op1)          // 必须的
+OutputIterator
+`\textbf{transform\_exclusive\_scan}` (ExcutionPolicy&& pol,    // 可选的
+                          InputIterator inBeg, InputIterator inEnd,
+                          OutputIterator outBeg,
+                          T initVal,            // 必须的
+                          BinaryOp op2,         // 必须的
+                          UnaryOp op1)          // 必须的
 \end{lstlisting}
 \begin{itemize}
     \item 所有的形式都先对范围\texttt{[}\emph{inBeg}\texttt{,}\emph{inEnd}\texttt{)}内每个

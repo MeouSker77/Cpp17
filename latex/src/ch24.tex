@@ -1,4 +1,232 @@
 \chapter{子串和子序列搜索器}\label{ch24}
+自从C++98起，C++标准库就提供了一些搜索算法来查找范围内满足特定条件的元素的子集。
+然而，还有一些其他的搜索算法。例如，通过预计算要搜索的模式的统计信息，
+这些算法在特定问题上的性能可能会有极大的提升，例如在一个长文本上搜索子字符串时。
+
+因此C++17引入了Boyer-Moore和Boyer-Moore-Horspool搜索算法，并且提供了不同的接口来使用它们。
+特别地，它们被用来在长文本中搜索子字符串，但也可以用来加快在容器或者范围中搜索子序列。
+
+
 \section{使用子串搜索器}
+新的搜索器主要是用来在长文本中搜索字符串（例如单词或者短语）。
+因此首先让我们演示怎么在这种情形下使用它们，以及使用它们带来的改进。
+
 \subsection{通过\texttt{search()}使用搜索器}
+我们已经有了如下方法在一个字符串\texttt{text}中搜索子串\texttt{sub}：
+\begin{enumerate}
+    \item 字符串成员函数\texttt{find()}：
+    \begin{lstlisting}
+        std::size_type idx = text.find(sub);
+    \end{lstlisting}
+    \item 算法\texttt{search()}：
+    \begin{lstlisting}
+        auto pos = std::search(text.begin(), text.end(), sub.begin(), sub.end());
+    \end{lstlisting}
+    \item \hyperref[ch22]{并行算法}\texttt{search()}：
+    \begin{lstlisting}
+        auto pos = std::search(std::execution::par,
+                               text.begin(), text.end(), sub.begin(), sub.end());
+    \end{lstlisting}
+    \item 使用\texttt{default\_searcher}：
+    \begin{lstlisting}
+        auto pos = std::search(text.begin(), text.end(),
+                               std::default_searcher{sub.begin(), sub.end()});
+    \end{lstlisting}
+    \item 使用\texttt{boyer\_moore\_searcher}：
+    \begin{lstlisting}
+        auto pos = std::search(text.begin(), text.end(),
+                               std::boyer_moore_searcher{sub.begin(), sub.end()});
+    \end{lstlisting}
+    \item 使用\texttt{boyer\_moore\_horspool\_searcher}：
+    \begin{lstlisting}
+        auto pos = std::search(text.begin(), text.end(),
+                               std::boyer_moore_horspool_searcher{sub.begin(), sub.end()});
+    \end{lstlisting}
+\end{enumerate}
+新的搜索器定义在头文件\texttt{<functional>}。
+
+Boyer-Moore和Boyer-Moore-Horspool搜索器是非常著名的在搜索之前预计算“表”（存放哈希值）的算法，
+当搜索区间非常大时可以显著加快搜索速度。为了使用这些搜索器，算法需要随机访问迭代器
+（而不是前向迭代器，前向迭代器可以用于原本的\texttt{search()}。
+
+在\emph{lib/search1.cpp}中，你可以找到一个完整的使用这些不同方法搜索子串的例子。
+
+注意所有形式的\texttt{search()}都返回一个迭代器指向匹配的子序列的第一个字符。
+如果没有匹配的子序列，将返回输入的尾后迭代器。这允许我们像下面这样搜索所有出现的子串：
+\begin{lstlisting}
+    std::boyer_moore_searcher bmsearch{sub.begin(), sub.end()};
+    for (auto pos = std::search(text.begin(), text.end(), bmsearch);
+         pos != text.end();
+         pos = std::search(pos+sub.size(), text.end(), bmsearch)) {
+        std::cout << "found '" << sub << "' at index " << pos - text.begin() << '\n';
+    }
+\end{lstlisting}
+
+\subsubsection{搜索器的性能}
+哪种方式是最好（更快且/或占用更少内存）的搜索子串的方式？
+这个问题还有一个特殊的情况就是\hyperref[ch22]{并行模式下的}传统\texttt{search()}（新的搜索器不能并行）。
+
+这个问题的答案依赖于具体的场景：
+\begin{itemize}
+    \item 只使用（非并行版本的）\texttt{search()}通常是最慢的方法，因为对于\texttt{text}中的每个字符，
+    我们都要查找以它开头的子串是否匹配搜索目标。
+    \item 使用\texttt{default\_search()}应该和上一种方法相差不多，但我发现实际运行时最差能比
+    上一种情况慢三倍。
+    \item 使用\texttt{find()}可能会更快，但这依赖于标准库实现的质量。我在测试中
+    发现实际速度能比\texttt{search()}快20\%到\\
+    100倍之间。
+    \item 如果文本或者要搜索的子串非常长，\texttt{boyer\_moore\_searcher}应该是最快的方法。
+    和\texttt{search()}相比，我发现性能可以提高50倍甚至100倍。对于特别长的文本和子串，
+    这种方法通常是最快的。
+    \item \texttt{boyer\_moore\_horspool\_searcher}用时间换空间（译者注：此处原文为
+    用空间换时间，应是作者笔误）。它通常比\texttt{boyer\_moore\_searcher}慢，但占用的内存
+    会更少。这个算法的性能改进在不同平台上差别极大，在有一个平台上它的性能接近\texttt{boyer\_moore}
+    （比\texttt{search()}快50倍，比\texttt{find()}快10倍），而在其他平台上速度只有\texttt{search()}的
+    2到3倍，甚至还没有使用\texttt{find()}快。
+    \item 还有，使用并行的\texttt{search()}的速度是普通\texttt{search()}的3倍，
+    这表明Boyer-Moore搜索器通常要更快的多。
+\end{itemize}
+因此，我只有一条建议：\textbf{测试！}测试目标平台上的典型场景。
+这是值得的，因为你可能能获得100倍的性能改进（例如，当在接近1千万个字符中搜索一个1000个字符的子串，
+且该子串在接近末尾位置时）。
+
+\emph{lib/searcher1.cpp}中的代码打印出了不同搜索方式的耗时，因此你可以在自己的平台上比较它们的性能。
+（译者注：\emph{lib/searcher1.cpp}见\url{https://www.cppstd17.com/code/lib/searcher1.cpp.html}）
+
 \subsection{直接使用搜索器}\label{ch24.1.2}
+另一种使用Boyer-Moore搜索器的方式是：你可以直接使用搜索器的函数调用运算符，它会返回一个匹配子序列
+开头和尾后的迭代器的pair。
+
+代码类似于下面这样：
+\begin{lstlisting}
+    std::boyer_moore_searcher bmsearch{sub.begin(), sub.end()};
+    ...
+    for (auto begend = bmsearch(text.begin(), text.end());
+         begend.first != text.end();
+         begend = bmsearch(begend.second, text.end())) {
+        std::cout << "found '" << sub << "' at index "
+                  << begend.first - text.begin() << '-'
+                  << begend.second - text.begin() << '\n';
+    }
+\end{lstlisting}
+然而，你可以使用\texttt{std::tie()}来给\texttt{std::pair<>}的\hyperref[ch1.2.3.4]{结构化绑定重新赋值}，
+上例的代码可以改写为如下形式：
+\begin{lstlisting}
+    std::boyer_moore_searcher bmsearch{sub.begin(), sub.end()};
+    ...
+    for (auto [beg, end] = bmsearch(text.begin(), text.end());
+         beg != text.end();
+         std::tie(beg, end) = bmsearch(end, text.end())) {
+        std::cout << "found '" << sub << "' at index "
+                  << beg - text.begin() << '-'
+                  << end - text.begin() << '\n';
+    }
+\end{lstlisting}
+如果要直接使用搜索器来查找第一个出现的匹配子串，你可以使用\nameref{ch2}和\nameref{ch1}：
+\begin{lstlisting}
+    std::boyer_moore_searcher bmsearch{sub.begin(), sub.end()};
+    ...
+    if (auto [beg, end] = bmsearch(text.begin(), text.end()); beg != text.end()) {
+        std::cout << "found '" << sub << "' first at index "
+                  << beg - text.begin() << '-'
+                  << end - text.begin() << '\n';
+    }
+\end{lstlisting}
+
+
+\section{使用泛型子序列搜索器}
+Boyer-Moore和Boyer-Moore-Horspool算法是作为字符串搜索器开发的。然而，C++17将它们改进为了
+泛型算法，这意味着你可以使用它们在一个容器或者范围内搜索子序列。
+
+也就是说，你现在可以实现下面这样的代码：
+\begin{lstlisting}
+    std::vector<int> coll;
+    ...
+    std::deque<int> sub{0, 8, 15, ...};
+    pos = std::search(coll.begin(), coll.end(), std::boyer_moore_searcher{sub.begin(), sub.end()});
+\end{lstlisting}
+而且，你还可以试用搜索器的函数调用运算符：
+\begin{lstlisting}
+    std::vector<int> coll;
+    ...
+    std::deque<int> sub{0, 8, 15, ...};
+    std::boyer_moore_searcher bm{sub.begin(), sub.end()};
+    auto [beg, end] = bm(coll.begin(), coll.end());
+    if (beg != coll.end()) {
+        std::cout << "found subsequence at " << beg - coll.begin() << '\n';
+    }
+\end{lstlisting}
+要想这段代码能通过编译，元素必须能用在哈希表中（也就是说，元素的类型必须提供默认的哈希函数和
+比较运算符\texttt{==}）。如果不满足条件，你可以使用搜索谓词（见\hyperref[ch24.3]{下文}）。
+
+再强调一次：测试性能（速度和内存占用）提升。我注意到对于一些例子性能提升的变化更大。
+例如，使用\texttt{boyer\_moore\_searcher}能把搜索速度提高100倍（比并行算法还要快得多）。
+然而，使用\texttt{boyer\_moore\_horspool\_searcher}有时候能把速度提高50倍，但有时候
+却会把速度降低2倍。一定要测试！
+
+\texttt{lib/searcher2.cpp}中的代码展示了如何使用不同的搜索器在一个vector中搜索子序列，
+并且也打印出了不同方法的耗时，因此你可以在自己的平台上比较它们的性能。
+（译者注：lib/searcher2.cpp见\url{https://www.cppstd17.com/code/lib/searcher2.cpp.html}）
+
+\section{使用搜索器谓词}\label{ch24.3}
+当使用搜索器时，你可以使用谓词。出于以下两个原因这是必须的：
+\begin{enumerate}
+    \item 你想自定义两个元素的比较方式。
+    \item 你想提供一个自定义的哈希函数，这也是Boyer-Moore(-Horspool)搜索器必须的。
+\end{enumerate}
+你可以把谓词作为额外的参数传递给搜索器的构造函数。例如，这里用一个大小写不敏感的搜索器
+来搜索子串：
+\begin{lstlisting}
+    std::boyer_moore_searcher bmic{substr.begin(), substr.end(),
+                                   [] (char c) {
+                                       return std::hash<char>{}(std::toupper(c));
+                                   },
+                                   [] (char c1, char c2) {
+                                       return std::toupper(c1) == std::toupper(c2);
+                                   }
+                                  };
+    auto begend = bmic(sub.begin(), sub.end());
+\end{lstlisting}
+在计算哈希值之前不要忘记调用\texttt{toupper()}，否则你会违背\texttt{==}返回\texttt{true}的两个元素
+的哈希值也必须相同这个要求。
+
+下一个例子：如果我们有一个如下定义的\texttt{Customer}类：
+\begin{lstlisting}
+    class Customer {
+        ...
+      public:
+        Customer() = default();
+        std::string getID() const {
+            return id;
+        }
+        friend bool operator== (const Customer& c1, const Customer& c2) {
+            return c1.id == c2.id;
+        }
+    };
+\end{lstlisting}
+我们可以像下面这样在一个顾客的vector中搜索子序列：
+\begin{lstlisting}
+    std::vector<Customer> customers;
+    ...
+    std::vector<Customer> sub{...};
+    ...
+    std::boyer_moore_searcher bmcust(sub.begin(), sub.end(),
+                                     [] (const Customer& c) {
+                                         return std::hash<std::string>{}(c.getID());
+                                     });
+    auto pos = bmcust(customers.begin(), customer.end());
+    if (pos.first != customers.end()) {
+        ...
+    }
+\end{lstlisting}
+然而，注意搜索器使用谓词时会产生很大的开销，这意味着只有当有非常多的元素并且要搜索的子序列也很大时
+（例如，在一个1千万的顾客集合里搜索一个1000个顾客的子序列）才值得这么做。
+
+再提醒一次：仔细考虑、实际测试。
+
+
+\section{后记}
+搜索器由Marshall Clow在\url{https://wg21.link/n3411}中首次提出，
+并指定Boost.Algorithm做为参考实现。之后它们被第一个Library Fundamentals TS采纳。
+到了C++17，它们和一些其它组件因为Beman Dawes和Alisdair Meredith在\url{https://wg21.link/p0220r1}
+发表的提案而被标准库采纳，Marshall Clow还在\url{https://wg21.link/p0253R1}中修正了一些接口的问题。
