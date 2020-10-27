@@ -1,13 +1,296 @@
 \chapter{其他工具函数和算法}\label{ch25}
+C++17提供了很多新的工具函数和算法，将在这一章中讲述。
+
 
 \section{\texttt{size()}，\texttt{empty()}，\texttt{data()}}
+为了让泛型代码更加灵活，C++标准库提供了三个新的辅助函数：\texttt{size()}、\texttt{empty()}、
+\texttt{data()}。
 
-\subsection{泛型\texttt{size()}函数}
+这三个辅助函数和另外几个用来迭代范围或集合的泛型全局辅助函数：\texttt{std::begin()}、
+\texttt{std::end()}、\texttt{std::advance()}一样，都定义在头文件\texttt{<iterator>}中。
+
+\subsection{泛型\texttt{size()}函数}\label{ch25.1.1}
+泛型\texttt{size()}函数允许我们查询任何范围的大小，前提是它有迭代器接口或者它是原生数组。
+通过使用这个函数你可以写出类似于下面的代码：
+\inputcodefile{lib/last5.hpp}
+这里通过
+\begin{lstlisting}
+    auto size{std::size(coll)};
+\end{lstlisting}
+我们用传入的集合的大小初始化了\texttt{size}，\texttt{std::size()}调用可能会映射到
+\texttt{coll.size()}，如果参数是原生数组的话会映射到其长度。
+因此，如果我们调用：
+\begin{lstlisting}
+    std::array arr{27, 3, 5, 8, 7, 12, 22, 0, 55};
+    std::vector v{0.0, 8.8, 15.15};
+    std::initializer_list<std::string> il{"just", "five", "small", "string", "literals"};
+    printLast5(arr);
+    printLast5(v);
+    printLast(il);
+\end{lstlisting}
+输出将是：
+\begin{lstlisting}
+    9 elems: ... 7 12 22 0 55
+    3 elems: 0 8.8 15.15
+    5 elems: just five small string literals
+\end{lstlisting}
+另外因为\texttt{std::size()}还支持原生C数组，所以我们也可以调用：
+\begin{lstlisting}
+    printLast5("hello world");
+\end{lstlisting}
+这回打印出：
+\begin{lstlisting}
+    12 elems: ... o r l d
+\end{lstlisting}
+注意这个函数模板计算数组大小时不是使用通常的方法，而是使用\texttt{countof}或者
+如下定义的\texttt{ARRAYSIZE}:
+\begin{lstlisting}
+    #define ARRAYSIZE(a) (sizeof(a)/sizeof(*(a)))
+\end{lstlisting}
+注意你不能向\texttt{printLast5<>()}传递隐式的初值列。
+这是因为模板参数不能推导为\texttt{std::initializer\_\\
+list()}。因此，如果你想传递隐式的初值列，那么你必须像下面这样重载\texttt{printLast5()}：
+\begin{lstlisting}
+    template<typename T>
+    void printLast5(const std::initializer_list<T>& coll)
+\end{lstlisting}
+最后，注意这段代码不能用于\texttt{forward\_list<>}，因为单向链表没有成员函数\texttt{size()}。
+因此，如果你只是想检查集合是否为空的话，更推荐使用\texttt{std::empty()}，下面即将讨论它。
 
 \subsection{泛型\texttt{empty()}函数}
+类似于\hyperref[ch25.1.1]{新的全局\texttt{size()}}，新的泛型\texttt{std::empty()}可以
+帮助我们检查是否一个容器、一个原生C数组或者一个\texttt{std::initializer\_list<>}为空。
+
+一个类似于上面的例子是，你可以检查一个传入的集合是否为空：
+\begin{lstlisting}
+    if (std::empty(coll)) {
+        return;
+    }
+\end{lstlisting}
+相比于\texttt{std::size()}，\texttt{std::empty()}还支持单向链表。
+
+注意，根据语言规则原生C数组的大小不能为0。因此，\texttt{std::empty()}对C数组总是
+返回\texttt{false}。
+\footnote{默认情况下，一些编译器（例如gcc和clang）把空原生数组支持作为一个扩展（你需要
+使用\texttt{-pedantic-errors}参数才能禁用）。然而，使用\texttt{std::empty()}处理空C数组将不能编译。}
 
 \subsection{泛型\texttt{data()}函数}
+最后，新的泛型\texttt{std::data()}函数允许我们访问集合（有\texttt{data()}成员的容器、原生C数组、
+\texttt{std::\\
+initializer\_list<>}都可以）的原始数据。
+例如，下面的代码会打印出集合内索引为偶数的元素：
+\inputcodefile{lib/data.hpp}
+因此，如果我们调用：
+\begin{lstlisting}
+    std::array arr{27, 3, 5, 8, 7, 12, 22, 0, 55};
+    std::vector v{0.0, 8.8, 15.15};
+    std::initializer_list<std::string> il{"just", "five", "small", "string", "literals"};
+    printData(arr);
+    printData(v);
+    printData(il);
+    printData("hello world");
+\end{lstlisting}
+输出将是：
+\begin{lstlisting}
+    27 5 7 22 55
+    0 15.15
+    just small literals
+    h l o w r d
+\end{lstlisting}
+
 
 \section{\texttt{as\_const()}}
+新的辅助函数\texttt{std::as\_const()}可以在不使用\texttt{static\_cast<>}或
+者\texttt{add\_const\_t<>}类型特征的情况下把值转换为相应的\texttt{const}类型。
+
+这允许我们用非常量对象强制调用常量版本的重载函数：
+\begin{lstlisting}
+    std::vector<std::string> coll;
+
+    foo(coll);                  // 非常量版本的重载优先级更高
+    foo(std::as_const(coll));   // 强制调用常量版本的重载
+\end{lstlisting}
+如果\texttt{foo()}是一个函数模板，这将强制模板参数被实例化为常量类型，
+而不是原本的非常量类型。
 
 \subsection{以常量引用捕获}\label{ch25.2.1}
+\texttt{as\_const()}的一个应用就是以常量引用方式捕获lambda的参数。例如：
+\begin{lstlisting}
+    std::vector<int> coll{8, 15, 7, 42};
+
+    auto printColl = [&coll = std::as_const(coll)] {
+                        std::cout << "coll: ";
+                        for (int elem : coll) {
+                            std::cout << elem << ' ';
+                        }
+                        std::cout << '\n';
+                     };
+\end{lstlisting}
+现在，调用
+\begin{lstlisting}
+    printColl();
+\end{lstlisting}
+将会打印出\texttt{coll}当前的状态，并且没有意外修改\texttt{coll}的值的危险。
+
+
+\section{\texttt{clamp()}}
+C++17提供了一个新的工具函数\texttt{clamp()}，它可以找出三个值中大小居中的那个。
+它其实是\texttt{min()}和\texttt{max()}\\
+的组合。例如：
+\inputcodefile{lib/clamp.cpp}
+这里的\texttt{clamp(i, 5, 13)}等价于\texttt{std::min(std::max(i, 5), 13)}，
+其输出如下：
+\begin{lstlisting}
+    5
+    5
+    8
+    13
+\end{lstlisting}
+类似于\texttt{min()}和\texttt{max()}，\texttt{clamp()}的所有参数也都
+是同一个类型\texttt{T}的\texttt{const}的引用：
+\begin{lstlisting}
+    namespace std {
+        template<typename T>
+        constexpr const T& clamp(const T& value, const T& min, const T& max);
+    }
+\end{lstlisting}
+返回值是也是\texttt{const}引用，并且是输入参数之一。
+
+如果你传递了不同类型的参数，你可以显示指明模板参数\texttt{T}：
+\begin{lstlisting}
+    double d{4.3};
+    int max{13};
+    ...
+    std::clamp(d, 0, max);          // 编译期 ERROR
+    std::clamp<double>(d, 0, max);  // OK
+\end{lstlisting}
+你也可以传递浮点数，只要它们的值不是NaN。
+
+就像\texttt{min()}和\texttt{max()}一样，你也可以传递一个谓词函数来进行比较操作。例如：
+\begin{lstlisting}
+    for (int i : {-7, 0, 8, 15}) {
+        std::cout << std::clamp(i, 5, 13, [] (auto a, auto b) {
+                                              return std::abs(a) < std::abs(b);
+                                          })
+                  << '\n';
+    }
+\end{lstlisting}
+将会有如下输出：
+\begin{lstlisting}
+    -7
+    5
+    8
+    13
+\end{lstlisting}
+因为\texttt{-7}的绝对值介于\texttt{5}和\texttt{13}的绝对值之间，
+所以\texttt{clamp()}第一次调用会返回\texttt{-7}。
+
+\texttt{clamp()}没有接受初值列参数的重载版本（\texttt{min()}和\texttt{max()}有）。
+
+
+\section{sample()}
+C++17提供了\texttt{sample()}算法来从一个给定的范围（总体）内提取出一个随机的子集（样本）。
+有时这也被称为\emph{水塘抽样或者选择抽样}。
+
+考虑下面的示例程序：
+\inputcodefile{lib/sample1.cpp}
+我们首先初始化了一个有足够多字符串（\texttt{value0, value1, ...}）的vector，
+之后我们使用了\texttt{sample()}来提取出这些字符串的一个随机的子集：
+\begin{lstlisting}
+    // 打印10个从集合中随机抽取的元素：
+    std::sample(coll.begin(), coll.end(),
+                std::ostream_iterator<std::string>{stdout, "\n"},
+                10,
+                std::default_random_engine{});
+\end{lstlisting}
+我们传递了以下参数：
+\begin{itemize}
+    \item 总体范围的起点和终点
+    \item 一个用来写入提取出的值的迭代器（这里使用了输出迭代器把提取出的字符串写入到标准输出）
+    \item 要提取的元素数量的上限（如果总体范围小于指定数量就无法达到上限）
+    \item 用来计算随机子集的随机数引擎
+\end{itemize}
+最后的结果是我们打印出了\texttt{coll}内的10个随机元素。输出的一个可能的示例是：
+\begin{lstlisting}
+    value132
+    value349
+    value796
+    value2902
+    value3267
+    value3553
+    value4226
+    value4820
+    value5509
+    value8931
+\end{lstlisting}
+如你所见，元素的顺序是稳定的（前后顺序和在\texttt{coll}里时一样）。
+然而，只有当传递的范围的迭代器至少是前向迭代器时才保证这一点。
+
+该算法的声明如下：
+\begin{lstlisting}
+    namespace std {
+        template<typename InputIterator, typename OutputIterator,
+                 typename Distance, typename UniformRandomBitGenerator>
+        OutputIterator sample(InputIterator sourceBeg, InputIterator sourceEnd,
+                              OutputIterator destBeg,
+                              Distance num,
+                              UniformRandomBitGenerator&& eng);
+    }
+\end{lstlisting}
+它有以下保证和约束：
+\begin{itemize}
+    \item 源范围迭代器至少是输入迭代器，目标迭代器至少是输出迭代器。
+    如果源迭代器连前向迭代器都不是，那么目标迭代器必须是随机访问迭代器。
+    \item 像通常一样，如果目标区间大小不够又没有使用插入迭代器，那么写入目标迭代器可能会导致未定义行为。
+    \item 算法返回最后一个被拷贝的元素的下一个位置。
+    \item 目标迭代器指向的位置不能在源区间中。
+    \item \emph{num}可能是整数类型。如果源区间里的元素数量不足，将会提取出源区间里所有的元素。
+    \item 只要源区间的迭代器不只是输入迭代器那么被提取出的子集中元素的顺序将保持稳定。
+\end{itemize}
+这里还有一个例子演示\texttt{sample()}的用法：
+\inputcodefile{lib/sample2.cpp}
+我们首先初始化了一个有足够多字符串（\texttt{value0, value1, ...}）的vector，
+然后用一个随机数种子初始化了一个随机数引擎:
+\begin{lstlisting}
+    // 用一个随机数种子初始化一个Mersenne Twister引擎：
+    std::random_device rd;      // 随机数种子（如果支持的话）
+    std::mt19937 eng{rd()};     // Mersenne Twister引擎
+\end{lstlisting}
+和一个目的区间：
+\begin{lstlisting}
+    // 初始化目标区间（至少要能存放10个元素）：
+    std::vector<std::string> subset;
+    subset.resize(100);
+\end{lstlisting}
+\texttt{sample()}调用会从源区间拷贝（最多）10个元素到目的区间：
+\begin{lstlisting}
+    // 从源区间随机拷贝10个元素到目的区间：
+    auto end = std::sample(coll.begin(), coll.end(),
+                           subset.begin(),
+                           10,
+                           eng);
+\end{lstlisting}
+返回值\texttt{end}被初始化为目的区间中最后一个被拷贝的元素的下一个位置，
+所以可以用来作为打印的终点：
+\begin{lstlisting}
+    // 打印被提取出的元素（使用返回值作为终点）：
+    std::for_each(subset.begin(), end,
+                  [] (const auto& s) {
+                      std::cout << "random elem: " << s << '\n';
+                  });
+\end{lstlisting}
+
+\section{后记}
+\texttt{size()}、\texttt{empty()}、\texttt{data()}由Riccardo Marcangelo在
+\url{https://wg21.link/n4017}中首次提出。最终被接受的提案由Riccardo Marcangelo
+发表于\url{https://wg21.link/n4280}。
+
+\texttt{as\_const()}由ADAM David Alan Martin和Alisdair Meredith在
+\url{https://wg21.link/n4380}中首次提出。最终被接受的提案由ADAM David Alan Martin和
+Alisdair Meredith发表于\url{https://wg21.link/p0007r1}。
+
+\texttt{clamp()}由Martin Moene和Niels Dekker在\url{https://wg21.link/n4536}中
+首次提出。最终被接受的提案由Martin Moene和Niels Dekker发表于\url{https://wg21.link/p002501}。
+
+\texttt{sample()}由Walter E. Brown在\url{https://wg21.link/n3842}中首次提出。
+最终被接受的提案由Walter E. Brown发表于\url{https://wg21.link/n3925}。
