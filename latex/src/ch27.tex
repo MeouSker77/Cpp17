@@ -1,1 +1,241 @@
 \chapter{多线程和并发}\label{ch27}
+C++17还引入了一些多线程和并发领域的扩展和改进。
+
+
+\section{补充的互斥量和锁}
+
+\subsection{\texttt{std::scoped\_lock}}\label{ch27.1.1}
+C++11引入了一个简单的\texttt{std::lock\_guard}来实现简单的RAII风格的
+互斥量上锁：
+\begin{itemize}
+    \item 构造函数上锁
+    \item 析构函数解锁（也可能因异常而调用析构函数解锁）
+\end{itemize}
+不幸的是，没有标准化的可变参数模板可以用来在一条声明中同时锁住多个互斥量。
+
+\texttt{std::scoped\_lock<>}解决了这个问题。它允许我们同时锁住一个或多个互斥量。
+互斥量的类型也可以不同。
+
+例如：
+\begin{lstlisting}
+    #include <mutex>
+    ...
+    std::vector<std::string> allIssues;
+    std::mutex allIssuesMx;
+    std::vector<std::string> openIssues;
+    std::timed_mutex openIssuesMx;
+
+    // 同时锁住两个issue列表：
+    {
+        std::scoped_lock lg(allIssuesMx, openIssuesMx);
+        ... // 操作allIssues和openIssues
+    }
+\end{lstlisting}
+注意根据\nameref{ch9}，声明\texttt{lg}时你不需要指明互斥量的类型。
+
+这个示例等价于下面的C++11代码：
+\begin{lstlisting}
+    // 锁住两个issue列表：
+    {
+        std::lock(allIssuesMx, openIssuesMx);   // 以避免死锁的方式上锁
+        std::lock_guard<std::mutex> lg1(allIssuesMx, std::adopt_lock);
+        std::lock_guard<std::mutex> lg2(openIssuesMx, std::adopt_lock);
+        ... // 操作allIssues和openIssues
+    }
+\end{lstlisting}
+因此，当传入的互斥量超过一个时，\texttt{scoped\_lock}的构造函数会使用可变参数的
+快捷函数\texttt{lock(...)}，这个函数会保证不会导致死锁
+（标准中提到：\emph{“必须使用一个避免死锁的算法，例如try-and-back-off算法，但具体
+使用哪种算法并没有明确指定，这是为了避免过度约束实现”}）。
+
+如果只向\texttt{scoped\_lock}的构造函数传递了一个互斥量，那么它只简单的锁住互斥量。
+因此，如果用单个参数构造\texttt{scoped\_lock}，它的行为类似于\texttt{lock\_guard}。
+它还定义了成员\texttt{mutex\_type}，而多个互斥量构造的对象没有这个成员。
+\footnote{典型的实现是提供一个单互斥量参数的偏特化版本。}
+因此，你可以把所有的\texttt{lock\_guard}都替换为\texttt{scoped\_lock}。
+
+如果没有传递互斥量，那么lock guard没有任何效果。
+
+注意你也可以传递已经被锁住的互斥量：
+\begin{lstlisting}
+    // 锁住两个issue列表：
+    {
+        std::lock(allIssuesMx, openIssuesMx);   // 注意：使用了避免死锁的算法
+        std::scoped_lock lg{std::adopt\_lock, allIssuesMx, openIssuesMx};
+        ... // 操作allIssues和openIssues
+    }
+\end{lstlisting}
+然而，注意现在传递已经被锁住的互斥量时要在前边加上\texttt{adopt\_lock}参数。
+\footnote{在最初的C++17标准中\texttt{adopt\_lock}参数是在最后，之后在
+\url{https://wg21.link/p0739r0}中修正。}
+
+\subsection{\texttt{std::shared\_mutex}}
+C++14添加了一个\texttt{std::shared\_timed\_mutex}来支持读/写锁，
+它支持多个线程同时读一个值，偶尔会有一个线程更改值。
+然而，在某些平台上不支持超时的锁可以被实现的更有效率。
+因此，现在引入了类型\texttt{std::shared\_mutex}
+（就像C++11引入的\texttt{std::mutex}和\texttt{std::timed\_mutex}的关系一样）。
+
+\texttt{std::shared\_mutex}定义在头文件\texttt{shared\_mutex}中，支持以下操作：
+\begin{itemize}
+    \item 对于独占锁：\texttt{lock}、\texttt{try\_lock()}、\texttt{unlock()}
+    \item 对于共享的读权限：\texttt{lock\_shared()}、\texttt{try\_lock\_shared()}、\texttt{unlock\_shared()}
+    \item \texttt{native\_handle()}
+\end{itemize}
+也就是说，和类型\texttt{std::shared\_timed\_mutex}不同的地方在于，
+\texttt{std::shared\_mutex}不保证支持\texttt{try\_\\
+lock\_for()}、\texttt{try\_lock\_until()}、\texttt{try\_lock\_shared\_for()}、\texttt{try\_lock\_shared\_until}等操作。
+
+注意\texttt{std::shared\_timed\_mutex}是唯一一个不提供\texttt{native\_handle()} API的互斥量类型。
+
+\subsubsection{使用\texttt{shared\_mutex}}
+我们可以像这样使用\texttt{shared\_mutex}：假设你有一个共享的vector，它被多个线程读取，
+但偶尔会被修改：
+\begin{lstlisting}
+    #include <shared_mutex>
+    #include <mutex>
+    ...
+    std::vector<double> v;      // 共享的资源
+    std::shared_mutex vMutex;   // 控制对v的访问（在C++14中要使用shared_timed_mutex）
+\end{lstlisting}
+为了获取共享的读权限（多个读者不会互相阻塞），你可以使用\texttt{std::shared\_lock}，
+它是为共享读权限设计的lock guard（C++14引入）。例如：
+\begin{lstlisting}
+    if (std::shared_lock sl(vMutex); v.size() > 0) {
+        ... // vector v的（共享）读权限
+    }
+\end{lstlisting}
+对于独占的写操作你应该使用独占的lock guard。可以使用简单的\texttt{lock\_guard}，
+或者\texttt{scoped\_lock}（\hyperref[ch27.1.1]{刚刚介绍的}）、或者复杂的\texttt{unique\_lock}。例如：
+\begin{lstlisting}
+    {
+        std::scoped_lock sl(vMutex);
+        ... // vector v的独占的写权限
+\end{lstlisting}
+
+
+\section{原子类型的\texttt{is\_always\_lock\_free}}
+你现在可以使用一个C++库的特性来检查一个特定的原子类型是否总是可以在无锁的情况下使用。例如：
+\begin{lstlisting}
+    if constexpr(std::atomic<int>::is_always_lock_free) {
+        ...
+    }
+    else {
+        ...
+    }
+\end{lstlisting}
+如果一个原子类型的\texttt{is\_always\_lock\_free}返回\texttt{true}，
+那么该类型的对象的\texttt{is\_lock\_free()}成员一定会返回\texttt{true}：
+\begin{lstlisting}
+    if constexpr(atomic<T>::is_always_lock_free) {
+        assert(atomic<T>{}.is_lock_free()); // 绝不会失败
+    }
+\end{lstlisting}
+在C++17之前只能使用相应的宏的值来判断。例如，
+当且仅当\texttt{ATOMIC\_INT\_LOCK\_FREE}返回\texttt{2}时（这个值代表“总是”）
+\texttt{std::atomic<int>::is\_always\_lock\_free}为\texttt{true}，
+\begin{lstlisting}
+    if constexpr(std::atomic<int>::is_always_lock_free) {
+        // ATOMIC_INT_LOCK_FREE == 2
+        ...
+    }
+    else {
+        // ATOMIC_INT_LOCK_FREE == 0 || ATOMIC_INT_LOCK_FREE == 1
+        ...
+    }
+\end{lstlisting}
+用静态成员替换宏是为了确保更多的类型安全和支持在复杂的泛型代码中使用这些检查（例如，使用SFINAE时）。
+
+记住\texttt{std::atomic<>}也可以用于平凡的可拷贝类型。因此，
+你可以检查如果把你自定义的结构体用作原子类型时是否需要锁。例如：
+\begin{lstlisting}
+    template<auto SZ>
+    struct Data {
+        bool set;
+        int values[SZ];
+        double average;
+    };
+
+    if constexpr(std::atomic<Data<4>>::is_always_lock_free) {
+        ...
+    }
+    else {
+        ...
+    }
+\end{lstlisting}
+
+
+\section{cache行大小}
+有时有的程序很需要处理cache行大小的能力：
+\begin{itemize}
+    \item 一方面，不同线程访问的不同对象不属于同一个cache行是很重要的。
+    否则，不同线程并发访问对象时cache行缓存的内存可能需要同步。
+    \footnote{在C++中多个线程并发访问不同的对象通常是安全的，但是必要的同步可能会降低程序的性能。}
+    \item 另一方面，你可能会想把多个对象放在同一个cache行中，这样访问了第一个对象之后，
+    访问接下来的对象时就可以直接在cache中访问它们，不用再把它们调入cache。
+\end{itemize}
+为了实现这一点，C++标准库在头文件\texttt{<new>}引入了两个\nameref{ch3}：
+\begin{lstlisting}
+    namespace std {
+        inline constexpr size_t hardware_destructive_interference_size;
+        inline constexpr size_t hardware_constructive_interference_size;
+    }
+\end{lstlisting}
+这些对象有下列实现定义的值：
+\begin{itemize}
+    \item \texttt{hardware\_destructive\_interference\_size}是推荐的
+    可能被不同线程并发访问的两个对象之间的最小偏移量，再小的话就可能有性能损失，
+    因为共用的L1缓存会被影响。
+    \item \texttt{hardware\_constructive\_interference\_size}是推荐的
+    两个想被放在同一个L1缓存行的对象合起来的最大大小。
+\end{itemize}
+这两个值都只是建议因为实际的值依赖于具体的架构。
+这两个值只是编译器在生成支持的不同平台的代码时可以提供的最佳的值。
+因此，如果你知道更好更准确的值，那就使用你知道的值。
+不过使用这两个值要比使用假设的不同平台的固定大小更好。
+
+这两个值都至少是\texttt{alignof(std::max\_align\_t)}。并且这两个值通常是相等。
+然而，从语义上讲，它们代表了不同的目的，所以你应该像下面这样根据情况使用它们：
+\begin{itemize}
+    \item 如果你想在\emph{不同的线程里}访问两个不同的（原子）对象：
+    \begin{lstlisting}
+        struct Data {
+            alignas(std::hardware_destructive_interference_size) int valueForThreadA;
+            alignas(std::hardware_destructive_interference_size) int valueForThreadB;
+        };
+    \end{lstlisting}
+    \item 如果你想在\emph{同一个线程里}访问两个不同的（原子）对象：
+    \begin{lstlisting}
+        struct Data {
+            int valueForThraedA;
+            int otherValueForTheThreadA;
+        };
+
+        // 再检查一次我们能通过共享的cache行获得最佳性能
+        static_assert(sizeof(Data) <= std::hardware_constructive_interference_size);
+
+        // 确保对象被恰当的对齐：
+        alignas(sizeof(Data)) Data myDataForAThread;
+    \end{lstlisting}
+\end{itemize}
+
+\section{后记}
+\texttt{scoped\_locks}最初由Mike Spertus在\url{https://wg21.link/n4470}中提议
+把\texttt{lock\_guard}改为可变参数，最后作为\url{https://wg21.link/p0156r0}提案被接受了。
+然而，因为这会导致ABI的不兼容，所以Mike Spertus又在\url{https://wg21.link/p0156r2}中引入了
+新的名字\texttt{scoped\_lock}，并且最终被接受。
+Mike Spertus、Walter E. Brown和Stephan T. Lavavej之后在\url{https://wg21.link/p0739r0}
+中作为C++17的缺陷修改了构造函数的参数顺序。
+
+\texttt{shared\_mutex}最早和所有其他C++11引入的互斥量一起由Howard Hinnant在
+\url{https://wg21.link/n2406}中提出。
+然而，让C++标准委员会相信所有的互斥量都很有用消耗了很长时间。
+因此它直到C++17才被接受，最终被接受的提案由Gor Nishanov发表于\url{https://wg21.link/n4508}。
+
+\texttt{std::atomic<>}的静态成员\texttt{std::is\_always\_lock\_free}
+由Olivier Giroux、JF Bastien和Jeff Snyder在\\
+\url{https://wg21.link/n4509}中首次提出。
+最终被接受的提案由Olivier Giroux、JF Bastien和Jeff Snyder发表于\url{https://wg21.link/p0152r1}。
+
+硬件的干扰因素（cache行）的大小由JF Bastien和Olivier Giroux在\url{https://wg21.link/n4523}中
+首次提出。最终被接受的提案由JF Bastien和Olivier Giroux发表于\url{https://wg21.link/p0154r1}。
