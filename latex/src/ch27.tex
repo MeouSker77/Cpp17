@@ -111,6 +111,7 @@ lock\_for()}、\texttt{try\_lock\_until()}、\texttt{try\_lock\_shared\_for()}�
     {
         std::scoped_lock sl(vMutex);
         ... // vector v的独占的写权限
+    }
 \end{lstlisting}
 
 
@@ -199,23 +200,23 @@ lock\_for()}、\texttt{try\_lock\_until()}、\texttt{try\_lock\_shared\_for()}�
 \begin{itemize}
     \item 如果你想在\emph{不同的线程里}访问两个不同的（原子）对象：
     \begin{lstlisting}
-        struct Data {
-            alignas(std::hardware_destructive_interference_size) int valueForThreadA;
-            alignas(std::hardware_destructive_interference_size) int valueForThreadB;
-        };
+    struct Data {
+        alignas(std::hardware_destructive_interference_size) int valueForThreadA;
+        alignas(std::hardware_destructive_interference_size) int valueForThreadB;
+    };
     \end{lstlisting}
     \item 如果你想在\emph{同一个线程里}访问两个不同的（原子）对象：
     \begin{lstlisting}
-        struct Data {
-            int valueForThraedA;
-            int otherValueForTheThreadA;
-        };
+    struct Data {
+        int valueForThraedA;
+        int otherValueForTheThreadA;
+    };
 
-        // 再检查一次我们能通过共享的cache行获得最佳性能
-        static_assert(sizeof(Data) <= std::hardware_constructive_interference_size);
+    // 再检查一次我们能通过共享的cache行获得最佳性能
+    static_assert(sizeof(Data) <= std::hardware_constructive_interference_size);
 
-        // 确保对象被恰当的对齐：
-        alignas(sizeof(Data)) Data myDataForAThread;
+    // 确保对象被恰当的对齐：
+    alignas(sizeof(Data)) Data myDataForAThread;
     \end{lstlisting}
 \end{itemize}
 

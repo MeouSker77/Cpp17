@@ -1,29 +1,460 @@
 \chapter{标准库的其他微小特性和修改}\label{ch28}
+C++标准库还有一些微小的扩展和变化，将在这一章中描述。
+
 
 \section{\texttt{std::uncaught\_exceptions()}}
+C++的一个关键模式是\emph{RAII: Resource Acquisition Is Initialization}。
+这是一种安全地处理那些你必须要释放或清理的资源的方式。
+在构造一个对象时你把需要的资源的所有权传递给它，当它离开作用域时它的析构函数就会自动释放资源。
+这样做的好处是即使因为异常而离开当前作用域时也能保证释放资源。
+
+然而，有时资源的“释放操作”依赖于我们到底是正常执行离开了作用域还是因为异常而意外离开了作用域。
+一个例子是事务性的资源，如果我们正常执行离开作用域我们可能想进行\emph{提交}操作，
+而当因为异常离开作用域时想进行\emph{回滚}操作。
+
+为了这个目的，C++11引入了\texttt{std::uncaught\_exception()}，其用法如下所示：
+\begin{lstlisting}
+    class Request {
+      public:
+        ...
+        ~Request() {
+            if (std::uncaught_exception()) {
+                rollback();
+            }
+            else {
+                commit();
+            }
+        }
+    };
+\end{lstlisting}
+因此，当使用\texttt{Request}时，离开作用域时到底是调用\texttt{commit()}还
+是\texttt{rollback()}依赖于是否有异常被抛出：
+\begin{lstlisting}
+    {
+        Request r1{...};    // 没有异常时析构函数会调用commit()
+        ...
+        if (...) {
+            throw ...;      // 让析构函数调用rollback()
+        }
+        ...
+    }   // 正常时调用commit()，异常时调用rollback()
+\end{lstlisting}
+然而，在如下使用场景中这个API不能正常工作：\emph{当我们正在处理异常时}
+如果创建了新的\texttt{Request}对象，那么即使在使用它的期间没有异常抛出
+它的析构函数也总是会调用\texttt{rollback()}：
+\begin{lstlisting}
+    try {
+        ...
+    }
+    catch (...) {
+        Request r2{...};
+        ...
+    }   // 即使在catch语句块中没有出现新的异常也会调用rollback()
+\end{lstlisting}
+新的标准库函数\texttt{uncaught\_exceptions()}（注意名字最后多出来的\texttt{s}）
+解决了这个问题。它返回有多少个（嵌套的）还未处理的异常，而不是我们是否正在处理一个异常。
+这允许我们查明是否有额外的异常抛出（即使在处理异常时）。
+
+有了这个，我们可以简单的对\texttt{Request}的定义做如下修改：
+\begin{lstlisting}
+    class Request {
+      private:
+        int initialUncaught{std::uncaught_exceptions()};
+      public:
+        ...
+        ~Request() {
+            if (std::uncaught_exception() > initialUncaught) {
+                rollback();
+            }
+            else {
+                commit();
+            }
+        }
+    };
+\end{lstlisting}
+现在下面两个示例场景都能正常工作：
+\begin{lstlisting}
+    try {
+        Request r1{...};    // 没有异常时析构函数会调用commit()
+        ...
+        if (...) {
+            throw ...;      // 让析构函数调用rollback()
+        }
+        ...
+    }   // 正常时调用commit()，异常时调用rollback()
+    catch (...) {
+        Request r2{...};
+        ...
+    }   // 如果没有额外的异常发生就调用commit()
+\end{lstlisting}
+这里，\texttt{r2}的构造函数把\texttt{initialUncaught}初始化为\texttt{1}，
+因为我们已经在\texttt{catch}语句块中处理了一个异常。
+然而，当\texttt{r2}的析构函数调用时没有新的异常抛出，所以\texttt{initialUncaught}仍然
+是\texttt{1}，因此会调用\texttt{commit()}。如果在\texttt{catch}子句中又抛出了第二个未
+捕获的异常那么\texttt{std::uncaught\_exceptions()}将会返回\texttt{2}，因此\texttt{r2}的
+析构函数会调用\texttt{rollback()}。
+
+见\emph{lib/uncaught.cpp}获取完整的示例。
+\footnote{译者注：lib/uncaught.cpp见\url{https://www.cppstd17.com/code/lib/uncaught.cpp.html}。}
+
+旧的API \texttt{std::uncaught\_exception()}（没有末尾的\texttt{s}）自从C++17起被废弃，不应该再被使用。
+
 
 \section{共享指针改进}
+C++17中也添加了一些共享指针的改进。
 
-\subsection{对原始C数组的共享指针的特殊处理}\label{ch28.2.1}
+另外，注意成员函数\hyperref[ch35.2.7]{\texttt{unique()已经被废弃了}}
+
+\subsection{对原生C数组的共享指针的特殊处理}\label{ch28.2.1}
+自从C++17起，你可以显式的声明数组的共享指针来确保deleter会调用\texttt{delete[]}
+（自从C++11起独占指针就已经可以做到）：你现在可以简单的调用：
+\begin{lstlisting}
+    std::shared_ptr<std::string[]> p{new std::string[10]};
+\end{lstlisting}
+来代替：
+\begin{lstlisting}
+    std::shared_ptr<std::string> p{new std::string[10], std::default_delete<std::string[]>()};
+\end{lstlisting}
+或者：
+\begin{lstlisting}
+    std::shared_ptr<std::string> p{new std::string[10], [](std::string* p) {
+                                                            delete[] p;
+                                                        }};
+\end{lstlisting}
+当实例化的是数组时，API也会有一些变化：不再是使用\texttt{operator*}，而是使
+用\texttt{operator[]}（就像独占指针一样）：
+\begin{lstlisting}
+    std::shared_ptr<std::string> ps{new std::string};
+    *ps = "hello";      // OK
+    ps[0] = "hello";    // ERROR
+
+    std::shared_ptr<std::string[]> parr{new std::string[10]};
+    *parr = "hello";    // ERROR（未定义行为）
+    parr[0] = "hello";  // OK
+\end{lstlisting}
+注意分配的是原生数组时是否支持\texttt{operator*}和分配的不是数组时是否支持\texttt{operator[]}
+还没有明确的定义。然而，通常情况下调用这些未定义的运算符不能编译。
 
 \subsection{共享指针的\texttt{reinterpret\_pointer\_cast}}
+除了\texttt{static\_pointer\_cast}、\texttt{dynamic\_pointer\_cast}、\texttt{const\_pointer\_cast}之外，
+你现在还可以调用\texttt{reinterpret\_pointer\_cast}重新解释一个共享指针指向的若干位的类型。
 
 \subsection{共享指针的\texttt{weak\_type}}
+为了支持在泛型代码中使用弱指针，共享指针类像现在提供了一个新的成员\texttt{weak\_type}。例如：
+\begin{lstlisting}
+    template<typename T>
+    void observe(T sp)
+    {
+        // 用传入的共享指针初始化弱指针
+        typename T::weak_type wp{sp};
+        ...
+    }
+\end{lstlisting}
 
 \subsection{共享指针的\texttt{weak\_from\_this}}
+有时你需要另一个智能指针来指向一个已经存在的对象，并且不想访问已经指向该对象的其他共享指针。
+为了解决这个问题，C++11引入了基类\texttt{enable\_shared\_from\_this}，
+它提供了成员函数\texttt{shared\_from\_this}：
+\begin{lstlisting}
+    #include <memory>
+
+    class Person : public std::enable_shared_from_this<Person>
+    {
+        ...
+    };
+
+    Person* pp = new Person{...};
+    std::shared_ptr<Person> sp1{pp};    // sp1获得了所有权
+    std::shared_ptr<Person> sp2{pp};    // 运行时错误：sp2不能再获取所有权
+    std::shared_ptr<Person> sp3{pp->shared_from_this()};    // OK：sp1和sp3共享所有权
+\end{lstlisting}
+如果该对象的一个成员函数需要返回一个自身的共享指针时就会用到这个特性：
+\begin{lstlisting}
+    class Person : public std::enable_shared_from_this<Person>
+    {
+        ...
+        std::shared_ptr<Person> sharedPtrTo() {
+            return shared_from_this();
+        }
+    }
+\end{lstlisting}
+自从C++17之后，有一个额外的辅助函数可以返回一个指向对象的弱指针：
+\begin{lstlisting}
+    Person* pp = new Person{...};
+    std::shared_ptr<Person> sp{pp};                 // sp获得了所有权
+    ...
+    std::weak_ptr<Person> wp{pp->weak_from_this()}; // wp分享了sp拥有的所有权
+\end{lstlisting}
+在C++17之前，你可以用如下代码实现同样的功能：
+\begin{lstlisting}
+    weak_ptr<Person> wp{pp->shared_from_this()}
+\end{lstlisting}
+但是\texttt{weak\_from\_this()}可以在修改更少的引用计数的情况下实现相同的效果。
+另外，还要说明一种特殊的边界情况：如果一个原生指针被传递给两个不同的共享指针
+（如果它们中只有一个最终释放了资源那么这是有效的），那么\texttt{shared\_from\_this()}
+和\texttt{weak\_from\_this()}会分享第一个共享指针的所有权。
+这意味着下面的代码是可行的：
+\begin{lstlisting}
+    struct Person : public std::enable_shared_from_this<Person>
+    {
+        ...
+    };
+
+    Person* p = new Person;
+    std::shared_ptr<Person> sp1(p);         // 创建第一个共享指针
+
+    {
+        std::shared_ptr<Person> sp2(p,      // 创建第二个不会释放资源的共享指针
+                                    [] (void*) {
+                                    });
+        auto sp3{p->shared_from_this()};    // sp3分享sp1的所有权
+    }
+
+    auto sp4{p->shared_from_this()};        // sp4分享sp1的所有权
+\end{lstlisting}
+在这个情况得到说明之前，一些实现让\texttt{sp3}和\texttt{sp4}分享\emph{最后}创建的
+共享指针的所有权，这会导致当初始化时\texttt{sp4}抛出\texttt{std::bad\_weak\_ptr}异常。
+
 
 \section{数学扩展}
+C++17还引入了下面的数学函数。
 
 \subsection{最大公约数和最小公倍数}
+在头文件\texttt{<numeric>}中：
+\begin{itemize}
+    \item \texttt{gcd(x, y)}返回\texttt{x}和\texttt{y}的\emph{最大公约数}。
+    \item \texttt{lcm(x, y)}返回\texttt{x}和\texttt{y}的\emph{最小公倍数}。
+\end{itemize}
+参数的类型都是除了\texttt{bool}以外的整数类型。两个参数的类型可以不同，
+这是返回值的类型将是两个参数的公共类型。
+
+例如：
+\begin{lstlisting}
+    #include <numeric>
+
+    int i{42};
+    long l{30};
+
+    auto x{std::gcd(i, l)};     // x是long 6
+    auto y{std::lcm(i, l)};     // y是long 210
+\end{lstlisting}
 
 \subsection{\texttt{std::hypot()}的三参数重载}
+在头文件中\texttt{<cmath>}中：
+\begin{itemize}
+    \item hypot(x, y, z)返回三个参数的平方之和的平方根。
+\end{itemize}
+就像\texttt{<cmath>}中其他的函数一样，这个函数有支持所有浮点数类型的重载版本。
 
-\subsection{数学领域的特殊函数}
+这些重载在\texttt{math.h}或者命名空间\texttt{std}中是没有的。
+
+例如：
+\begin{lstlisting}
+    #include <cmath>
+
+    // 计算3D坐标下两个点的距离：
+    auto dist = std::hypot(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
+\end{lstlisting}
+在C++17之前，你必须像下面这样调用：
+\begin{lstlisting}
+    auto dist = std::hypot(p2.x - p1.x, std::hypot(p2.y - p1.y, p2.z - p1.z));
+\end{lstlisting}
+
+\subsection{数学的特殊函数}
+表\hyperref[t28.1]{数学的特殊函数}中的一部分已经在国际标准IS 29124:2010中标准化，
+现在被要求无条件的加入C++标准中的头文件\texttt{<cmath>}中。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l|l}
+        \hline
+        \textbf{名称}\textbf{含义} \\
+        \hline
+        \texttt{assoc\_laguerre()} & 关联Laguerre多项式       \\
+        \texttt{assoc\_legendre()} & 关联Legendre函数        \\
+        \texttt{beta()}            & beta函数              \\
+        \texttt{comp\_ellint\_1()} & 第一类完整椭圆积分           \\
+        \texttt{comp\_ellint\_2()} & 第二类完整椭圆积分           \\
+        \texttt{comp\_ellint\_3()} & 第三类完整椭圆积分           \\
+        \texttt{cyl\_bessel\_i()}  & 规则圆柱贝塞尔函数变体         \\
+        \texttt{cyl\_bessel\_j()}  & 第一类圆柱贝塞尔函数          \\
+        \texttt{cyl\_bessel\_k()}  & 不规则圆柱贝塞尔函数变体        \\
+        \texttt{cyl\_neumann()}    & 圆柱诺依曼函数（第二类圆柱贝塞尔函数） \\
+        \texttt{ellint\_1()}       & 第一类不完整椭圆积分          \\
+        \texttt{ellint\_2()}       & 第二类不完整椭圆积分          \\
+        \texttt{ellint\_3()}       & 第三类不完整椭圆积分          \\
+        \texttt{expint()}          & 指数积分                \\
+        \texttt{hermite()}         & Hermite多项式          \\
+        \texttt{laguerre()}        & Laguerre多项式         \\
+        \texttt{legendre()}        & Legendre多项式         \\
+        \texttt{riemann\_zeta()}   & 黎曼zeta函数            \\
+        \texttt{sph\_bessel()}     & 第一类球形贝塞尔函数          \\
+        \texttt{sph\_legendre()}   & 关联球形Legendre函数      \\
+        \texttt{sph\_neumann()}    & 球形诺依曼函数（第二类球形贝塞尔函数） \\
+        \hline
+    \end{tabular}
+    \caption{数学的特殊函数}
+    \label{t28.1}
+\end{table}
+
+这些函数的参数都是浮点数，返回值是\texttt{double}。
+所有这些函数还有
+\begin{itemize}
+    \item 后缀\texttt{f}代表参数和返回值的类型是\texttt{float}
+    \item 后缀\texttt{l}代表参数和返回值的类型是\texttt{long double}
+\end{itemize}
+例如：
+\begin{lstlisting}
+    // 指数积分：
+    double      expint(double x);
+    float       expintf(float x);
+    long double expintl(long double x);
+
+    // Laguerre多项式：
+    double      laguerre(unsigned n, double x);
+    float       laguerref(unsigned n, float x);
+    long double laguerref(unsigned n, long double x);
+\end{lstlisting}
 
 \subsection{\texttt{chrono}扩展}
+C++17还向标准库中的时间库部分添加了一些扩展来增强库的易用性和一致性。
+
+对于时间段和时间点，还添加了新的舍入函数：
+\begin{itemize}
+    \item \texttt{round()}：舍入到最近的整数值
+    \item \texttt{floor()}：向负无穷舍入到最近的整数值
+    \item \texttt{ceil()}：向正无穷舍入到最近的整数值
+\end{itemize}
+这些舍入方法和\texttt{duration\_cast<>}和\texttt{time\_point\_cast<>}
+（在C++17之前就已经存在）不同，新的舍入函数不是简单的向0截断。
+
+另外，时间段类型还添加了缺失的\texttt{abs()}函数。
+
+下面的程序演示了时间段类型的行为：
+\inputcodefile{lib/chronoext.cpp}
+它会有如下输出：
+\begin{lstlisting}
+    3330ms
+      abs():   3330ms
+      cast:    3000ms
+      floor(): 3000ms
+      ceil():  4000ms
+      roumd(): 3000ms
+    3770ms
+      abs():   3770ms
+      cast:    3000ms
+      floor(): 3000ms
+      ceil():  4000ms
+      round(): 4000ms
+    -3770ms
+      abs():   3770ms
+      cast:    -3000ms
+      floor(): -4000ms
+      ceil():  -3000ms
+      round(): -4000ms
+\end{lstlisting}
 
 \subsection{\texttt{constexpr}扩展和修正}\label{ch28.5}
+就像从C++11开始的每个新版本一样，标准中又在很多地方添加/修正了对\texttt{constexpr}的支持。
+
+最重要的修正有：
+\begin{itemize}
+    \item 对于\texttt{std::array}，下面的函数现在是\texttt{constexpr}：
+    \begin{itemize}
+        \item \texttt{begin()、end()、cbegin()、cend()、rbegin()、rend()、crbegin()、crend()}
+        \item 非常量数组的\texttt{operator[]、at()、front()、back()}
+        \item \texttt{data()}
+    \end{itemize}
+    \item 范围访问的泛型独立函数（\texttt{std::begin()、std::end()、std::rbegin()、std::rend()}）
+    和辅助函数（\texttt{std::advance()、std::distance()、std:prev()、std::next()}）现在也是\texttt{constexpr}。
+    \item 类\texttt{std::reverse\_iterator}和\texttt{std::move\_iterator}的所有操作现在都是\texttt{constexpr}。
+    \item C++标准库里整个时间库部分（\texttt{time\_point}、\texttt{duration}、时钟、\texttt{ratio}），
+    现在除了时钟的成员函数\texttt{now()}、\texttt{to\_time\_t()}、\texttt{from\_time\_t()}之外
+    所有操作和变量都是\texttt{constexpr}。
+    \item 所有的\texttt{std::char\_traits}特化的成员函数是\texttt{constexpr}。特别的，
+    这允许我们\hyperref[编译期字符串视图]{在编译期初始化字符串视图}。
+\end{itemize}
+例如，你现在可以写：
+\begin{lstlisting}
+    constexpr std::array arr{0, 8, 15, 42};
+    constexpr auto val = arr[2];    // OK
+    static_assert(val == 15);       // OK，不会断言失败
+\end{lstlisting}
+注意对于迭代器，我们需要使用全局的或者\texttt{static}的对象，因为我们不能在编译期
+获取栈上的对象的地址：
+\begin{lstlisting}
+    constexpr static std::array arr{0, 8, 15, 42};
+    constexpr auto pos = std::next(arr.begin());    // OK
+    static_assert(*pos == 15);                      // OK，不会断言失败
+\end{lstlisting}
 
 \subsection{\texttt{noexcept}扩展和修正}
+就像从C++11开始的每个新版本一样，标准中又在很多地方添加/修正了对\texttt{noexcept}的支持。
+
+最重要的修正有：
+\begin{itemize}
+    \item 对于\texttt{std::vector<>}和\texttt{std::string}(\texttt{std::basic\_string<>})，
+    C++17保证下列操作不会抛出异常
+    \begin{itemize}
+        \item 默认构造函数（前提是提供的分配器的默认构造函数不会抛出异常）
+        \item 移动构造函数
+        \item 以分配器为参数的构造函数
+    \end{itemize}
+    \item 对于所有的容器（包括\texttt{std::string/std::basic\_string<>}，C++17保证下列操作不会抛出异常
+    \begin{itemize}
+        \item 移动赋值运算符（前提是提供的分配器可以互换）
+        \item \texttt{swap()}函数（前提是提供的分配器可以互换）
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{vector重新分配的后果}
+注意\texttt{noexcept}的修正中有一项非常特殊也非常重要：
+只有vector和string现在保证不会在移动构造函数中抛出异常。
+其他的容器仍然有可能抛出异常。
+
+这一点当在一个vector中使用这几种类型时会产生重要的影响，
+如果元素的移动构造函数保证不抛出异常，
+那么vector在重新分配时可以简单的使用移动构造函数来移动元素。
+
+换句话说：
+\begin{itemize}
+    \item 重新分配一个string/vector的vector现在保证会很快速。
+    \item 重新分配一个其他容器类型的vector仍然可能很慢。
+\end{itemize}
+这已经成为了另一个除非必要否则使用vector作为默认容器的原因。
 
 \subsection{后记}
+\texttt{std::uncaught\_exceptions()}的动机由Herb Sutter在\url{https://wg21.link/n3614}中
+首次提出。最终被接受的提案由Herb Sutter发表于\url{https://wg21.link/n4259}。
+
+数组类型的共享指针扩展和添加\texttt{reinterpret\_pointer\_cast}转换由Peter Dimov在
+\url{https://wg21.link/n3640}中首次提出。最终被接受的提案由Jonathan Wakely发表
+于\url{https://wg21.link/p0414r2}。
+
+获取共享指针的弱指针类型的访问权限的问题由Arthur O’Dwyer在\url{https://wg21.link/n4537}中首次提出。
+最终被接受的提案由Arthur O’Dwyer发表于\url{https://wg21.link/p0163r0}。
+
+\texttt{weak\_from\_this}由Jonathan Wakely和Peter Dimov在\url{https://wg21.link/p0033r0}中首次提出。
+最终被接受的提案由Jonathan Wakely和Peter Dimov发表于\url{https://wg21.link/p0033r1}。
+
+数学的GCD和LCM函数由Walter E. Brown在\url{https://wg21.link/n3845}中首次提出。
+之后它们进入了第一个Library Fundamentals TS。直到C++17，它们因为Walter E. Brown的
+\url{https://wg21.link/p0295r0}提案而被标准库采纳。
+
+三参数的\texttt{std::hypot()}重载由Benson Ma在\url{https://wg21.link/p0030r0}中首次提出。
+最终被接受的提案由Benson Ma发表于\url{https://wg21.link/p0030r1}。
+
+添加特殊数学函数由Walter E. Brown于2003年在\url{https://wg21.link/n1422}中首次提出。
+按照国际标准IS 29124:2010强制要求它们进入C++17的提案由Walter E. Brown、Axel Naumann
+和Edward Smith-Rowland发表于\url{https://wg21.link/p0226r1}。
+
+时间库扩展由Howard Hinnant在\url{https://wg21.link/p0092r0}中首次提出。
+最终被接受的提案由Howard Hinnant\url{https://wg21.link/p0092r1}。
+
+为时间库添加\texttt{constexpr}由Howard Hinnant在\url{https://wg21.link/p0505r0}中首次提出。
+最终被接受的提案由Howard Hinnant发表于\url{https://wg21.link/p0092R1}。
+
+在其他地方添加\texttt{constexpr}因为Antony Polukhin的
+\url{https://wg21.link/p0031r0}和\url{https://wg21.link/p0426r1}提案而被采纳。
+
+\texttt{noexcept}的修正由Nicolai Josuttis在\url{https://wg21.link/4002}中首次提出。
+这项修改最终被接受的提案由Nicolai Josuttis发表于\url{https://wg21.link/n4258}。

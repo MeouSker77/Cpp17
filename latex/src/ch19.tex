@@ -419,7 +419,7 @@ string\_view}（除非你知道自己在做什么）。
     \end{lstlisting}
 \end{itemize}
 注意\texttt{std::char\_traits}成员被改为了\texttt{constexpr}，
-所以你可以在编译期用一个字符串字面量初始化字符串视图：
+所以你可以在编译期用一个字符串字面量初始化字符串视图：\label{编译期字符串视图}
 \begin{lstlisting}
     constexpr string_view hello = "Hello World!";
 \end{lstlisting}
