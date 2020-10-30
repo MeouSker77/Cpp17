@@ -1,1 +1,301 @@
 \chapter{多态内存资源(PMR)}\label{ch29}
+自从C++98起，标准库就支持配置类管理自己内部（堆）内存的方式。
+因此，标准库中几乎所有会分配内存的类型都有一个分配器参数。
+这允许你配置容器、字符串和其他需要栈以外的内存的类型分配内存的方式。
+
+默认分配内存的方式是从堆上分配。然而，下面有一些修改这个默认行为的原因：
+\begin{itemize}
+    \item 你可以使用自己的方式分配内存来减少系统调用。
+    \item 你可以确保分配的内存是连续的来受益于CPU缓存。
+    \item 你可以把容器和元素放在可以被多个进程访问的共享内存中。
+    \item 你甚至可以重定向这些堆内存调用来复用之前在栈上分配的内存。
+\end{itemize}
+因此，修改默认的行为可能会带来性能和功能上的改进。
+\footnote{一开始设置分配器的原因是为了处理不同大小的指针（“near”和“far”指针）。}
+
+然而，直到C++17，（正确地）使用分配器在许多方面都即困难又笨拙
+（因为一些语言的缺陷、太过复杂、要考虑向后的兼容性更改）。
+
+C++17现在提供了一种相当容易使用的方法来支持预定义的和用户定义的内存分配方式，
+这对标准类型和用户自定义类型都很有用。
+
+因此，这一章将讨论：
+\begin{itemize}
+    \item 使用标准库提供的\hyperref[ch29.1]{标准内存资源}
+    \item 定义\hyperref[ch29.2]{自定义内存资源}
+    \item 提供\hyperref[ch29.3]{自定义类型的内存资源支持}
+\end{itemize}
+
+如果没有Pablo Halpern、Arthur O’Dwyer、David Sankel、Jonathan Wakely的
+大力帮助我将不可能完成这一章。
+
+
+\section{使用标准内存资源}\label{ch29.1}
+这一节介绍了标准内存资源和使用它们的方法。
+
+\subsection{示例}
+让我们首先比较一下使用和不使用标准内存资源的内存消耗。
+
+\subsubsection{为容器和字符串分配内存}
+假设你的程序中有一个string的vector，并且你用了很多很长的string来初始化这个vector：
+\inputcodefile{pmr/pmr0.cpp}
+注意我们使用了\hyperref[ch30.4]{追踪所有\texttt{::new}调用的类}来在下列循环中
+追踪内存分配的情况：
+\begin{lstlisting}
+    std::vector<std::string> coll;
+    for (int i = 0; i < 1000; ++i) {
+        coll.emplace_back("just a non-SSO string");
+    }
+\end{lstlisting}
+这个过程中会发生很多次内存分配，因为vector使用堆内存来存储元素。
+另外，字符串本身也可能在堆上分配空间来存储值
+（如果实现使用了短字符串优化，那么通常当字符串超过15个字符时会在堆上分配空间）。
+
+程序的输出可能会像下面这样：
+\begin{lstlisting}[keywordstyle=\color{black}]
+    1018 allocations for 134,730 bytes
+\end{lstlisting}
+这意味着除了每个string要分配一次内存之外，vector内部还分配了18（或者更多）次内存来存储元素。
+\footnote{重新分配的次数在不同平台上可能不同，因为重新分配的算法可能会不同。
+如果当前的内存容量已经满了，有的实现会将它扩大50\%，然而有的实现会把大小翻倍。}
+
+这样的行为可能会导致很严重的问题，因为内存（重新）分配在一些环境中需要很长时间（例如嵌入式系统），
+完全在堆上分配内存可能会导致性能问题。
+
+我们可以事先要求vector预留充足的内存，但一般来说，重新分配内存是不可避免的，除非你事先知道要存储的元素的数量。
+如果你不知道具体要处理多少数据，你就必须在避免重新分配和不想浪费太多内存之间权衡。
+并且这个例子中至少需要1001次分配（一次分配用来存储vector中的元素，每一个没有使用短字符串优化的string还要分配一次）。
+
+\subsubsection{不为容器分配内存}
+我们可以通过使用多态分配器来改进这种情况。
+首先，我们可以使用\texttt{std::pmr::vector}，并且允许vector在栈上分配自己的内存：
+\inputcodefile{pmr/pmr1.cpp}
+
+首先，我们在栈上分配了自己的内存（使用了新类型\nameref{ch18}）：
+\begin{lstlisting}
+    // 在栈上分配一些内存：
+    std::array<std::byte, 200000> buf;
+\end{lstlisting}
+你也可以使用\texttt{char}来代替\texttt{std::byte}。
+
+之后，我们用这些内存初始化了一个\texttt{monotonic\_buffer\_resource}，
+传递这些内存的地址和大小作为参数：
+\begin{lstlisting}
+    std::pmr::monotonic_buffer_resource pool{buf.data(), buf.size()};
+\end{lstlisting}
+最后，我们使用了一个\texttt{std::pmr::vector}，它将使用传入的内存资源来分配内存：
+\begin{lstlisting}
+    std::pmr::vector<std::string> coll{&pool};
+\end{lstlisting}
+这个声明是下面声明的缩写：
+\begin{lstlisting}
+    std::vector<std::string, std::pmr::polymorphic_allocator<std::string>> coll{&pool};
+\end{lstlisting}
+也就是说，我们声明了一个使用\emph{多态分配器}的vector，多态分配器可以在运行时在不同的\emph{内存资源}之间切换。
+类\texttt{monotonic\_buffer\_resource}派生自类\texttt{memory\_resource}，因此可以
+用作多态分配器的内存资源。
+最后，通过传递我们的内存资源的地址，可以确保vector的多态分配器使用我们的内存资源。
+
+如果我们测试这个程序中内存分配的次数，输出将是：
+\begin{lstlisting}[keywordstyle=\color{black}]
+    1000 allocations for 32000 bytes
+\end{lstlisting}
+vector的18次内存分配将不会再发生在堆上，而是在我们初始化的\texttt{buf}里发生。
+
+如果分配的200,000字节不够用，vector将会继续在堆上分配更多的内存。
+这是因为\texttt{monotonic\_memory\_\\
+resource}使用了默认的分配器，它会把使用\texttt{new}分配内存作为备选项。
+
+\subsubsection{一次也不分配内存}
+
+我们甚至可以通过把\texttt{std::pmr::vector}的元素类型定义为\texttt{std::pmr::string}来
+避免任何内存分配：
+\inputcodefile{pmr/pmr2.cpp}
+因为下面的vector的声明：
+\begin{lstlisting}
+    std::pmr::vector<std::pmr::string> coll{&pool};
+\end{lstlisting}
+程序的输出将变为：
+\begin{lstlisting}[keywordstyle=\color{black}]
+    0 allocations for 0 bytes
+\end{lstlisting}
+这是因为一个pmr vector尝试把它的分配器传播给它的元素，
+当元素并不使用多态分配器（也就是类型为\texttt{std::string}）时这会失败。
+然而，\texttt{std::pmr::string}类型会使用多态分配器，因此传播不会失败。
+
+重复一下，当缓冲区没有足够的内存时还会在堆上分配新的内存。
+例如，做了如下修改之后就有可能发生这种情况：
+\begin{lstlisting}
+    for (int i = 0; i < 50000; ++i) {
+        coll.emplace_back("just a non-SSO string");
+    }
+\end{lstlisting}
+输出可能会变为：
+\begin{lstlisting}[keywordstyle=\color{black}]
+    8 allocations for 14777448 bytes
+\end{lstlisting}
+
+\subsubsection{复用内存池}
+我们甚至可以复用栈内存池。例如：
+\inputcodefile{pmr/pmr3.cpp}
+这里，在栈上分配了200,000字节之后，我们可以多次使用这块内存来初始化vector和它的元素的内存池。
+
+输出可能会变为：
+\begin{lstlisting}[keywordstyle=\color{black}]
+    -- check with 1000 elements:
+    0 allocations for 0 bytes
+    -- check with 2000 elements:
+    1 allocations for 300000 bytes
+    -- check with 500 elements:
+    0 allocations for 0 bytes
+    -- check with 2000 elements:
+    1 allocations for 300000 bytes
+    -- check with 3000 elements:
+    2 allocations for 750000 bytes
+    -- check with 50000 elements:
+    8 allocations for 14777448 bytes
+    -- check with 1000 elements:
+    0 allocations for 0 bytes
+\end{lstlisting}
+当200,000字节足够时，将不需要任何额外的内存分配（这里不到1000个元素的情况就是这样）。
+当内存池被销毁之后这200,000字节被重新使用并用于下一次迭代。
+
+每一次内存超限时，就会在堆里分配额外的内存，当内存池销毁时这些内存也会被释放。
+
+通过这种方式，你可以轻易的使用内存池，你可以在只分配一次（可以在栈上也可以在堆上）
+然后在每一个新任务里（服务请求、事件、处理数据文件等等）都复用这块内存。
+
+\subsection{标准内存资源}
+为了支持多态分配器，C++标准库提供了表\hyperref[t29.1]{标准内存资源}中列出的内存资源。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l|l}
+        \hline
+        \textbf{内存资源}                           & \textbf{行为}                                \\
+        \hline
+        \texttt{new\_delete\_resource()}        & 返回一个调用\texttt{new}和\texttt{delete}的内存资源的指针 \\
+        \texttt{synchronized\_pool\_resource}   & 创建更少碎片化的、线程安全的内存资源的类                       \\
+        \texttt{unsynchronized\_pool\_resource} & 创建更少碎片化的、线程不安全的内存资源的类                      \\
+        \texttt{monotonic\_buffer\_resource}    & 创建从不释放、可以传递一个可选的缓冲区、线程不安全的类                \\
+        \texttt{null\_memory\_resource()}       & 返回一个每次分配都会失败的内存资源的指针                       \\
+        \hline
+    \end{tabular}
+    \caption{标准内存资源}
+    \label{t29.1}
+\end{table}
+
+\texttt{new\_delete\_resource()}和\texttt{null\_memory\_resource()}函数
+会返回指向单例全局内存资源的指针。其他三个内存资源都是类，你必须创建对象并把指针传递给这些对象的多态分配器。
+一些用法如下：
+\begin{lstlisting}
+    std::pmr::string s1{"my string", std::pmr::new_delete_resource()};
+
+    std::pmr::synchronized_pool_resource pool1;
+    std::pmr::string s2{"my string", &pool1};
+
+    std::pmr::monotonic_buffer_resource pool2{...};
+    std::pmr::string s3{"my string", &pool2};
+\end{lstlisting}
+一般情况下，内存资源都以指针的形式传递。
+因此，你必须保证指针指向的资源对象直到最后释放内存之前都一直有效
+（如果你到处move对象或者内存资源可互换的话最后释放内存的时机可能比你想的要晚）。
+
+\subsubsection{默认内存资源}
+如果没有传递内存资源的话多态分配器会有一个默认的内存资源。
+表\hyperref[t29.2]{默认内存资源的操作}列出了它的所有操作。
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{l|p{0.5\textwidth}}
+        \hline
+        \textbf{内存资源}                              & \textbf{行为}                   \\
+        \hline
+        \texttt{get\_default\_resource()}          & 返回一个指向当前默认内存资源的指针             \\
+        \texttt{set\_default\_resource(memresPtr)} & 设置默认内存资源（传递一个指针）并返回之前的内存资源的指针 \\
+        \hline
+    \end{tabular}
+    \caption{默认内存资源的操作}
+    \label{t29.2}
+\end{table}
+
+你可以使用\texttt{std::pmr::get\_default\_resource()}获取当前的默认资源，
+然后把传递它来初始化一个多态分配器。你也可以使用\texttt{std::default\_resource()}
+来全局的设置一个不同的默认内存资源。这个资源将在任何作用域中用作默认资源，直到
+下一次调用\texttt{std::pmr::set\_default\_resource()}。例如：
+\begin{lstlisting}
+    static std::pmr::synchronized_pool_resource myPool;
+
+    // 设置myPool为新的默认内存资源：
+    std::pmr::memory_resource* old = std::pmr::set_default_resource(&myPool);
+    ...
+    // 恢复旧的默认内存资源
+    std::pmr::set_default_resource(old);
+\end{lstlisting}
+如果你在程序中设置了自定义内存资源并且把它用作默认资源，
+那么直接在\texttt{main()}中首先将它创建为\texttt{static}对象将是一个好方法：
+\begin{lstlisting}
+    int main()
+    {
+        static std::pmr::synchronized_pool_resource myPool;
+        ...
+    }
+\end{lstlisting}
+或者，提供一个返回静态资源的全局函数：
+\begin{lstlisting}
+    memory_resource* myResource()
+    {
+        static std::pmr::synchronized_pool_resource myPool;
+        return &myPool;
+    }
+\end{lstlisting}
+返回类型\texttt{memory\_resource}是任何内存资源的基类。
+
+注意之前的默认内存资源可能仍然会被使用，即使它已经被替换掉。
+如果你知道（并且确信）不会发生这种情况，那你可以不把自己的资源创建为静态对象，
+否则你应该确保你的资源的生命周期尽可能的长
+（再提醒一次，可以在\texttt{main()}开始处创建它，这样它会在程序的最后才会被销毁）。
+\footnote{如果你有其他稍后会被销毁的对象你可能还会陷入麻烦，这意味着为了程序结束时能正确清理资源而做好记录是值得的。}
+
+\subsection{详解标准内存资源}
+让我们仔细讨论不同的标准内存资源。
+
+\subsubsection{\texttt{new\_delete\_resource()}}
+\texttt{new\_delete\_resource()}是默认的内存资源，
+也是\texttt{get\_default\_resource()}的返回值，
+除非你调用\texttt{set\_default\_resource()}设置了新的不同的默认内存资源，
+这个资源处理内存分配的方式和普通的分配器一样：
+\begin{itemize}
+    \item 每次分配内存会调用\texttt{new}
+    \item 每次释放内存会调用\texttt{delete}
+\end{itemize}
+然而，注意持有这种内存资源的多态分配器不能和默认的分配器互换，因为它们的类型不同。因此：
+\begin{lstlisting}
+    std::string s{"my string with some value"};
+    std::pmr::string ps{std::move(s), std::pmr::new_delete_resource()}; // 拷贝
+\end{lstlisting}
+将不会发生move（把\texttt{s}分配的内存传给\texttt{ps}），
+而是把\texttt{s}的内存拷贝到\texttt{ps}内部用\texttt{new}分配的新的内存中。
+
+\subsubsection{\texttt{(un)synchronized\_poo\_resource}}
+
+\subsubsection{\texttt{monotonic\_buffer\_resource}}
+
+\subsubsection{\texttt{null\_memory\_resource}}
+
+
+\section{定义自定义内存资源}\label{ch29.2}
+
+\subsection{内存资源的等价性}
+
+
+\section{为自定义类型提供内存资源支持}\label{ch29.3}
+
+\subsection{定义PMR类型}
+
+\subsection{使用PMR类型}
+
+\subsection{处理不同的类型}
+
+
+\section{后记}
+
+

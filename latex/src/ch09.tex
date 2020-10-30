@@ -370,7 +370,7 @@
 参数\texttt{x}的类型是\texttt{const char(\&)[3]}，因此\texttt{T1}被推导为\texttt{char[3]}，
 参数\texttt{y}的类型是\texttt{const char(\&)[6]}，因此\texttt{T2}被推导为\texttt{char[6]}。
 
-有了推导指引饮后，模板参数就会退化。这意味着传入的数组或者字符串字面量会退化为相应的指针类型。
+有了推导指引后，模板参数就会退化。这意味着传入的数组或者字符串字面量会退化为相应的指针类型。
 现在，如下声明：
 \begin{lstlisting}
     Pair3 p3{"hi", "world"};
