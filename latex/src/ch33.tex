@@ -1,5 +1,197 @@
 \chapter{编写泛型代码的改进}\label{ch33}
+C++17引入了很多辅助工具来帮助实现泛型代码和库。
+
+注意我们已经在在\nameref{ch21}这一章中介绍了一些新的类型特征。
+
 
 \section{\texttt{std::invoke<>()}}\label{ch33.1}
+新的工具\texttt{std::invoke<>()}是一个新的辅助函数，
+它被用于编写调用一个可调用对象的代码，可调用对象包括函数、lambda、
+有\texttt{operator()}的函数对象、成员函数。
+
+这里有一个辅助函数的例子演示怎么使用它：
+\inputcodefile{tmpl/invoke.hpp}
+你传递给\texttt{call()}的第一个参数，将会按照如下方式使用剩余的参数进行调用：
+\begin{itemize}
+    \item 如果可调用对象是一个成员函数的指针，将使用剩余参数中的第一个参数作为对象调用成员函数，
+    所有其他参数被用作调用的参数。
+    \item 否则，可调用对象会把剩余参数用作自己的参数进行调用。
+\end{itemize}
+例如：
+\inputcodefile{tmpl/invoke.cpp}
+注意在不指明要调用哪个版本的情况下调用重载函数将导致错误：
+\begin{lstlisting}
+    call(&decltype(vals)::resize, vals, 5);     // ERROR：resize()被重载了
+
+    call<void(decltype(vals)::*)(std::size_t)>(&decltype(vals)::resize, vals, 5);   // OK
+\end{lstlisting}
+还要注意调用函数模板需要显式实例化。如果\texttt{print()}是一个模板：
+\begin{lstlisting}
+    template<typename T>
+    void print(const T& coll)
+    {
+        std::cout << "elems: ";
+        for (const auto& elem : coll) {
+            std::cout << elem << ' ';
+        }
+        std::cout << '\n';
+    }
+\end{lstlisting}
+那么当你将它传给\texttt{call}时必须显式指明模板参数：
+\begin{lstlisting}
+    call(print, vals);                      // ERROR：不能推导出模板参数T
+
+    call(print<std::vector<int>>, vals);    // OK
+\end{lstlisting}
+最后，注意根据移动语义的规则，转发一个调用的结果需要使用\texttt{decltype(auto)}来
+\emph{完美返回}返回值到调用者：
+\begin{lstlisting}
+    template<typename Callable, typename... Args>
+    decltype(auto) call(Callable&& op, Args&&.. args)
+    {
+        return std::invoke(std::forward<Callable>(op),      // 调用传入的可调用对象
+                           std::forward<Args>(args)...);    // 以传入的其他参数为参数
+    }
+\end{lstlisting}
+
 
 \section{\texttt{std::bool\_constant<>}}\label{ch33.2}
+如果一个特征返回bool值，那么它们现在使用了新的模板别名\texttt{bool\_constant<>}：
+\begin{lstlisting}
+    namespace std {
+        template<bool B>
+        using bool_constant = integral_constant<bool, B>;   // 自从C++17起
+        using true_type = bool_constant<true>;
+        using false_type = bool_constant<false>;
+    }
+\end{lstlisting}
+在C++17之前，你必须直接使用\texttt{integral\_constant<>}，这意味着\texttt{true\_type}和
+\texttt{false\_type}按照如下方式定义：
+\begin{lstlisting}
+    namespace std {
+        using true_type = integral_constant<bool, true>;
+        using false_type = integral_constant<bool, false>;
+    }
+\end{lstlisting}
+bool特征仍然是在满足特定属性时继承\texttt{std::true\_type}，
+在不满足时继承\texttt{std::false\_type}。例如：
+\begin{lstlisting}
+    // 主模板：T不是void类型时
+    template<typename T>
+    struct IsVoid : std::false_type {
+    };
+
+    // 为类型void的特化
+    template<>
+    struct IsVoid<void> : std::true_type {
+    };
+\end{lstlisting}
+然而，你现在可以通过派生自\texttt{bool\_constant<>}来定义自己的类型特征，
+只需要制定相应的编译期表达式作为一个bool条件。例如：
+\begin{lstlisting}
+    template<typename T>
+    struct IsLargerThanInt : std::bool_constant<(sizeof(T) > sizeof(int))> {
+    }
+\end{lstlisting}
+之后你可以使用这样一个特征来在编译器判断一个类型是否大于\texttt{int}：
+\begin{lstlisting}
+    template<typename T>
+    void foo(T x)
+    {
+        if constexpr(IsLargerThanInt<T>::value) {
+            ...
+        }
+    }
+\end{lstlisting}
+通过添加相应的\hyperref[ch21.1]{带有后缀\_v的变量模板}作为\nameref{ch3}：
+\begin{lstlisting}
+    template<typename T>
+    inline static constexpr auto IsLargerThanInt_v = IsLargerThanInt<T>::value;
+\end{lstlisting}
+你可以把这个特征的使用缩短为如下形式：
+\begin{lstlisting}
+    template<typename T>
+    void foo(T x)
+    {
+        if constexpr(IsLargerThanInt_v<T>) {
+            ...
+        }
+    }
+\end{lstlisting}
+作为另一个例子，我们可以定义一个如下的特征来粗略的检查
+一个类型\texttt{T}的移动构造函数是否保证不抛出异常：
+\begin{lstlisting}
+    template<typename T>
+    struct IsNothrowMoveConsructibleT : std::bool_constant<noexcept(T(std::declval<T>()))> {
+    };
+\end{lstlisting}
+
+
+\section{\texttt{std::void\_t<>}}
+还有一个很小但很有用的辅助定义类型特征的工具在C++17中被标准化了：\texttt{std::void\_t<>}。
+它简单的按照如下形式定义：
+\begin{lstlisting}
+    namespace std {
+        template<typename...> using void_t = void;
+    }
+\end{lstlisting}
+也就是说，对于任何可变模板参数列表它都会返回\texttt{void}。
+如果我们只想在参数列表中处理类型时这会很有用。
+
+它的主要应用就是当定义新的类型特征时检查条件。
+下面的例子演示了它的应用：
+\begin{lstlisting}
+    #include <utility>      // for declval<>
+    #include <type_traits>  // for true_type, false_type, void_t
+
+    // 主模板：
+    template<typename, typename = std::void_t<>>
+    struct HasVarious : std::false_type {
+    };
+
+    // 部分特化（may be SFINAE'd away）：
+    template<typename T>
+    struct HasVarious<T, std::void_t<decltype(std::declval<T>().begin()),
+                                     typename T::difference_type,
+                                     typename T::iterator>>
+        : trye_type {
+    };
+\end{lstlisting}
+这里，我们定义了一个新的类型特征\texttt{HasVariousT<>}，它会检查如下三个条件：
+\begin{itemize}
+    \item 该类型有成员函数\texttt{begin()}吗？
+    \item 该类型有类型成员\texttt{difference\_type}吗？
+    \item 该类型有类型成员\texttt{iterator}吗？
+\end{itemize}
+只有当对于类型\texttt{T}所有相应的条件都有效时才会使用部分特化版本。
+在这种情况下，它的特化程度比主模板更高所以会使用它，
+并且因为我们从\hyperref[ch33.2]{\texttt{std::true\_type}}，
+检查这个特征的值将返回\texttt{true}：
+\begin{lstlisting}
+    if constexpr (HasVarious<T>::value) {
+        ...
+    }
+\end{lstlisting}
+如果任何表达式导致无效代码（即\texttt{T}没有\texttt{begin()}、或者
+没有类型成员\texttt{difference\_type}、或者没有类型成员\texttt{iterator}），
+部分特化版会\emph{SFINAE'd away}，这意味着根据
+\emph{代换失败不是错误(substitution failure is not an error)}规则它会被忽略。
+之后，只有主模板可以使用，它派生自\texttt{std::false\_type}，如果检查它的值
+会返回\texttt{false}。
+
+使用这种方式，你可以使用\texttt{std::void\_t}来轻易的定义其他检查一个或多个条件的特征，
+这些条件包括是否存在某个成员或操作或者某个成员或操作的能力。
+参见\hyperref[ch30.1.2.2]{\texttt{HasDelete<>}}获取另一个例子。
+
+
+\section{后记}
+\texttt{std::invoke<>}由Tomasz Kaminski在\url{https://wg21.link/n3727}中首次提出。
+最终被接受的提案由Tomasz Kaminski发表于\url{https://wg21.link/4169}。
+之后根据Daniel Krügler、Pablo Halpern、Jonathan Wakely在
+\url{https://wg21.link/p0604r0}中的提议使用\nameref{ch21.2.0.5}修改了它的返回值类型。
+
+\texttt{std::bool\_constant<>}由Zhihao Yuan在\url{https://wg21.link/n4334}中
+首次提出。最终被接受的提案由Zhihao Yuan发表于\url{https://wg21.link/n4389}。
+
+\texttt{std::void\_t<>}因Walter E. Brown在\url{https://wg21.link/n3911}中
+的提议而被采纳。
