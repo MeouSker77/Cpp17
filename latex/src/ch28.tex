@@ -2,7 +2,7 @@
 C++标准库还有一些微小的扩展和变化，将在这一章中描述。
 
 
-\section{\texttt{std::uncaught\_exceptions()}}
+\section{\texttt{std::uncaught\_exceptions()}}\label{ch28.1}
 C++的一个关键模式是\emph{RAII: Resource Acquisition Is Initialization}。
 这是一种安全地处理那些你必须要释放或清理的资源的方式。
 在构造一个对象时你把需要的资源的所有权传递给它，当它离开作用域时它的析构函数就会自动释放资源。

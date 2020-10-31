@@ -1,33 +1,203 @@
 \chapter{废弃和移除的特性}\label{ch35}
+C++17中又有一些特性被废弃或者彻底被移除。
+
+实现可能仍然提供被移除的特性，但你不应该依赖它。
+如果你使用了这些废弃的特性实现应该可能会给出一个警告。
 
 
 \section{废弃和移除的核心语言特性}
 
 \subsection{throw声明}
+动态异常声明不再受支持（它们自从C++11起就已经被废弃）：
+\begin{lstlisting}
+    void f6() throw(std::bad_alloc);    // ERROR：自从C++17起无效
+\end{lstlisting}
+空异常声明仍然可以使用但仍然被废弃：
+\begin{lstlisting}
+    void f5() throw();                  // 自从C++11起废弃
+\end{lstlisting}
+使用\texttt{noexcept}作为替代（它现在已经是\hyperref[ch8.7]{函数类型的一部分}）：
+\begin{lstlisting}
+    void f5() noexcept;                 // OK
+\end{lstlisting}
 
 \subsection{关键字\texttt{register}}
+关键字\texttt{register}不再有任何标准化的语义，但仍然保留：
+\begin{lstlisting}
+    register int x = 42;    // 自从C++17起ERROR
+
+    std::string register;   // 在所有版本的C++中仍然ERROR
+\end{lstlisting}
+\texttt{register}仍然保留的一个原因是它仍然是C里有标准化语义的关键字
+（例如，它可以出现在函数的参数列表中）。
+
+因为这个关键字已经在C++11和C++14中被废弃，如果因为使用了\texttt{register}而编译失败，
+只需要移除这个关键字即可。
 
 \subsection{禁止\texttt{bool}类型的\texttt{++}}
+你不能再对\texttt{bool}类型的对象调用\texttt{++}（调用\texttt{--}从来都不允许）：
+\begin{lstlisting}
+    bool b{false};
+
+    ++b;    // 自从C++17起ERROR
+\end{lstlisting}
+作为代替，使用：
+\begin{lstlisting}
+    b = true;
+\end{lstlisting}
 
 \subsection{三字符}
+你不能再使用代表特殊字符的三字符序列（例如\texttt{??=}代表\texttt{\#}）。
+
+一开始引入这个特性是为了一些没有像\texttt{\#}这样的特殊字符的打字机准备的。
+现在已经没有必要再支持这个特性。
 
 \subsection{\texttt{static constexpr}成员的定义/重复声明}
+因为\hyperref[ch3.3]{\texttt{static constexpr}数据成员现在隐式\texttt{inline}}，
+所以稍后的定义不再是必须的，并会被认为是多余的重复声明。因此，这样的定义/重新声明现在已经被废弃：
+\begin{lstlisting}
+    struct D {
+        static constexpr int n = 5; // 以前是声明，现在是定义
+    };
+
+    constexpr int D::n;             // 以前是定义，现在被废弃
+\end{lstlisting}
 
 
 \section{废弃和移除的库特性}
 
 \subsection{\texttt{auto\_ptr}}
+智能指针\texttt{std::auto\_ptr<>}终于被移除。它在C++98中标准化，它会尝试使用拷贝操作
+提供独占式的所有权移动语义，这可能会导致一些错误或者副作用。
+
+使用\texttt{std::unique\_ptr<>}代替它。
 
 \subsection{算法\texttt{random\_shuffle()}}
+C++98中提供的随机重排元素顺序的\texttt{random\_shuffle()}算法终于被移除。
+
+使用\texttt{std::shuffle()}代替它，或者如果你需要集合的随机子集，使用新
+算法\nameref{ch25.4}
 
 \subsection{\texttt{unary\_function}和\texttt{binary\_function}}
+实现函数对象的辅助函数\texttt{std::unary\_function}和\texttt{std::binary\_function}终
+于被移除。当定义函数对象时它们用来为类型定义提供一种简单的标准化的方法。
+然而，有了C++11的新语言特性（lambda、\texttt{decltype}、\ldots）
+它们不再是必须的，也不再适用于任何场景。
+
+移除基类并手动提供必须的类型定义来替代它们。
 
 \subsection{\texttt{ptr\_fun()}、\texttt{mem\_fun()}、绑定器}
+绑定器和创建更加复杂的函数调用适配器的包装终于被移除：
+\begin{itemize}
+    \item 为了代替\texttt{std::ptr\_fun()}，你现在可以使用lambda，类模板\texttt{std::function}、
+    函数模板\texttt{std::bind()}。
+    \item 为了代替\texttt{std::mem\_fun()}和\texttt{std::mem\_fun\_ref()}，你现在可以
+    使用lambda和\texttt{std::mem\_fn()}。
+    \item 为了代替\texttt{std::bind1st()}和\texttt{std::bind2nd()}，你现在可以
+    使用lambda和函数模板\texttt{std::bind()}。
+\end{itemize}
 
 \subsection{\texttt{std::function<>}的分配器支持}
+一开始类模板\texttt{std::function<>}被标准化时是有分配器支持的。
+然而，没有主流编译器完全实现了这个支持，并且这个规则导致了一些有趣的问题
+（见library issues 2385, 2386, 2062, 2370, 2501, 2502）。
+
+最终，在C++17中移除了\texttt{std::function<>}的分配器支持。
 
 \subsection{废弃的IO流别名}
+自从C++98就已经废弃的IO流的类型和函数别名终于被移除：
+\begin{itemize}
+    \item \texttt{std::ios\_base}中的\texttt{io\_state}类型
+    \item \texttt{std::ios\_base}中的\texttt{open\_mode}类型
+    \item \texttt{std::ios\_base}中的\texttt{seek\_dir}类型
+    \item \texttt{std::ios\_base}中的\texttt{streamoff}类型
+    \item \texttt{std::ios\_base}中的\texttt{streampos}类型
+    \item \texttt{std::basic\_streambuf<>}中的\texttt{stossc()}
+    \item \texttt{std::basic\_ios<>}中的\texttt{clear(io\_state)}
+    \item \texttt{std::basic\_ios<>}中的\texttt{setstate(io\_state)}
+    \item \texttt{std::basic\_ios<>}中的\texttt{exceptions(io\_state)}
+    \item \texttt{std::basic\_streambuf<>}中的\texttt{pubseekoff(off\_type, ios\_base::seek\_dir,\\
+    ios\_base::open\_mode)}
+    \item \texttt{std::basic\_streambuf<>}中的\texttt{pubseekpos(pos\_type, ios\_base::open\_mode)}
+    \item \texttt{std::basic\_filebuf}、\texttt{stsd::basic\_ifstream<>}、\texttt{std::basic\_ofstream<>}中
+    的\\
+    \texttt{open(const char*, ios\_base::open\_mode)}
+\end{itemize}
 
 \subsection{废弃的库特性}\label{ch35.2.7}
+下列的库特性自从C++17起被废弃，不应该再使用：
+\begin{itemize}
+    \item 类型特征\texttt{result\_of<>}被废弃。
+
+    使用\hyperref[ch21.2.0.5]{\texttt{invoke\_result<>}}代替它。
+    \item 类型特征\texttt{is\_literal\_type<>}被废弃。
+    \item 对于智能指针，成员函数\texttt{unique()}被废弃。
+
+    使用\texttt{use\_count()}代替它。
+    \item 对字符编码转换的支持（头文件\texttt{<codecvt>}和标准类\texttt{wstring\_convert<>}和
+    \texttt{wbuffer\_convert<>}）被废弃。
+
+    这个功能在C++11中引入，但在实践中发现这个方法并不是很有用并且还有一些安全漏洞。
+    为了给C++20中提供的更好的字符编码支持腾出空间，\texttt{<codecvt>}中的所有内容和用于
+    字符转换的类在C++17中都被废弃。
+    \item 类\texttt{std::iterator<>}被废弃。
+    \item 类\texttt{std::raw\_storage\_iterator<>}被废弃。
+    \item \texttt{std::get\_temporary\_buffer()}被废弃。
+    \item \texttt{std::allocator<void>}：为\texttt{void}特化的标准分配器，被废弃。
+    \item 头文件\texttt{<ccomplex>}、\texttt{<cstdalign>}、\texttt{<cstdbool>}、
+    \texttt{<ctgmath>}的使用被废弃。
+    \item \texttt{std::uncaught\_exception()}的使用被废弃。
+
+    使用\nameref{ch28.1}代替它。
+    \item 内存同步顺序\texttt{memory\_order\_consume}暂时不鼓励使用。
+    它现在不是很有用，不过之后或许会修复它。
+
+    当前阶段，使用\texttt{memory\_order\_acquire}代替它。
+\end{itemize}
+
 
 \section{后记}
+Alisdair Meredith在\url{https://wg21.link/p0003r5}中提议的
+移除throw声明终于被接受。
+
+Alisdair Meredith在\url{https://wg21.link/p0001r1}中提议的
+移除关键字\texttt{register}终于被接受。
+
+Alisdair Meredith在\url{https://wg21.link/p0002r1}中提议的
+移除\texttt{bool}类型的\texttt{++}和\texttt{--}终于被接受。
+
+Richard Smith在\url{https://wg21.link/n4086}中提议的移除三字符终于被接受。
+
+移除\texttt{auto\_ptr<>}由Billy Baker在\url{https://wg21.link/n4168}中首次提出。\\
+最终被接受的提案由Stephan T. Lavavej发表于\url{https://wg21.link/n4190}。
+
+Stephan T. Lavavej在\url{https://wg21.link/n4190}中提议的
+移除\texttt{random\_shuffle()}和函数对象的辅助函数终于被接受。
+
+Jonathan Wakely在\url{https://wg21.link/p0302r1}中提议的
+移除\texttt{std::function<>}的分配器终于被接受。
+
+Alisdair Meredith在\url{https://wg21.link/p0004r1}中提议的
+移除被废弃的IO流别名终于被接受。
+
+Daniel Krügler、Pablo Halpern和Jonathan Wakely在\url{https://wg21.link/p0604r0}中提议的
+废弃\\
+\texttt{result\_of<>}被接受。
+
+Stephan T. Lavavej在\url{https://wg21.link/p0521r0}中提议的
+废弃智能指针的\texttt{unique()}被接受。
+
+Alisdair Meredith在\url{https://wg21.link/p0618r0}中提议的
+废弃\texttt{<codecvt>}被接受。
+
+Alisdair Meredith在\url{https://wg21.link/p0174r2}中提议的
+废弃\texttt{is\_literal\_type<>}、\texttt{iterator<>}\\
+类、\texttt{raw\_storage\_iterator<>}类、\texttt{get\_temporary\_buffer()}、
+\texttt{std::allocator<void>}被接受。
+
+Clark Nelson和Hans-J. Boehm在\url{https://wg21.link/p0063r3}中提议的
+废弃头文件\texttt{<ccomplex>}、\\
+\texttt{<cstdalign>}、\texttt{<cstdbool>}、\texttt{<ctgmath>}的使用被接受。
+
+Hans-J. Boehm在\url{https://wg21.link/p0371r1}中提议的
+暂时不鼓励使用\texttt{memory\_order\_consume}被接受。
