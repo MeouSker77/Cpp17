@@ -1,1 +1,68 @@
-\chapter{常见的C++17事项}\label{ch34}
+\chapter{总体性的C++17设置}\label{ch34}
+这一章包括一些C++17中的总体性的内容。
+
+
+\section{\texttt{\_\_cplusplus}的值}
+这个预处理值代表当前C++的版本，现在\texttt{\_\_cplusplus}应该被定义为\texttt{201703L}。
+
+然而，注意Visual C++在所有模式下的默认值仍然是\texttt{199711}。
+为了纠正这个行为，可以使用编译选项\texttt{/Zc:\_\_cplusplus}，见如下讨论：
+
+\url{http://docs.microsoft.com/en-us/cpp/build/reference/zc-cplusplus}
+
+
+\section{与C11的兼容性}
+C++17以C11为基础，而不是C99，后者是C++14的基础。
+
+这意味着C++17将从C11引入的特性中受益，但也必须做出相应的修改。
+然而，还有各种约束：
+\begin{itemize}
+    \item C11标准引入了一些为了“更安全的编程”设计的函数和宏来替代传统的可能导致例如
+    覆写无限数量的内存等问题的函数和宏。它们中的大多数有后缀\texttt{\_s}。例如，
+    C11引入了\texttt{strcpy\_s()}、\texttt{sprintf\_s()}函数接受一个额外的参数表示大小
+    来保证它们不会覆写一个长度不够的字节序列。
+
+    在C11中，这些函数和之前的不安全的版本在同一个头文件中。
+    然而在相应的C++17头文件中，它们\emph{不}在命名空间\texttt{std}中。
+    当包含了相应的头文件后它们是否会出现在全局命名空间中是实现定义的。
+    \item 新的C头文件\texttt{<stdatomic.h>}，\texttt{<stdnoreturn.h>}、\texttt{<threads.h>}被
+    忽略并且在C++中没有对应的内容。
+    \item 对头文件\texttt{<ccomplex>}、\texttt<{cstdalign>}、\texttt{<cstdbool>}、\texttt{<ctgmath>}的使用已经被废弃。
+\end{itemize}
+
+\section{处理信号处理器}
+作为和C11兼容的一个副作用，C++17澄清了信号处理器中可以使用哪些调用和函数。
+
+C++17引入了术语\emph{信号安全}求值。根据它的定义，下列操作不能出现在信号处理器中：
+\begin{itemize}
+    \item 调用任何标准库函数（除非显式声明了是信号安全的）
+    \item 调用\texttt{new}或者\texttt{delete}（除非使用了信号安全的内存分配器）
+    \item 使用\texttt{thread\_local}对象
+    \item 使用\texttt{dynamic\_cast}
+    \item 抛出异常或者进入\texttt{try}语句块
+    \item 执行或等待具有静态生命周期的变量的首次初始化
+\end{itemize}
+下面的函数是信号安全的并且可以被调用：
+\begin{itemize}
+    \item \texttt{abort()}和\texttt{\_Exit()}
+    \item \texttt{quick\_exit()}，前提是用\texttt{at\_quick\_exit()}注册的函数是线程安全的
+    \item \texttt{memcpy()}和\texttt{memmove()}
+    \item \texttt{std::numeric\_limits<>}的所有成员函数
+    \item \texttt{std::initializer\_lists}的所有成员函数
+    \item 所有类型特征
+\end{itemize}
+
+\section{向前运行保证}
+C++17澄清了一个程序“make progress”（取得进展）或者“block”（阻塞）的含义。
+
+参见\url{https://wg21.link/p0072r1}获取有关这个话题的进一步讨论。
+
+\section{后记}
+C++17兼容C11而不是C99由Hans-J. Boehm和Clark Nelson在\url{https://wg21.link/p0063r0}（以\\
+Thomas Plum发表于\url{https://wg21.link/n3631}的文章中分析的情况为基础）中首次提出。
+最终被接受的提案由Clark Nelson和Hans-J. Boehm发表于\url{https://wg21.link/p0063r3}。
+
+关于信号处理器的说明由\url{Hans-J. Boehm}在\url{https://wg21.link/p0270r0}中首次提出。
+最终被接受的提案由Hans-J. Boehm发表于\url{https://wg21.link/p0270r3}。
+
+向前运行保证被接受的提案由Torvald Riegel发表于\url{https://wg21.link/p0296r2}。
