@@ -1,10 +1,216 @@
 \chapter{\texttt{std::to\_chars()}和
 \texttt{std::from\_chars()}}\label{ch31}
+C++标准库中提供了底层的把数字转换为字符序列和反向转换的操作。
 
-\section{字符序列和数字值之间的底层转换的动机}
+
+\section{底层字符序列和数字值转换的动机}
+把整数值转换为字符序列和反向转换自从C开始就是一个问题。
+C提供了\texttt{sprintf()}和\texttt{sscanf()}，
+C++一开始引入了字符串流，然而它需要消耗太多资源。
+C++11中又引入了\texttt{std::to\_string()}和\texttt{std::stoi()}等函数，
+后者只接受\texttt{std::string}参数。
+
+C++17引入了有下列能力的新的底层字符串转换函数（引用自最初的提案）：
+\begin{itemize}
+    \item 没有格式化字符串的运行时解析
+    \item 不需要动态内存分配
+    \item 不考虑locale
+    \item 不需要间接的函数指针
+    \item 防止缓冲区溢出
+    \item 当解析字符串时，如果发生错误可以和有效的数字区分
+    \item 当解析字符串时，空格或前后缀不会被悄悄忽略
+\end{itemize}
+另外，对于浮点数，这个特性还提供双向保证：即保证值被转换为字符序列之后如果再转换回来还是原来的值。
+
+这些函数在头文件\texttt{<charconv>}中提供。
+\footnote{注意C++17一开始把它们加入了\texttt{<utility>}，之后因为一篇关于C++17的
+缺陷报告中指出这样会导致循环依赖而进行了修改（见\url{https://wg21.link/p0682r1}）。}
+
 
 \section{使用示例}
+标注库提供了两个重载过的函数：
+\begin{itemize}
+    \item \texttt{std::from\_chars()}把一个字符序列转换为数字值。
+    \item \texttt{std::to\_chars()}把一个数字值转换为字符序列。
+\end{itemize}
 
 \subsection{\texttt{from\_chars}}\label{ch31.2.1}
+\texttt{std::from\_chars()}把一个字符序列转换为数字值。例如：
+\begin{lstlisting}
+    #include <charconv>
+
+    const char* str = "12 monkeys";
+    int value;
+    std::from_chars_result res = std::from_chars(str, str+10, value);
+\end{lstlisting}
+转换成功之后，\texttt{value}会含有解析后的值（这个例子中是\texttt{12}）。
+返回值是一个如下的结构体：
+\footnote{注意一开始C++17把\texttt{ec}声明为\texttt{std::error\_code}类型，之后
+因为一篇缺陷报告而进行了修改（见\url{https://wg21.link/p0682r1}）。}
+\begin{lstlisting}
+    struct from_chars_result {
+        const char* ptr;
+        std::errc ec;
+    };
+\end{lstlisting}
+调用之后，\texttt{ptr}指向没有被解析为数字的部分的第一个字符（或者，如果所有字符都被解析了就
+等于传入的第二个参数），\texttt{ec}包含\texttt{std::errc}类型的错误条件，如果转换成功时
+等于\texttt{std::errc{}}。因此，你可以按照如下方式检查是否成功：
+\begin{lstlisting}
+    if (res.ec != std::errc{}) {
+        ... // 错误处理
+    }
+\end{lstlisting}
+注意\texttt{std::errc}没有到\texttt{bool}的隐式转换，所以你不能像下面这样检查：
+\begin{lstlisting}
+    if (res.ec) {   // ERROR：没有到bool的隐式转换
+\end{lstlisting}
+或者：
+\begin{lstlisting}
+    if (!res.ec) {  // ERROR：没有定义operator!
+\end{lstlisting}
+然而，通过使用\nameref{ch1}和\nameref{ch2.1}，你可以写：
+\begin{lstlisting}
+    if (auto [ptr, ec] = std::from_chars(str, str+10, value); ec != std::errc{}) {
+        ... // 错误处理
+    }
+\end{lstlisting}
+对于整数值，你可以传递一个进制数作为最后的可选参数。进制数可以从2到26（包括26）。例如：
+\begin{lstlisting}
+    #include <charconv>
+
+    const char* str = "12 monkeys";
+    int value;
+    std::from_chars_result res = std::from_chars(str, str+10,   // 字节序列
+                                                 value,         // 存储转换后的值
+                                                 16);           // 可选的进制数
+\end{lstlisting}
+对于其他的例子，见
+\begin{itemize}
+    \item \hyperref[位序列到byte]{位序列到\texttt{std::byte}的转换}
+    \item \hyperref[改进asInt]{解析传入的字符串视图}
+\end{itemize}
 
 \subsection{\texttt{to\_chars()}}\label{ch31.2.2}
+\texttt{std::to\_chars()}把数字值转换为字符序列。例如：
+\begin{lstlisting}
+    #include <charconv>
+
+    int value = 42;
+    char str[10];
+    std::to_chars_result res = std::to_chars(str, str+9, value);
+    *res.ptr = '\0';
+\end{lstlisting}
+转换成功之后，\texttt{str}开头的字符序列包含了传入的整数值（这个例子中是\texttt{42}）的字符表示，
+注意没有结尾的空字符。
+
+同理，对于整数值，你还可以传递为值传递一个进制数作为可选的最后一个参数。
+进制数可以是2到26（包含26）。例如：
+\begin{lstlisting}
+    #include <charconv>
+
+    int value = 42;
+    char str[10];
+    std::to_chars_result res = std::to_chars(str, str+9,    // 存储结果的字符序列
+                                             value,         // 要转换的值
+                                             16);           // 可选的进制数
+    *res.ptr = '\0';    // 保证结尾有一个空字符
+\end{lstlisting}
+对于另一个例子，见\hyperref[byte到位序列]{\texttt{std::byte}转换为位序列}。
+
+返回值是一个如下的结构体：
+\footnote{注意一开始C++17把\texttt{ec}声明为\texttt{std::error\_code}类型，之后
+因为一篇缺陷报告而进行了修改（见\url{https://wg21.link/p0682r1}）。}
+\begin{lstlisting}
+    struct to_chars_result {
+        char* ptr;
+        std::errc ec;
+    };
+\end{lstlisting}
+调用之后，\texttt{ptr}指向最后一个被写入的字符的下一个位置，\texttt{ec}可能会包含一个
+\texttt{std::errc}类型的错误条件，如果转换成功，它的值等于\texttt{std::errc{}}。
+
+因此，你可以像这样检查结果：
+\begin{lstlisting}
+    if (res.ec != std::errc{}) {
+        ... // 错误处理
+    }
+    else {
+        process(str, res.ptr - str);    // 传递字符序列和长度
+    }
+\end{lstlisting}
+再次注意\texttt{std::errc}没有到\texttt{bool}的隐式转换，这意味着你不能像下面这样检查：
+\begin{lstlisting}
+    if (res.ec) {   // ERROR：没有到bool的隐式转换
+\end{lstlisting}
+或者：
+\begin{lstlisting}
+    if (!res.ec) {  // ERROR：没有定义operator!
+\end{lstlisting}
+因为不会自动写入末尾的空字符，所以你必须保证只使用被写入的那些字符或者像上面的例子一样
+使用返回值的\texttt{ptr}成员手动添加一个末尾的空字符：
+\begin{lstlisting}
+    *res.ptr = '\0';    // 确保最后有一个空字符
+\end{lstlisting}
+再一次，通过使用\nameref{ch1}和\nameref{ch2.1}，你可以写：
+\begin{lstlisting}
+    if (auto [ptr, ec] = std::to_chars(str, str+10, value); ec != std::errc{}) {
+        ... // 错误处理
+    }
+    else {
+        process(str, ptr - str);    // 传递字符和长度
+    }
+\end{lstlisting}
+注意使用\texttt{std::to\_string()}可以更安全更方便的实现这个功能。
+只有进一步处理时需要被写入的字符序列时使用\texttt{std::to\_chars()}才有意义。
+
+\section{浮点数和双向支持}
+如果没有指定精度，\texttt{to\_chars()}和\texttt{from\_chars()}保证浮点数的双向支持。
+这意味着值被转换为字符序列之后，再转换回来的值和一开始完全相同。
+然而，只有当在同一个实现上读写时这个保证才成立。
+
+为了实现保证，浮点数必须以最好的粒度和最高的精度写入字符序列。
+因此，写入的字节序列可能非常长。
+
+考虑如下函数：
+\inputcodefile{lib/charconv.hpp}
+这里我们把一个传入的\texttt{double}值转换为了字符序列，又把它解析回来。
+最后的断言再一次检查两个值是相同的。
+
+下面的程序演示了效果：
+\inputcodefile{lib/charconv.cpp}
+我们按照不同的顺序累加了几个浮点数。\texttt{sum1}是从左到右累加，\texttt{sum2}是
+从右到左累加（使用反向迭代器）。最后这两个数看起来相同但事实上不是：
+\begin{lstlisting}
+    sum1:  0.40001
+    sum2:  0.40001
+    equal: false
+    sum1:  0.40001000000000003221
+    sum2:  0.40000999999999997669
+\end{lstlisting}
+当把值传给\texttt{d2str2d()}之后，你可以看到这两个值被按照必要的精度被存储为不同长度的字节序列：
+\begin{lstlisting}
+    in:  0.40001000000000003221
+    str: 0.40001000000000003
+    out: 0.40001000000000003221
+
+    in:  0.40000999999999997669
+    str: 0.40001
+    out: 0.40000999999999997669
+\end{lstlisting}
+再重复一次，注意粒度（决定了存储字符序列必须的长度）依赖于平台。
+
+双向支持应该支持包含\texttt{NAN}和\texttt{INFINITY}在内的所有浮点数值。
+例如，使用\texttt{INFINITY}调用\texttt{d2st2d()}应该有如下效果：
+\begin{lstlisting}
+    in:  inf
+    str: inf
+    out: inf
+\end{lstlisting}
+然而，注意\texttt{d2str2d()}中的断言会失败，因为\texttt{NAN}不能跟任何东西比较，即使是它自己也不行。
+
+\section{后记}
+字符序列和数字值的底层转换由Jens Maurer在\url{https://wg21.link/p0067r0}中首次提出。
+最终被接受的提案由Jens Maurer发表于\url{https://wg21.link/p0067r5}。
+然而，一些重要的澄清和新的头文件由Jens Maurer在\url{https://wg21.link/p0682r1}中
+作为C++17的缺陷提出。

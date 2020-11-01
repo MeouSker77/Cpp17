@@ -202,7 +202,7 @@
 \begin{lstlisting}
     std::string s = ByteBitset{std::to_integer<unsigned>(b1)}.to_string();
 \end{lstlisting}
-如果你已经有了一个字符序列，你也可以像下面这样使用\nameref{ch31.2.2}：
+如果你已经有了一个字符序列，你也可以像下面这样使用\nameref{ch31.2.2}：\label{byte到位序列}
 \footnote{感谢Daniel Krügler指出这一点。}
 \begin{lstlisting}
     #include <charconv>
@@ -248,7 +248,7 @@
 \end{lstlisting}
 并且我们也没有其他的初始化方法了。
 
-另外，你也可以使用\nameref{ch31.2.1}来从给定的字符序列读取：
+另外，你也可以使用\nameref{ch31.2.1}来从给定的字符序列读取：\label{位序列到byte}
 \begin{lstlisting}
     #include <charconv>
 
