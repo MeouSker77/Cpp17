@@ -2,7 +2,7 @@
 自从C++11起，就可以指明\emph{属性}(attribute)（允许或者禁用某些警告的注解）。
 C++17引入了新的属性，另外现在属性也可以在其他一些地方使用，也许能带来一些便利。
 
-\section{\texttt{[[nodiscard]]}属性}
+\section{\texttt{[[nodiscard]]}属性}\label{ch7.1}
 新属性\texttt{[[nodiscard]]}可以鼓励编译器在某个函数的返回值未被使用时给出警告
 （这并不意味着编译器一定要给出警告）。
 \texttt{[[nodiscard]]}通常应该用于防止某些因为返回值未被使用导致的不当行为。
