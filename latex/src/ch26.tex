@@ -28,7 +28,7 @@ C++17引入了把某个节点从关联或无序容器中移入或移出的功能
 \end{lstlisting}
 这段代码先是把key为\texttt{2}的元素节点移出容器，然后修改了key，最后有移进了容器，
 这个过程如\hyperref[f26.1]{图26.1}所示。
-\begin{figure}[ht]
+\begin{figure}[htb]
     \centering
     \includegraphics[scale=0.67]{../imgs/26.1.png}
     \caption{使用节点句柄修改key}
@@ -67,7 +67,7 @@ C++17引入了把某个节点从关联或无序容器中移入或移出的功能
 \end{lstlisting}
 注意当不允许重复时（set、map、unordered set、unordered map），以节点句柄为参数
 的\texttt{insert()}成员函数会返回一个有三个成员的结构体类型\emph{container}\texttt{::insert\_return\_type}，
-三个成员分别是（按照如下顺序）：
+三个成员分别是（按照如下顺序）：\label{insert节点句柄}
 \begin{itemize}
     \item 一个迭代器\textbf{\texttt{position}}，当插入成功时（不存在相同key的元素时）指向插入的新元素，
     当插入失败时指向已经存在的元素。
@@ -298,20 +298,20 @@ Alan Talbot在\url{https://wg21.link/lwg839}中要求拼接操作、
 Alisdair Meredith在\url{https://wg21.link/lwg1041}中要求节点元素要有更多操作支持，
 这两个提案都是作为标准库的issue提出，间接的首次提出了节点句柄的概念。
 
-最终被接受的提案由Alan Talbot、Jonathan Wakely、Howard Hinnant、James Dennett
-发表于\url{https://wg21.link/p0083r3}。
+最终被接受的是Alan Talbot、Jonathan Wakely、Howard Hinnant、James Dennett
+发表于\url{https://wg21.link/p0083r3}的提案。
 Howard E. Hinnant在\url{https://wg21.link/p0508r0}中稍微修改使API更加明晰，并成为了最终版本的API。
 
 emplace成员函数的新返回值类型由Alan Talbot在\url{https://wg21.link/p0084r0}中首次提出。
-最终被接受的提案由Alan Talbot发表于\url{https://wg21.link/p0084r2}。
+最终被接受的是Alan Talbot发表于\url{https://wg21.link/p0084r2}的提案。
 
 (unordered) map的\texttt{insert\_or\_assign()}和\texttt{try\_emplace()}操作由
 Thomas Köppe在\url{https://wg21.link/n3873}中首次提出。
-最终被接受的提案由Thomas Köppe发表于\url{https://wg21.link/n4279}。
+最终被接受的是Thomas Köppe发表于\url{https://wg21.link/n4279}的提案。
 
 对不完全类型的容器支持由Matt Austern在\url{http://drdobbs.com/184403814}中首次讨论，
 由Zhihao Yuan在\url{https://wg21.link/n3890}中首次提出。
-最终被接受的提案由Zhihao Yuan发表于\url{https://wg21.link/n4510}。
+最终被接受的是Zhihao Yuan发表于\url{https://wg21.link/n4510}的提案。
 
 string的\texttt{data()}支持由Michael Bradshaw在\url{https://wg21.link/lwg2391}
-中作为标准库的issue首次提出。最终被接受的提案由David Sankel发表于\url{https://wg21.link/p0272r1}。
+中作为标准库的issue首次提出。最终被接受的是David Sankel发表于\url{https://wg21.link/p0272r1}的提案。

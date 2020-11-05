@@ -1,10 +1,12 @@
 \chapter{新属性和属性特性}\label{ch7}
-自从C++11起，就可以指明\emph{属性}(attribute)（允许或者禁用某些警告的注解）。
-C++17引入了新的属性，另外现在属性也可以在其他一些地方使用，也许能带来一些便利。
+自从C++11起，就可以指明\emph{属性(attributes)}（允许或者禁用某些警告的注解）。
+C++17引入了新的属性，还扩展了属性的使用场景，这样可以带来一些便利。
+
 
 \section{\texttt{[[nodiscard]]}属性}\label{ch7.1}
 新属性\texttt{[[nodiscard]]}可以鼓励编译器在某个函数的返回值未被使用时给出警告
 （这并不意味着编译器一定要给出警告）。
+
 \texttt{[[nodiscard]]}通常应该用于防止某些因为返回值未被使用导致的不当行为。
 这些不当行为可能是（译者注：请配合下边的例子理解这些不当行为）：
 \begin{itemize}
@@ -28,7 +30,7 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
     函数会阻塞等待任务运行结束。因此，不使用返回值导致的结果与\texttt{std::async()}的目的
     完全矛盾。将\texttt{std::async()}标记为\texttt{[[nodiscard]]}可以让编译器给出警告。
     \item 另一个例子是成员函数\texttt{empty()}，它的作用是检查一个对象（容器/字符串）是否
-    没有元素。程序员经常误用该函数来“清空”容器：
+    为空。程序员经常误用该函数来“清空”容器（删除所有元素）：
     \begin{lstlisting}
     cont.empty();
     \end{lstlisting}
@@ -36,7 +38,7 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
     \begin{lstlisting}
     class MyContainer {
         ...
-      public:
+    public:
         [[nodiscard]] bool empty() const noexcept;
         ...
     };
@@ -79,7 +81,7 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
 把属性放在\texttt{friend}和\texttt{bool}之间或者\texttt{bool}和\texttt{operator==}
 之间是错误的。
 
-尽管这个特性从C++17起引入，但它还没有在标准库中使用。因为这个提案出现的太晚了，所以最应该
+尽管这个特性从C++17起引入，但它还没有在标准库中使用。因为这个提案出现的太晚了，所以最
 需要它的\texttt{std::async()}也还没有使用它。不过这里讨论的所有例子，将在下一次C++标准
 中实现（见C++20中通过的\url{https://wg21.link/p0600r1}提案）。
 
@@ -90,6 +92,7 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
 当\hyperref[ch30.2.2]{定义\texttt{new()}运算符}时，
 你应该用\texttt{[[nodiscard]]}对该函数进行标记，
 例如\hyperref[ch30.4]{定义一个追踪所有\texttt{new}调用的头文件}。
+
 
 \section{\texttt{[[maybe\_unused]]}属性}
 新的属性\texttt{[[maybe\_unused]]}可以避免编译器在某个变量未被使用时发出警告。
@@ -115,18 +118,20 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
         ...
     };
 \end{lstlisting}
-注意你不能在一条语句上应用\texttt{[[maybe\_unused]]}。
-也就是说，你不能直接用\texttt{[[maybe\_unused]]}来抵消\texttt{[[nodiscard]]}的作用：
+注意你不能对一条语句应用\texttt{[[maybe\_unused]]}。
+因此，你不能直接用\texttt{[[maybe\_unused]]}来抵消\\
+\texttt{[[nodiscard]]}的作用：
 \footnote{感谢Roland Bock指出这一点}
 \begin{lstlisting}
     [[nodiscard]] void* foo();
     int main()
     {
-        foo();  // 警告：返回值没有使用
-        [[maybe_unused]] foo(); // 错误：maybe_unused不允许出现在此
-        [[maybe_unused]] auto x = foo(); // OK
+        foo();                              // 警告：返回值没有使用
+        [[maybe_unused]] foo();             // 错误：maybe_unused不允许出现在此
+        [[maybe_unused]] auto x = foo();    // OK
     }
 \end{lstlisting}
+
 
 \section{\texttt{[[fallthrough]]}属性}
 新的属性\texttt{[[fallthrough]]}可以避免编译器在\texttt{switch}语句中某一个标签
@@ -148,12 +153,13 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
     }
 \end{lstlisting}
 这个例子中参数为1时将输出：
-\begin{lstlisting}
+\begin{blacklisting}
     very well
-\end{lstlisting}
+\end{blacklisting}
 \texttt{case 1}和\texttt{case 2}中的语句都会被执行。
 注意这个属性必须被用作单独的语句，还要有分号结尾。
 另外在\texttt{switch}语句的最后一个分支不能使用它。
+
 
 \section{通用的属性扩展}
 自从C++17起下列有关属性的通用特性变得可用：
@@ -169,10 +175,10 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
     例如你可以像下面这样引入一个新的枚举值作为某个已有枚举值（并且现在已经被废弃）的替代：
     \begin{lstlisting}
     enum class City { Berlin = 0,
-        NewYork = 1,
-        Mumbai = 2,
-        Bombay [[deprecated]] = Mumbai,
-        ... };
+                      NewYork = 1,
+                      Mumbai = 2,
+                      Bombay [[deprecated]] = Mumbai,
+                      ... };
     \end{lstlisting}
     这里\texttt{Mumbai}和\texttt{Bombay}代表同一个城市的数字码，但使用\texttt{Bombay}
     已经被标记为废弃的。注意对于枚举值，属性被放置在标识符\emph{之后}。
@@ -191,22 +197,22 @@ C++17引入了新的属性，另外现在属性也可以在其他一些地方使
     \end{lstlisting}
 \end{enumerate}
 
+
 \section{后记}
 三个新属性由Andrew Tomazos在\url{https://wg21.link/p0068r0}中首次提出。
 
-\texttt{[[nodiscard]]}属性最终被接受的提案由Andrew Tomazos发表于
-\url{https://wg21.link/p0189r1}。
+\texttt{[[nodiscard]]}属性最终被接受的是Andrew Tomazos发表于
+\url{https://wg21.link/p0189r1}的提案。
+\texttt{[[maybe\_unused]]}属性最终被接受的是Andrew Tomazos发表于
+\url{https://wg21.link/p0212r1}的提案。
+\texttt{[[fallthrough]]}属性最终被接受的是Andrew Tomazos发表于
+\url{https://wg21.link/p0188r1}的提案。
 
-\texttt{[[maybe\_unused]]}属性最终被接受的提案由Andrew Tomazos发表于
-\url{https://wg21.link/p0212r1}。
-
-\texttt{[[fallthrough]]}属性最终被接受的提案由Andrew Tomazos发表于
-\url{https://wg21.link/p0188r1}。
-
-允许为命名空间和枚举值标记属性由Richard Smith在\url{https://wg21.link/n4196}
-中首次提出。该特性最终被接受的提案由Richard Smith发表于\url{https://wg21.link/n4266}。
+允许为命名空间和枚举值标记属性由Richard Smith在\url{https://wg21.link/n4196}中首次提出。
+最终被接受的是Richard Smith发表于\url{https://wg21.link/n4266}的提案。
 
 属性的\texttt{using}前缀由J. Daniel Garcia、Luis M. Sanchez、
-Massimo Torquati、Marco Danelutto、Peter Sommerlad在\url{https://wg21.link/p0028r0}
-中首次提出。最终被接受的提案由J. Daniel Garcia和Daveed Vandevoorde发表于
-\url{https://wg21.link/P0028R4}。
+Massimo Torquati、Marco Danelutto、Peter Sommerlad
+在\url{https://wg21.link/p0028r0}中首次提出。
+最终被接受的是J. Daniel Garcia和Daveed Vandevoorde发表于
+\url{https://wg21.link/P0028R4}的提案。

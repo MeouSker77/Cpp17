@@ -1,5 +1,5 @@
 \chapter{lambda表达式扩展}\label{ch6}
-lambda表达式是一个很大的成功，它最早在C++11中引入，在C++14中又引入了泛型lambda。
+C++11引入的lambda和C++14引入的泛型lambda是一个很大的成功。
 它允许我们将函数作为参数传递，这让我们能更轻易的指明一种行为。
 
 C++17扩展了lambda表达式的应用场景：
@@ -23,11 +23,11 @@ C++17扩展了lambda表达式的应用场景：
     };
     std::array<int, squared(5)> a;  // 自从C++17起OK => std::array<int, 25>
 \end{lstlisting}
-使用\texttt{constexpr}中不允许的特性将会使lambda失去成为\texttt{constexpr}的能力，
+使用编译期上下文中不允许的特性将会使lambda失去成为\texttt{constexpr}的能力，
 不过你仍然可以在运行时上下文中使用lambda：
 \begin{lstlisting}
     auto squared2 = [](auto val) {  // 自从C++17起隐式constexpr
-        static int calls = 0;   // OK，但会使该lambda不能成为constexpr
+        static int calls = 0;       // OK，但会使该lambda不能成为constexpr
         ...
         return val*val;
     };
@@ -40,7 +40,7 @@ C++17扩展了lambda表达式的应用场景：
         return val*val;
     };
 \end{lstlisting}
-如果指明返回类型的话，看起来像下面这样：
+如果指明返回类型的话，语法看起来像下面这样：
 \begin{lstlisting}
     auto squared3i = [](int val) constexpr -> int {  // 自从C++17起OK
         return val*val;
@@ -49,7 +49,7 @@ C++17扩展了lambda表达式的应用场景：
 关于\texttt{constexpr}函数的规则也适用于lambda：如果一个lambda在运行时上下文中使用，
 那么相应的函数体也会在运行时才会执行。
 
-然而，如果在声明了\texttt{constexpr}的lambda内使用了编译期上下文中不允许出现的特性
+然而，如果在声明了\texttt{constexpr}的lambda内使用了编译期上下文中不允许的特性
 将会导致编译错误：\footnote{不允许出现在编译期上下文中的特性有：静态变量、虚函数、
 \texttt{try/catch}、\texttt{new/delete}等。}
 \begin{lstlisting}
@@ -62,14 +62,14 @@ C++17扩展了lambda表达式的应用场景：
 一个隐式或显式的\texttt{constexpr} lambda的函数调用符也是\texttt{constexpr}。
 也就是说，如下定义：
 \begin{lstlisting}
-    auto squared = [](auto val) {   // 自从C++17起隐式constexpr
+    auto squared = [](auto val) {   // 从C++17起隐式constexpr
         return val*val;
     };
 \end{lstlisting}
-将会被转换为如下\emph{闭包类型}(closure type)：
+将会被转换为如下\emph{闭包类型(closure type)}：
 \begin{lstlisting}
     class CompilerSpecificName {
-      public:
+    public:
         ...
         template<typename T>
         constexpr auto operator() (T val) const {
@@ -77,9 +77,10 @@ C++17扩展了lambda表达式的应用场景：
         }
     };
 \end{lstlisting}
-注意，这里自动生成的闭包类型的函数调用运算符自动声明为\texttt{constexpr}。
+注意，这里生成的闭包类型的函数调用运算符自动声明为\texttt{constexpr}。
 自从C++17起，如果lambda被显式或隐式地定义为\texttt{constexpr}，
 那么生成的函数调用运算符将自动是\texttt{constexpr}。
+
 注意如下定义：
 \begin{lstlisting}
     auto squared1 = [](auto val) constexpr {  // 编译期lambda调用
@@ -96,7 +97,8 @@ C++17扩展了lambda表达式的应用场景：
 
 第一个例子中如果（只有）lambda是\texttt{constexpr}那么它可以被用于编译期，
 但是\texttt{squared1}可能直到运行期才会被初始化，
-这意味着如果静态初始化顺序很重要那么可能导致问题。
+这意味着如果静态初始化顺序很重要那么可能导致问题
+（例如，可能会导致\emph{static initialization order fiasco}）。
 如果用lambda初始化的闭包对象是\texttt{constexpr}，那么该对象将在程序开始时就初始化，
 但lambda可能还是只能在运行时使用。因此，可以考虑使用如下定义：
 \begin{lstlisting}
@@ -107,11 +109,11 @@ C++17扩展了lambda表达式的应用场景：
 
 \subsection{使用\texttt{constexpr} lambda}
 这里有一个使用\texttt{constexpr} lambda的例子。
-假设我们有一个字符串的哈希函数，这个函数迭代字符串的每一个字符反复更新哈希值：
+假设我们有一个字符序列的哈希函数，这个函数迭代字符串的每一个字符反复更新哈希值：
 \footnote{djb2算法的源码见\url{http://www.cse.yorku.ca/~oz/hash.html}。}
 \begin{lstlisting}
     auto hashed = [](const char* str) {
-        std::size_t hash = 5381;    // 初始化哈希值
+        std::size_t hash = 5381;        // 初始化哈希值
         while (*str != '\0') {
             hash = hash * 33 ^ *str++;  // 根据下一个字符更新哈希值
         }
@@ -122,8 +124,7 @@ C++17扩展了lambda表达式的应用场景：
 \begin{lstlisting}
     enum Hashed { beer = hashed("beer"),
                   wine = hashed("wine"),
-                  water = hashed("water"),
-                  ... };   // OK，编译期哈希
+                  water = hashed("water"), ... };   // OK，编译期哈希
 \end{lstlisting}
 我们也可以在编译期计算\texttt{case}标签：
 \begin{lstlisting}
@@ -145,13 +146,13 @@ C++17扩展了lambda表达式的应用场景：
 \begin{lstlisting}
     std::array arr{ hashed("beer"),
                     hashed("wine"),
-                    hashed(("water")};
+                    hashed("water")};
 \end{lstlisting}
 你甚至可以在\texttt{hashed}函数里联合使用另一个\texttt{constexpr} lambda。
 设想我们把\texttt{hashed}里根据当前哈希值和下一个字符值更新哈希值的逻辑定义为一个参数：
 \begin{lstlisting}
     auto hashed = [](const char* str, auto combine) {
-        std::size_t hash = 5381;
+        std::size_t hash = 5381;            // 初始化哈希值
         while (*str != '\0') {
             hash = combine(hash, *str++);   // 用下一个字符更新哈希值
         }
@@ -163,7 +164,7 @@ C++17扩展了lambda表达式的应用场景：
     constexpr std::size_t hv1{hashed("wine"), [](auto h, char c) {return h*33 + c;})};
     constexpr std::size_t hv2{hashed("wine"), [](auto h, char c) {return h*33 ^ c;})};
 \end{lstlisting}
-这里，我们在编译期通过改变更新逻辑初始化了两个不同的"wine"的哈希值。
+这里，我们在编译期通过改变更新逻辑初始化了两个不同的\texttt{"wine"}的哈希值。
 两个\texttt{hashed}都是在编译期调用。
 
 
@@ -173,13 +174,13 @@ C++17扩展了lambda表达式的应用场景：
 （即使你用\texttt{this->}来访问也不行）：
 \begin{lstlisting}
     class C {
-      private:
+    private:
         std::string name;
-      public:
+    public:
         ...
         void foo() {
-            auto l1 = [] {std::cout << name << '\n';}; // ERROR
-            auto l2 = [] {std::cout << this->name << '\n';}; // ERROR
+            auto l1 = [] { std::cout << name << '\n'; };        // ERROR
+            auto l2 = [] { std::cout << this->name << '\n'; };  // ERROR
             ...
         }
     };
@@ -187,20 +188,20 @@ C++17扩展了lambda表达式的应用场景：
 在C++11和C++14里，你可以通过值或引用捕获\texttt{this}：
 \begin{lstlisting}
     class C {
-      private:
+    private:
         std::string name;
-      public:
+    public:
         ...
         void foo() {
-            auto l1 = [this] {std::cout << name << '\n';}; // OK
-            auto l2 = [=] {std::cout << name << '\n';}; // OK
-            auto l3 = [&] {std::cout << name << '\n';}; // OK
+            auto l1 = [this] { std::cout << name << '\n'; };    // OK
+            auto l2 = [=] { std::cout << name << '\n'; };       // OK
+            auto l3 = [&] { std::cout << name << '\n'; };       // OK
             ...
         }
     };
 \end{lstlisting}
 然而，问题是即使是用拷贝的方式捕获\texttt{this}实质上获得的也是引用
-（因为只会拷贝\texttt{this}指针）。当lambda的生命周期比该对象的生命周期更长的时候，
+（因为只会拷贝\texttt{this}\emph{指针}）。当lambda的生命周期比该对象的生命周期更长的时候，
 调用这样的函数就可能导致问题。比如一个极端的例子是在lambda中开启一个新的线程来完成某些任务,
 调用新线程时正确的做法是传递整个对象的拷贝来避免并发和生存周期的问题，而不是传递该对象的引用。
 另外有时候你可能只是简单的想向lambda传递当前对象的拷贝。
@@ -208,9 +209,9 @@ C++17扩展了lambda表达式的应用场景：
 自从C++14起有了一个解决方案，但可读性和实际效果都比较差：
 \begin{lstlisting}
     class C {
-      private:
+    private:
         std::string name;
-      public:
+    public:
         ...
         void foo() {
             auto l1 = [thisCopy=*this] { std::cout << thisCopy.name << '\n'; };
@@ -228,9 +229,9 @@ C++17扩展了lambda表达式的应用场景：
 自从C++17起，你可以通过\texttt{*this}显式地捕获当前对象的拷贝：
 \begin{lstlisting}
     class C {
-      private:
+    private:
         std::string name;
-      public:
+    public:
         ...
         void foo() {
             auto l1 = [*this] { std::cout << name << '\n'; };
@@ -247,7 +248,7 @@ C++17扩展了lambda表达式的应用场景：
 \end{lstlisting}
 这里有一个完整的例子：
 \inputcodefile{lang/lambdathis.cpp}
-lambda里捕获了\texttt{*this}，因此传递进lambda的是一份拷贝。
+lambda里捕获了\texttt{*this}，所以传递进lambda的是一份拷贝。
 因此，即使在\texttt{d}被销毁之后使用捕获的对象也没有问题。
 
 如果我们使用\texttt{[this]}、\texttt{[=]}或者\texttt{[\&]}捕获\texttt{this}，
@@ -260,7 +261,13 @@ lambda里捕获了\texttt{*this}，因此传递进lambda的是一份拷贝。
 
 
 \section{后记}
-\texttt{constexpr} lambda由Faisal Vali、Ville Voutilainen和Gabriel Dos Reis
-在\url{https://wg21.link/n4487}中首次提出。
-最终被接受的正式提案由Faisal Vali、Jens Maurer、Richard Smith
-发表于\url{https://wg21.link/p0170r1}。
+\texttt{constexpr} lambda由Faisal Vali、Ville Voutilainen和Gabriel Dos Reis在
+\url{https://wg21.link/n4487}中首次提出。
+最终被接受的是Faisal Vali、Jens Maurer、Richard Smith发表
+于\url{https://wg21.link/p0170r1}的提案。
+
+在lambda中捕获\texttt{*this}由H. Carter Edwards、Christian Trott、Hal Finkel、
+Jim Reus、Robin Maffeo、Ben Sander\\
+在\url{https://wg21.link/p0018r0}中首次提出。
+最终被接受的是H. Carter Edwards、Daveed Vandevoorde、Christian Trott、Hal Finkel、
+Jim Reus、Robin Maffeo、Ben Sander发表于\url{https://wg21.link/p0180r3}的提案。

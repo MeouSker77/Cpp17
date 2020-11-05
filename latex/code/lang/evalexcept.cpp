@@ -16,7 +16,7 @@ int main()
     catch (const std::exception& e) {   // 处理标准异常
         std::cerr << "EXCEPTION: " << e.what() << '\n';
     }
-    catch (...) {   // 处理任何其他异常
+    catch (...) {                       // 处理任何其他异常
         std::cerr << "EXCEPTION of unknown type\n";
     }
 }

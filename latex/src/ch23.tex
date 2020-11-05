@@ -7,13 +7,13 @@ C++17引入了一些新的STL算法。主要目的是为了支持\hyperref[ch22]
 作为\nameref{ch22}的一部分，原本就有的\texttt{for\_each\_n()}又提出了一个新的并行版本。
 类似于\texttt{copy\_n()}、\texttt{fill\_n()}、\texttt{generate\_n()}，这个算法需要
 一个整数参数指出要对范围内多少个元素进行操作。
-\begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
+\begin{blacklisting}
 InputIterator
 `\textbf{for\_each\_n}` (ExecutionPolicy&& pol,  // 可选的
             InputIterator beg,
             Size count,
             UnaryProc op)
-\end{lstlisting}
+\end{blacklisting}
 \begin{itemize}
     \item 对以\emph{beg}为起点的范围中前\emph{count}个元素调用\emph{op(elem)}。
     \item 返回最后一个调用了\emph{op}()的元素的的下一个位置。
@@ -64,7 +64,7 @@ InputIterator
 注意这些新算法的动机\hyperref[ch22.6]{之前就已经讨论过}。
 
 \subsection{\texttt{std::reduce()}}\label{ch23.2.1}
-\begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
+\begin{blacklisting}
 typename iterator_traits<InputIterator>::value_type
 `\textbf{reduce}` (ExecutionPolicy&& pol,   // 可选的
         InputIterator beg, InputIterator end)
@@ -79,7 +79,7 @@ T
         InputIterator beg, InputIterator end,
         T initVal,
         BinaryOp op)
-\end{lstlisting}
+\end{blacklisting}
 \begin{itemize}
     \item 前两个形式返回范围\texttt{[}\emph{beg}\texttt{,}\emph{end}\texttt{)}内
     所有元素和初始值之和。因此，在如下初始化后：\\
@@ -128,13 +128,13 @@ T
 \texttt{std::transform\_reduce()}有两种变体：
 
 \subsubsection{单范围的\texttt{std::transform\_reduce()}}
-\begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
+\begin{blacklisting}
 T
 `\textbf{transform\_reduce}` (ExecutionPolicy&& pol,    // 可选的
                   InputIterator beg, InputIterator end,
                   T initVal,
                   BinaryOp op2, UnaryOp op1)
-\end{lstlisting}
+\end{blacklisting}
 \begin{itemize}
     \item 计算并返回范围\texttt{[}\emph{beg}\texttt{,}\emph{end}\texttt{)}内所有
     元素变换之后再和初始值一起进行结合/累积之后的结果。
@@ -164,7 +164,7 @@ T
 和\hyperref[ch22.6.1.4]{一些其他的例子}。
 
 \subsubsection{双范围的\texttt{std::transform\_reduce()}}\label{ch23.2.2.2}
-\begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
+\begin{blacklisting}
 T
 `\textbf{transform\_reduce}` (ExecutionPolicy&& pol,    // 可选的
                   InputIterator1 beg1, InputIterator1 end1,
@@ -177,7 +177,7 @@ T
                   InputIterator2 beg2,
                   T initVal,
                   BinaryOp1 op1, BinaryOp2 op2)
-\end{lstlisting}
+\end{blacklisting}
 \begin{itemize}
     \item 第一个形式计算范围\texttt{[}\emph{beg1}\texttt{,}\emph{end1}\texttt{)}和
     以\emph{beg2}开头的范围内元素的内积再加上\emph{initVal}。特别地，它对每两个相应的元素进行如下操作：\\
@@ -216,7 +216,7 @@ T
 \end{lstlisting}
 
 \subsection{\texttt{std::inclusive\_scan()}和\texttt{std::exclusive\_scan()}}\label{ch23.2.3}
-\begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
+\begin{blacklisting}
 OutputIterator
 `\textbf{inclusive\_scan}` (ExcutionPolicy&& pol,   // 可选的
                 InputIterator inBeg, InputIterator inEnd,
@@ -230,7 +230,7 @@ OutputIterator
                 OutputIterator outBeg,
                 T initVal,              // 必须的
                 BinaryOp op)            // 可选的
-\end{lstlisting}
+\end{blacklisting}
 \begin{itemize}
     \item 所有的形式都计算范围\texttt{[}\emph{inBeg}\texttt{,}\emph{inEnd}\texttt{)}内每个
     元素和之前所有元素组合之后的值并写入以\emph{outBeg}开头的目标范围。
@@ -278,7 +278,7 @@ OutputIterator
 
 \subsection{\texorpdfstring{\texttt{std::transform\_inclusive\_scan()}和\\
 \texttt{std::transform\_exclusive\_scan()}}{}}
-\begin{lstlisting}[frame=single,xleftmargin=13pt,xrightmargin=13pt]
+\begin{blacklisting}
 OutputIterator
 `\textbf{transform\_inclusive\_scan}` (ExcutionPolicy&& pol,    // 可选的
                           InputIterator inBeg, InputIterator inEnd,
@@ -294,7 +294,7 @@ OutputIterator
                           T initVal,            // 必须的
                           BinaryOp op2,         // 必须的
                           UnaryOp op1)          // 必须的
-\end{lstlisting}
+\end{blacklisting}
 \begin{itemize}
     \item 所有的形式都先对范围\texttt{[}\emph{inBeg}\texttt{,}\emph{inEnd}\texttt{)}内每个
     元素进行变换，再把每个元素变换后的值和之前所有元素变换后的值组合之后的值写入以\emph{outBeg}开头的目标范围。

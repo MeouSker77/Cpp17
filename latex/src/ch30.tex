@@ -538,7 +538,7 @@
 \inputcodefile{lang/tracknew.cpp}
 输出依赖于追踪器被实例化的具体时间和其他初始化分配了多少内存。
 然而，它应该包含类似于如下这几行的输出：
-\begin{lstlisting}[keywordstyle=\color{black}]
+\begin{blacklisting}
     #1 ::new (27 bytes, def-aligned) => 0x8002ccc0 (total: 27 Bytes)
     #2 ::new (24 bytes, def-aligned) => 0x8004cd28 (total: 51 Bytes)
     #3 ::new (36 bytes, def-aligned) => 0x8004cd48 (total: 87 Bytes)
@@ -546,7 +546,7 @@
     #5 ::new[] (100 bytes, def-aligned) => 0x8004cde8 (total: 287 Bytes)
     #6 ::new (29 bytes, def-aligned) => 0x8004ce50 (total: 316 Bytes)
     6 allocations for 316 bytes
-\end{lstlisting}
+\end{blacklisting}
 在这个例子中，第一个输出是为\texttt{s}分配内存。注意根据\texttt{std::string}类的
 内存分配策略这个值可能会更大。
 
@@ -566,4 +566,4 @@
 
 \section{后记}
 堆/动态内存的对齐分配由Clark Nelson在\url{https://wg21.link/n3396}中首次提出。
-最终被接受的提案由Clark Nelson发表于\url{https://wg21.link/p0035r4}。
+最终被接受的是Clark Nelson发表于\url{https://wg21.link/p0035r4}的提案。

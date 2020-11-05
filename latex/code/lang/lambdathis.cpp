@@ -9,7 +9,7 @@ public:
     Data(const std::string& s) : name(s) {
     }
     auto startThreadWithCopyOfThis() const {
-        // 开启并返回新线程，新线程将在3秒后使用this
+        // 开启并返回新线程，新线程将在3秒后使用this：
         using namespace std::literals;
         std::thread t([*this] {
             std::this_thread::sleep_for(3s);

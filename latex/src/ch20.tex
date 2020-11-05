@@ -27,9 +27,9 @@
     checkpath checkpath.cpp
     \end{lstlisting}
     将会有如下输出：
-    \begin{lstlisting}[stringstyle=\color{black}]
+    \begin{blacklisting}
     "checkpath.cpp" exists with 907 bytes
-    \end{lstlisting}
+    \end{blacklisting}
     注意输出路径时会自动把路径名用双引号括起来输出
     （把路径用双引号括起来、反斜杠用另一个反斜杠转义，
     \hyperref[ch20.1.1.1]{对Windows路径来说是一个问题}）。
@@ -51,12 +51,12 @@
     checkpath .
     \end{lstlisting}
     输出将是：
-    \begin{lstlisting}[stringstyle=\color{black}]
+    \begin{blacklisting}
     "." is a directory containing:
       "./checkpath.cpp"
       "./checkpath.exe"
       ...
-    \end{lstlisting}
+    \end{blacklisting}
     \item 最后，我们检查传入文件系统路径是否不存在：
     \begin{lstlisting}
     if (exists(p)) {        // 路径p存在吗？
@@ -80,12 +80,12 @@ file()}、\texttt{file\_size()}、\texttt{is\_directory()}、\texttt{exists()}�
     checkpath C:\
 \end{lstlisting}
 将会有如下输出：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     "C:" is a directory containing:
       ...
       "C:Users"
       "C:Windows"
-\end{lstlisting}
+\end{blacklisting}
 用双引号括起来输出路径可以确保输出的文件名可以被直接复制粘贴到其他程序里，
 并且经过转义之后还会恢复为原本的文件名。
 然而，终端通常不接受这样的路径。
@@ -98,12 +98,12 @@ file()}、\texttt{file\_size()}、\texttt{is\_directory()}、\texttt{exists()}�
     checkpath C:\
 \end{lstlisting}
 将会有如下输出：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     "C:\" is a directory containing:
       ...
       "C:\Users"
       "C:\Windows"
-\end{lstlisting}
+\end{blacklisting}
 通用字符串格式还提供了\hyperref[ch20.3.4]{其他转换}来把string转换为本地编码。
 
 \subsection{用\texttt{switch}语句处理不同的文件系统类型}
@@ -256,7 +256,7 @@ symlink}来遍历符号链接。因此，我们在POSIX兼容系统上可能会�
     }
 \end{lstlisting}
 将会在POSIX兼容系统上有如下输出：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     all files:
       ...
       "./testdir"
@@ -264,9 +264,9 @@ symlink}来遍历符号链接。因此，我们在POSIX兼容系统上可能会�
       "./tmp"
       "./tmp/test"
       "./tmp/test/data.txt"
-\end{lstlisting}
+\end{blacklisting}
 在Windows上，输出将是：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     all files:
       ...
       ".testdir"
@@ -274,7 +274,7 @@ symlink}来遍历符号链接。因此，我们在POSIX兼容系统上可能会�
       ".tmp"
       ".tmptest"
       ".tmptestdata.txt"
-\end{lstlisting}
+\end{blacklisting}
 通过调用\texttt{lexically\_normal()}我们可以得到正规化的路径，
 它移除了前导的代表当前路径的点。还有，\hyperref[ch20.1.1.1]{如上文所述}，
 通过调用\texttt{string()}我们避免了输出路径时用双引号括起来。
@@ -298,25 +298,25 @@ symlink}来遍历符号链接。因此，我们在POSIX兼容系统上可能会�
     }
 \end{lstlisting}
 例如，如果我们不能创建目录，将会打印出类似于如下消息：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     EXCEPTION: filesystem error: cannot create directory: [tmp/test]
         path1: "tmp/test"
-\end{lstlisting}
+\end{blacklisting}
 如果我们不能创建符号链接可能是因为它已经存在了，
 或者我们可能需要特殊权限，这些情况下你可能会得到如下消息：\label{创建链接失败}
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     EXCEPTION: create_directory_symlink: Can't create a file when it
                                          already exists: "tmp\test\
                                          data.txt", "testdir"
         path1: "tmp\test\data.txt"
-\end{lstlisting}
+\end{blacklisting}
 或者：
-\begin{lstlisting}[stringstyle=\color{black}, keywordstyle=\color{black}]
+\begin{blacklisting}
     EXCEPTION: create_directory_symlink: A requied privilege is not
                                          held by the client.: "test
                                          ", "tmp\slink"
         path1: "test"
-\end{lstlisting}
+\end{blacklisting}
 在每一种情况下，都要注意在多用户/多进程操作系统中情况可能会在任何时候改变，
 这意味着你刚刚创建的目录甚至可能已经被删除、重命名、或已经被同名的文件覆盖。
 因此，很显然不能只根据当前的情况就保证一个预期操作一定是有效的。
@@ -410,12 +410,12 @@ current\_path()}。
 目录分隔符由一个或多个\texttt{'/'}组成或者是实现特定的。
 
 可移植的通用路径的例子有：
-\begin{lstlisting}[commentstyle=\color{black}]
+\begin{blacklisting}
     //host1/bin/hello.txt
     .
     tmp/
     /a/b//.../c
-\end{lstlisting}
+\end{blacklisting}
 注意在POSIX系统上最后一个路径和\texttt{/a/c}指向同一个位置，并且都是绝对路径。
 而在Windows上则是相对路径（因为没有指定驱动器/分区（盘））。
 
@@ -450,7 +450,7 @@ current\_path()}。
 表\hyperref[t20.1]{路径正规化的效果}列举了一些在POSIX系统和Windows系统上
 对路径进行正规化的例子。注意再重复一次，在POSIX系统上，\texttt{C:bar}和\texttt{C:}只是
 把冒号作为文件名的一部分的单个文件名，并没有特殊的含义，而在Windows上，它们指定了一个分区。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l|l}
         \hline
@@ -623,7 +623,7 @@ filesystem}。在POSIX兼容的系统上这些被
     }
 \end{lstlisting}
 表\hyperref[t20.2]{\texttt{file\_type}的值}列出了这些值的含义。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -681,7 +681,7 @@ filesystem}。在POSIX兼容的系统上这些被
 
 \subsection{创建路径}
 表\hyperref[t20.3]{创建路径}列出了创建新的路径对象的方法。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -723,7 +723,7 @@ filesystem}。在POSIX兼容的系统上这些被
 \subsection{检查路径}\label{ch20.3.2}
 表\hyperref[t20.4]{检查路径}列出了检查路径\texttt{p}时可以调用的函数。
 注意这些操作都不会访问底层的操作系统，因此都是\texttt{path}类的成员函数。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -831,26 +831,26 @@ filesystem}。在POSIX兼容的系统上这些被
     printPath("C:\\usr\\tmp\\test\\dir\\");
 \end{lstlisting}
 在POSIX兼容系统上的输出将会是：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     path elements of "../sub/file.txt":
       ".."  "sub"  "file.txt"
     path elements of "/usr/tmp/test/dir/":
       "/"  "usr"  "tmp"  "test"  "dir"  ""
     path elements of "C:\\usr\\tmp\\test\\dir\\":
       "C:\\usr\\tmp\\test\\dir\\"
-\end{lstlisting}
+\end{blacklisting}
 注意最后一个路径只是一个文件名，因为在POSIX兼容系统上\texttt{C:}不是有效的根名称，
 反斜杠也不是有效的目录分隔符。
 
 在Windows上的输出将是：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     path elements of "../sub/file.txt":
       ".."  "sub"  "file.txt"
     path elements of "/usr/tmp/test/dir/":
       "/"  "usr"  "tmp"  "test"  "dir"  ""
     path elements of "C:\usr\tmp\test\dir\":
       "C:"  "\"  "usr"  "tmp"  "test"  "dir"  ""
-\end{lstlisting}
+\end{blacklisting}
 为了检查路径\texttt{p}是否以目录分隔符结尾，你可以这么写：
 \begin{lstlisting}
     if (!p.empty() && (--p.end())->empty()) {
@@ -862,7 +862,7 @@ filesystem}。在POSIX兼容的系统上这些被
 表\hyperref[t20.5]{路径I/O和转换}列出了路径的读写操作和转换操作。
 这些函数也不会访问实际的文件系统。如果你必须要处理符号链接，你可能要使用
 \hyperref[ch20.4.5]{依赖文件系统的路径转换}。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -897,15 +897,15 @@ filesystem}。在POSIX兼容的系统上这些被
     std::cout <<  "lexically_normal(): " << p.lexically_normal() << '\n';
 \end{lstlisting}
 前三行的输出是相同的：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     path                "/dir/./sub//sub1/../sub2"
     string():           /dir/./sub//sub1/../sub2
     wstring():          /dir/./sub//sub1/../sub2
-\end{lstlisting}
+\end{blacklisting}
 但最后一行的输出就依赖于目录分隔符了。在POSIX兼容系统上输出是：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     lexically_normal(): "/dir/sub/sub2"
-\end{lstlisting}
+\end{blacklisting}
 而在Windows上输出是：
 \begin{lstlisting}
     lexically_normal(): "\\dir\\sub\\sub2"
@@ -927,11 +927,11 @@ filesystem}。在POSIX兼容的系统上这些被
     std::cout << '"' << tmp.string() << "\"\n";
 \end{lstlisting}
 将会有如下输出：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     "C:\\Windows\\Temp"
     C:\Windows\Temp
     "C:\Windows\Temp"
-\end{lstlisting}
+\end{blacklisting}
 注意读取路径时既支持带双引号的字符串也支持不带双引号的字符串。
 因此，所有的输出形式都能使用输入运算符再读取回来：
 \begin{lstlisting}
@@ -951,15 +951,15 @@ filesystem}。在POSIX兼容的系统上这些被
     std::cout << "lexically_normal(): " << p2.lexically_normal() << '\n';
 \end{lstlisting}
 在Windows系统上可能会有如下输出：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     p2:                 "//host\\dir/sub\\/./\\"
     lexically_normal(): "\\\\host\\dir\\sub\\"
-\end{lstlisting}
+\end{blacklisting}
 然而，在POSIX兼容系统上，输出将是：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     p2:                 "//host\\dir/sub\\/./\\"
     lexically_normal(): "/host\\dir/sub\\/\\"
-\end{lstlisting}
+\end{blacklisting}
 原因是对于POSIX兼容系统来说反斜杠既不是路径分隔符也不是有效的根名称，
 这意味着我们得到了一个有三个文件名的绝对路径，三个文件名分别是\texttt{host\textbackslash dir}、
 \texttt{sub\textbackslash}、\texttt{\textbackslash}。
@@ -1044,7 +1044,7 @@ filesystem}。在POSIX兼容的系统上这些被
 \subsection{本地和通用格式的转换}\label{ch20.3.4}
 表\hyperref[t20.6]{本地和通用格式的转换}列出了在\hyperref[ch20.2.3]{通用路径格式}
 和实际平台特定实现的格式之间转换的方法。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -1095,7 +1095,7 @@ filesystem}。在POSIX兼容的系统上这些被
     std::cout <<  "p:                  " << p << '\n';
 \end{lstlisting}
 将会有如下输出：
-\begin{lstlisting}[stringstyle=\color{black}, commentstyle=\color{black}]
+\begin{blacklisting}
     p:                  "/dir\\subdir/subsubdir\\/./\\"
     string():           /dir\subdir/subsubdir\/./\
     wstring():          /dir\subdir/subsubdir\/./\
@@ -1106,7 +1106,7 @@ filesystem}。在POSIX兼容的系统上这些被
     c_str():            /dir\subdir/subsubdir\/./\
     make_preferred():   "\\dir\\subdir\\subsubdir\\\\.\\\\"
     p:                  "\\dir\\subdir\\subsubdir\\\\.\\\\"
-\end{lstlisting}
+\end{blacklisting}
 再次注意：
 \begin{itemize}
     \item 本地字符串格式是不可移植的。在Windows上是\texttt{wstring}，而在POSIX兼容系统上是\texttt{string}，
@@ -1116,7 +1116,7 @@ filesystem}。在POSIX兼容的系统上这些被
 
 \subsection{修改路径}\label{ch20.3.5}
 表\hyperref[t20.7]{修改路径}列出了可以直接修改路径的操作。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -1160,15 +1160,15 @@ filesystem}。在POSIX兼容的系统上这些被
     std::cout << p / p << '\n';
 \end{lstlisting}
 在POSIX兼容系统上输出将是：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     "myfile.git/.git1/1"
     "myfile.git/.git1/1/myfile.git/.git1/1"
-\end{lstlisting}
+\end{blacklisting}
 在Windows系统上输出将是：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     "myfile.git\\.git1\\1"
     "myfile.git\\.git1\\1\\myfile.git\\.git1\\1"
-\end{lstlisting}
+\end{blacklisting}
 注意如果添加一个绝对路径子路径意味着替换原本的路径。例如，如下操作之后：
 \begin{lstlisting}
     namespace fs = std::filesystem;
@@ -1201,13 +1201,13 @@ filesystem}。在POSIX兼容的系统上这些被
     std::cout << p << '\n';
 \end{lstlisting}
 在POSIX兼容系统上输出将是：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     "//server/dir/subdir/file.txt"
-\end{lstlisting}
+\end{blacklisting}
 在Windows系统上输出将是：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     "\\\\server\\dir\\\\subdir\\\\\\file.txt"
-\end{lstlisting}
+\end{blacklisting}
 注意开头的根名称没有被修改，因为它由两个斜杠或者反斜杠组成。
 也注意这个函数在POSIX兼容系统上也不会把反斜杠转换成斜杠，因为反斜杠不被识别为目录分隔符。
 \texttt{replace\_extension()}可以替换、添加、或者删除扩展名：
@@ -1230,7 +1230,7 @@ filesystem}。在POSIX兼容的系统上这些被
 
 \subsection{比较路径}\label{ch20.3.6}
 表\hyperref[t20.8]{比较路径}列出了可以比较两个路径的操作。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -1294,7 +1294,7 @@ filesystem}。在POSIX兼容的系统上这些被
 
 \subsection{其他路径操作}
 表\hyperref[t20.9]{其他路径操作}列出了剩余的路径操作。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -1327,7 +1327,7 @@ filesystem}。在POSIX兼容的系统上这些被
 对于一个路径你可以查询很多文件属性。首先，表\hyperref[t20.10]{文件类型的操作}
 列出了你可以用来检查路径\texttt{p}是否指向特定的文件并查询它的类型（如果有的话）。
 注意这些操作都会访问实际的文件系统，也都是独立函数。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -1395,7 +1395,7 @@ filesystem}。在POSIX兼容的系统上这些被
 
 \subsubsection{其他文件属性}
 表\hyperref[t20.11]{文件属性操作}列出了一些检查额外文件属性的独立函数。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -1445,9 +1445,9 @@ filesystem}。在POSIX兼容的系统上这些被
     }
 \end{lstlisting}
 输出可能是：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     "fileattr.cpp" is 4 Seconds old.
-\end{lstlisting}
+\end{blacklisting}
 这个例子中，你可以使用：
 \begin{lstlisting}
     decltype(filetime)::clock::now()
@@ -1511,7 +1511,7 @@ filesystem}。在POSIX兼容的系统上这些被
     \item 当使用表\hyperref[t20.12]{文件状态的操作}中的方法访问某个指定路径的文件状态时
     \item 当\nameref{ch20.5}时
 \end{itemize}
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -1529,7 +1529,7 @@ filesystem}。在POSIX兼容的系统上这些被
 将会返回符号链接自身的状态。
 
 表\hyperref[t20.13]{\texttt{file\_status}的操作}列出了\texttt{file\_status}类型的对象\texttt{fs}的所有操作。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -1598,7 +1598,7 @@ filesystem}。在POSIX兼容的系统上这些被
 
 表\hyperref[t20.14]{权限位}列出了位域枚举类型\texttt{perms}的值，该类型定义在
 \texttt{std::filesystem}中，表示一个或多个权限位。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|r|l|l}
         \hline
@@ -1670,7 +1670,7 @@ filesystem}。在POSIX兼容的系统上这些被
 
 \subsubsection{创建和删除文件}
 表\hyperref[t20.15]{创建和删除文件}列出了通过路径\texttt{p}创建和删除文件的操作。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -1713,7 +1713,7 @@ filesystem}。在POSIX兼容的系统上这些被
 定义在命名空间\texttt{std::filesystem}中。
 
 表\hyperref[t20.16]{拷贝选项}列出了所有可能的值。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|p{0.7\textwidth}}
         \hline
@@ -1762,7 +1762,7 @@ filesystem}。在POSIX兼容的系统上这些被
 
 \subsubsection{修改已存在的文件}\label{ch20.4.4.2}
 表\hyperref[t20.17]{修改文件}列出了修改已存在文件的操作。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -1833,7 +1833,7 @@ filesystem}。在POSIX兼容的系统上这些被
 表\hyperref[t20.18]{文件系统路径转换}列出了所有访问实际文件系统的处理路径的操作。
 当你想处理符号链接时这些操作尤其重要。使用\hyperref[ch20.3.3]{纯路径转换}开销更小但不会
 访问实际的文件系统。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -1855,7 +1855,7 @@ filesystem}。在POSIX兼容的系统上这些被
 
 注意根据文件是否必须存在、路径是否正规化、是否解析符号链接这些函数有不同的行为。
 表\hyperref[t20.19]{文件系统路径转换属性}列出了这些函数的需求和行为。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l|l|l}
         \hline
@@ -1884,7 +1884,7 @@ filesystem}。在POSIX兼容的系统上这些被
 然而，在创建了符号链接\texttt{ps}（指向\texttt{top}）之后，它会解析符号链接并给出一个不同的结果。
 
 在POSIX系统上，在当前路径\texttt{"/tmp"}以参数\texttt{"top"}调用上述函数将有如下输出：
-\begin{lstlisting}[stringstyle=\color{black}]
+\begin{blacklisting}
     "/tmp/top"
     "tmp/top/a/x"
     "../x"
@@ -1895,7 +1895,7 @@ filesystem}。在POSIX兼容的系统上这些被
     ps: "tmp/top/a/s" -> "/tmp/top"
     "../x"
     "a/x"
-\end{lstlisting}
+\end{blacklisting}
 在Windows系统上，在当前路径\texttt{"C:/temp"}以参数\texttt{"top"}调用上述函数将会由如下输出：
 \begin{lstlisting}
     "C:\\temp\\top"
@@ -1913,7 +1913,7 @@ filesystem}。在POSIX兼容的系统上这些被
 
 \subsection{其他文件系统操作}\label{ch20.4.6}
 表\hyperref[t20.20]{其他操作}列出了所有还未提到的其他文件系统操作。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -2035,7 +2035,7 @@ filesystem}。在POSIX兼容的系统上这些被
 当遍历目录时，你可以传递\texttt{directory\_options}类型的值，这些值在表
 \hyperref[t20.21]{目录迭代器选项}中列出。这个类型是一个位域的枚举类型，定义在命名空间
 \texttt{std::filesystem}中。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -2074,7 +2074,7 @@ filesystem}。在POSIX兼容的系统上这些被
 表\hyperref[t20.22]{目录项操作}列出了目录项\texttt{e}的所有操作。
 他们基本都是一些查询\nameref{ch20.4.1}、获取\nameref{ch20.4.2}、检查\nameref{ch20.4.3}、
 \hyperref[ch20.3.6]{比较}路径的操作。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline

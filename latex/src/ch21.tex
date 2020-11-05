@@ -60,7 +60,7 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
 
 \section{新的类型特征}
 表\hyperref[t21.1]{新类型特征}列出了C++17引入的新类型特征。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|p{0.45\textwidth}}
         \hline
@@ -87,10 +87,10 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
     \label{t21.1}
 \end{table}
 
-另外，\texttt{is\_litera\_type<>}和\texttt{result\_of<>}自从C++17起被废弃。
+另外，\texttt{is\_literal\_type<>}和\texttt{result\_of<>}自从C++17起被废弃。
 下面的段落将详细讨论这些特征。
 
-\subsubsection{类型特征\texttt{is\_aggregate<>}}\label{ch21.2.1}
+\subsubsection{类型特征\texttt{is\_aggregate<>}}\label{ch21.2.0.1}
 \begin{itemize}
     \item[] \texttt{std::\textbf{is\_aggregate<T>}::value}
 \end{itemize}
@@ -225,7 +225,7 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
 \subsubsection{bool类型特征的逻辑操作}
 表\hyperref[t21.2]{组合其他类型特征的类型特征}列出了对bool类型类征（几乎所有的返回bool类型值的标准类型特征）
 进行逻辑组合的类型特征。
-\begin{table}[ht]
+\begin{table}[htb]
     \centering
     \begin{tabular}{l|l}
         \hline
@@ -313,11 +313,11 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
 引入（见\url{https://wg21.link/lwg2911}）。
 
 \texttt{is\_swappable}特征家族由Andrew Morrow在\url{https://wg21.link/n3619}
-中首次提出。最终被接受的提案由Daniel Krügler发表于\url{https://wg21.link/p0185r1}。
+中首次提出。最终被接受的是Daniel Krügler发表于\url{https://wg21.link/p0185r1}的提案。
 
 \texttt{std::has\_unique\_object\_representations<>}由Michael Spencer在\\
 \url{https://wg21.link/p0258r0}中首次提出，当时的名称为\texttt{is\_contiguous\_layout}。
-最终被接受的提案由Michael Spencer发表于\url{https://wg21.link/p0258r2}。
+最终被接受的是Michael Spencer发表于\url{https://wg21.link/p0258r2}的提案。
 
 \texttt{is\_invocable}特征家族由Agustin Berge在\url{https://wg21.link/n4446}中
 首次提出。和\texttt{std::\\
@@ -325,4 +325,4 @@ invoke\_result\_t<>}一起被接受的提案由Daniel Krügler、
 Pablo Halpern、Jonathan Wakely发表于\url{https://wg21.link/p0604r0}。
 
 bool类型特征的逻辑操作由Jonathan Wakely在\url{https://wg21.link/p0013r0}中首次提出。
-最终被接受的提案由Jonathan Wakely发表于\url{https://wg21.link/p0013r1}。
+最终被接受的是Jonathan Wakely发表于\url{https://wg21.link/p0013r1}的提案。

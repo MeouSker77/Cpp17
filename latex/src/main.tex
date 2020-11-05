@@ -16,7 +16,9 @@
 \usepackage[font={it}]{caption}     % 设置图表和代码文件标题
 \usepackage[numbered]{bookmark}     % 设置书签
 \usepackage[pagestyles,clearempty]{titlesec}   % 设置页眉和\part格式
-\usepackage[a4paper,left=2cm,right=2cm,bottom=3.67cm]{geometry} % 设置页边距
+\usepackage[a4paper,left=2cm,right=2cm,bottom=3.67cm]{geometry}
+\usepackage{hyperref}
+\usepackage{hyperref} % 设置页边距
 
 \setCJKmainfont[ItalicFont=楷体,BoldItalicFont=楷体]{宋体}    % 设置中文正文字体
 \setCJKmonofont{宋体}                                        % 设置中文等宽字体
@@ -69,7 +71,11 @@ title       = #1,       % 标题格式
 ]{../code/#1}           % 文件路径
 }
 
-%\includeonly{ch30}
+\lstnewenvironment{blacklisting}    % 全黑代码环境，用于代码输出
+{\lstset{keywordstyle=\color{black},stringstyle=\color{black},commentstyle=\color{black}}}
+{}
+
+%\includeonly{ch06}
 
 % Document
 \begin{document}
@@ -81,7 +87,7 @@ title       = #1,       % 标题格式
     \pagestyle{main}
 
     \part{基本语言特性}\label{part1}
-    这一部分介绍了C++17中新的核心语言特性，但不包括那些专为泛型编程（即template）设计的特性。
+    这一部分介绍了C++17中新的核心语言特性，但不包括那些专为泛型编程（即模板）设计的特性。
     这些新增的特性对于应用程序员的日常编程非常有用，因此每一个使用C++17的C++程序员都应该了解它们。
 
     专为模板编程设计的新的核心语言特性在\autoref{part2}中介绍。
@@ -97,7 +103,7 @@ title       = #1,       % 标题格式
 
 
     \part{模板特性}\label{part2}
-    这一部分介绍了C++17为泛型编程（即template）提供的新的语言特性。
+    这一部分介绍了C++17为泛型编程（即模板）提供的新的语言特性。
 
     我们首先从类模板参数推导开始，这一特性只影响模板的使用。之后的章节会介绍为编写泛型代码
     （函数模板，类模板，泛型库等）的程序员提供的新特性。

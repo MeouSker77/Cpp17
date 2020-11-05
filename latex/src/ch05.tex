@@ -1,15 +1,16 @@
-\chapter[强制省略拷贝或传递未实质化的对象] {强制省略拷贝或传递未实质化的对象
+\chapter[强制省略拷贝或传递未实质化的对象]{强制省略拷贝或传递未实质化的对象
 (Mandatory Copy Elision or Passing Unmaterialized Objects)}\label{ch5}
 这一章的标题来自于以下两种视角：
 \begin{itemize}
-    \item 从技术上讲，C++17标准制定了一个规则：当以值传递或返回一个临时对象的时候必须
+    \item 从技术上讲，C++17引入了一个新的规则：当以值传递或返回一个临时对象的时候必须
     省略对该临时对象的拷贝。
-    \item 从效果上讲，我们实际上是传递了一个\emph{未实质化 的对象}(unmaterialized object)。
+    \item 从效果上讲，我们实际上是传递了一个\emph{未实质化的对象(unmaterialized object)}。
 \end{itemize}
 接下来首先从技术上介绍这个特性，之后再介绍实际效果和术语\emph{materialization}。
 
+
 \section{强制省略临时变量拷贝的动机}
-自从第一次标准开始，C++就允许在某些情况下\emph{省略}(elision)拷贝操作，
+自从第一次标准开始，C++就允许在某些情况下\emph{省略(elision)}拷贝操作，
 即使这么做可能会影响程序的运行结果（例如，拷贝构造函数里的一条打印语句可能不会再执行）。
 当用临时对象初始化一个新对象时就很容易出现这种情况，尤其是当一个函数以值传递或返回临时对象的时候。
 例如：
@@ -24,7 +25,7 @@
     }
 
     MyClass bar() {
-        return MyClass{};   // 返回临时对象
+        return MyClass{};       // 返回临时对象
     }
 
     int main()
@@ -34,9 +35,10 @@
         foo(bar());         // 使用返回的临时对象初始化param
     }
 \end{lstlisting}
-然而，因为这种优化并不是强制性的，所以例子中的情况要求该对象必须有隐式或显式的拷贝或构造函数。
+然而，因为这种优化并不是强制性的，所以例子中的情况要求该对象必须有隐式或显式的拷贝/移动构造函数。
 也就是说，尽管因为优化的原因大多数情况下并不会真的调用拷贝/移动函数，但它们必须存在。
-如果将上例中的\texttt{MyClass}定义换成如下定义则上例代码将不能通过编译：
+
+因此，如果将上例中的\texttt{MyClass}类换成如下定义则上例代码将不能通过编译：
 \begin{lstlisting}
     class MyClass
     {
@@ -53,22 +55,24 @@
 （上例中只需要将拷贝构造函数定义为\texttt{delete}的就不会再有隐式定义的移动构造函数）
 
 自从C++17起用临时变量初始化对象时省略拷贝变成了强制性的。事实上，
-之后我将会看到我们我们传递为参数或者作为返回值的临时变量将会被用来\emph{实质化}
-(materialize)一个新的对象。这意味着即使上例中的\texttt{MyClass}完全不允许拷贝，
+之后我将会看到我们我们传递为参数或者作为返回值的临时变量将会被用来
+\emph{实质化(materialize)}一个新的对象。
+这意味着即使上例中的\texttt{MyClass}完全不允许拷贝，
 示例代码也能成功编译。
 
-然而，注意其他可选的省略拷贝的场景仍然是可选的。
-这种场景下仍然需要一个拷贝或者移动构造函数。例如：
+然而，注意其他可选的省略拷贝的场景仍然是可选的，
+这些场景中仍然需要一个拷贝或者移动构造函数。例如：
 \begin{lstlisting}
     MyClass foo()
     {
         MyClass obj;
         ...
-        return obj; // 仍然需要拷贝/移动构造函数的支持
+        return obj;     // 仍然需要拷贝/移动构造函数的支持
     }
 \end{lstlisting}
-这里，\texttt{foo()}中有一个具名的变量\texttt{obj}（当使用它时它是\emph{左值}(lvalue)）。
-因此，\emph{具名返回值优化}(named return value optimization)(NRVO)会生效，
+这里，\texttt{foo()}中有一个具名的变量\texttt{obj}
+（当使用它时它是\hyperref[ch5.3.1.1]{\emph{左值(lvalue)}}）。
+因此，\emph{具名返回值优化(named return value optimization)}(NRVO)会生效，
 然而该优化仍然需要拷贝/移动支持。当\texttt{obj}是形参的时候也会出现这种情况：
 \begin{lstlisting}
     MyClass bar(MyClass obj)    // 传递临时变量时会省略拷贝
@@ -77,19 +81,22 @@
         return obj;     // 仍然需要拷贝/移动支持
     }
 \end{lstlisting}
-当向函数传递一个临时变量(也就是\emph{纯右值}(prvalue))作为实参时不再需要拷贝/移动，但如果返回这个参数的话仍然需要拷贝/
+当传递一个临时变量（也就是\hyperref[ch5.3.1.1]{\emph{纯右值(prvalue)}}）
+作为实参时不再需要拷贝/移动，但如果返回这个参数的话仍然需要拷贝/
 移动支持因为返回的对象是具名的。
 
 作为变化的一部分，术语\nameref{ch5.3.1}的含义也做了很多修改和说明。
 
-\section{强制省略临时变量拷贝的好处}
-这个特性的一个显而易见的好处就是减少拷贝会带来更好的性能。
+
+\section{强制省略临时变量拷贝的作用}
+这个特性的一个显而易见的作用就是减少拷贝会带来更好的性能。
 尽管很多主流编译器之前就已经进行了这种优化，但现在这一行为有了标准的\emph{保证}。
 尽管移动语义能显著的减少拷贝开销，但如果直接不拷贝还是能带来很大的性能提升
 （例如当对象有很多基本类型成员时移动语义还是要拷贝每个成员）。
 另外这个特性可以减少输出参数的使用，转而直接返回一个值（前提是这个值直接在返回语句里创建）。
 
-另一个益处是可以定义一个\emph{总是}可以工作的工厂函数因为现在它甚至可以返回不允许拷贝或移动的对象。
+另一个作用是可以定义一个\emph{总是}可以工作的工厂函数，
+因为现在它甚至可以返回不允许拷贝或移动的对象。
 例如，考虑如下泛型工厂函数：
 \inputcodefile{lang/factory.hpp}
 这个工厂函数现在甚至可以用于\texttt{std::atomic<>}这种既没有拷贝又没有移动构造函数的类型：
@@ -97,7 +104,7 @@
 另一个效果就是对于移动构造函数被显式删除的类，现在也可以返回临时对象来初始化新的对象：
 \begin{lstlisting}
     class CopyOnly {
-      public:
+    public:
         CopyOnly() {
         }
         CopyOnly(int) {
@@ -110,46 +117,49 @@
         return CopyOnly{};  // 自从C++17起OK
     }
 
-    CopyOnly x = 42;    // 自从C++17起OK
+    CopyOnly x = 42;        // 自从C++17起OK
 \end{lstlisting}
 在C++17之前\texttt{x}的初始化是无效的，因为\emph{拷贝初始化}（使用\texttt{=}初始化）
-需要把\texttt{42}转化为一个临时对象，然后要用这个临时对象初始化\texttt{x}原则上需要移动构造函数，
+需要把\texttt{42}转换为一个临时对象，然后要用这个临时对象初始化\texttt{x}原则上需要移动构造函数，
 尽管它可能不会被调用。（只有当移动构造函数\emph{不是}用户自定义时拷贝构造函数才能作为移动构造函数的
 备选项）
 
+
 \section{更明确的值类型体系}
 用临时变量初始化新对象时强制省略临时变量拷贝的提议的一个副作用就是，
-为了支持这个提议，\emph{值类型体系}(value category)进行了很多修改。
+为了支持这个提议，\emph{值类型体系(value category)}进行了很多修改。
 
 \subsection{值类型体系}\label{ch5.3.1}
 C++中的每一个表达式都有值类型。这个类型描述了表达式的值可以用来做什么。
 
-\subsubsection{历史上的值类型体系}
-C++以前只有从C语言继承而来的\emph{左值}(lvalue)和\emph{右值}(rvalue)，根据赋值语句划分：
+\subsubsection{历史上的值类型体系}\label{ch5.3.1.1}
+C++以前只有从C语言继承而来的\emph{左值(lvalue)}和\emph{右值(rvalue)}，根据赋值语句划分：
 \begin{lstlisting}
     x = 42;
 \end{lstlisting}
-这里表达式\texttt{x}是左值因为它可以出现在赋值等号的左边，\texttt{42}是右值因为它只能出现在
-表达式的右边。然而，当ANSI-C出现之后事情就变得更加复杂了，因为如果\texttt{x}被声明为
+这里表达式\texttt{x}是\emph{左值}因为它可以出现在赋值等号的左边，\texttt{42}是\emph{右值}
+因为它只能出现在表达式的右边。
+然而，当ANSI-C出现之后事情就变得更加复杂了，因为如果\texttt{x}被声明为
 \texttt{const int}的话它将不能出现在赋值号左边，但它仍然是一个（不能修改的）左值。
 
-之后，C++11又引入了可移动的对象，从语义上分析，可移动对象只能出现在赋值号右侧但它却可以被修改
-因为赋值号能移走它们的值。出于这个原因，类型\emph{到期值}(xvalue)被引入，
-原来的右值被重命名为\emph{纯右值}(prvalue)。
+之后，C++11又引入了可移动的对象。
+从语义上分析，可移动对象只能出现在赋值号右侧但它却可以被修改，
+因为赋值号能移走它们的值。出于这个原因，类型\emph{到期值(xvalue)}被引入，
+原来的右值被重命名为\emph{纯右值(prvalue)}。
 
 \subsubsection{从C++11起的值类型体系}
-自从C++11起，值类型的关系见\hyperref[f5.1]{图5.1}：我们有了核心的值类型体系\emph{lvalue(左值)}，
-\emph{prvalue(纯右值)}("pure rvalue")和\emph{xvalue(到期值)}("eXpiring value")。
-复合的值类型体系有\emph{glvalue(广义左值)}（"generalized lvalue"，
+自从C++11起，值类型的关系见\hyperref[f5.1]{图5.1}：
+我们有了核心的值类型体系\emph{lvalue(左值)}，
+\emph{prvalue(纯右值)}(“pure rvalue”)和\emph{xvalue(到期值)}(“eXpiring value”)。
+复合的值类型体系有\emph{glvalue(广义左值)}（“generalized lvalue”，
 它是\emph{lvalue}和\emph{xvalue}的复合）
 和\emph{rvalue(右值)}（\emph{xvalue}和\emph{prvalue}的复合）。
 
-\begin{figure}[ht]
-    \begin{center}
-        \includegraphics[scale=0.8]{../imgs/05.1.png}
-        \caption{从C++11起的值类型体系}
-        \label{f5.1}
-    \end{center}
+\begin{figure}[htb]
+    \centering
+    \includegraphics[scale=0.8]{../imgs/05.1.png}
+    \caption{从C++11起的值类型体系}
+    \label{f5.1}
 \end{figure}
 
 \emph{\textbf{lvalue(左值)}}的例子有：
@@ -157,7 +167,7 @@ C++以前只有从C语言继承而来的\emph{左值}(lvalue)和\emph{右值}(rv
     \item 只含有单个变量、函数或成员的表达式
     \item 只含有字符串字面量的表达式
     \item 内建的一元\texttt{*}运算符（解引用运算符）的结果
-    \item 一个返回\emph{lvalue(左值)}引用(\emph{type\&})的函数的返回值
+    \item 一个返回lvalue(左值)引用(\emph{type\&})的函数的返回值
 \end{itemize}
 \emph{\textbf{prvalue(纯右值)}}的例子有：
 \begin{itemize}
@@ -165,21 +175,21 @@ C++以前只有从C语言继承而来的\emph{左值}(lvalue)和\emph{右值}(rv
     \item 内建的一元\texttt{\&}运算符（取地址运算符）的运算结果
     \item 内建的数学运算符的结果
     \item 一个返回值的函数的返回值
-    \item lambda返回值
+    \item 一个lambda表达式
 \end{itemize}
 \emph{\textbf{xvalue(到期值)}}的例子有：
 \begin{itemize}
-    \item 一个返回右值引用(\emph{type\&\&})的函数的返回值
+    \item 一个返回rvalue(右值)引用(\emph{type\&\&})的函数的返回值
     （尤其是\texttt{std::move()}的返回值）
-    \item 把一个对象转换为右值引用的操作的结果
+    \item 把一个对象转换为rvalue(右值)引用的操作的结果
 \end{itemize}
 简单来讲：
 \begin{itemize}
-    \item 所有名称都是\emph{lvalue(左值)}。
+    \item 所有用作表达式的变量名都是\emph{lvalue(左值)}。
     \item 所有用作表达式的字符串字面量是\emph{lvalue(左值)}。
     \item 所有其他的字面量（\texttt{4.2, true, nullptr}）是\emph{prvalue(纯右值)}。
     \item 所有临时对象（尤其是以值返回的对象）是\emph{prvalue(纯右值)}。
-    \item \texttt{std::move()}是一个\emph{xvalue(到期值)}
+    \item \texttt{std::move()}的结果是一个\emph{xvalue(到期值)}
 \end{itemize}
 例如：
 \begin{lstlisting}
@@ -210,7 +220,7 @@ C++以前只有从C语言继承而来的\emph{左值}(lvalue)和\emph{右值}(rv
 \subsection{自从C++17起的值类型体系}
 C++17再次明确了值类型体系，现在的值类型体系如\hyperref[f5.2]{图5.2}所示：
 
-\begin{figure}[ht]
+\begin{figure}[htb]
     \begin{center}
         \includegraphics[scale=0.8]{../imgs/05.2.png}
         \caption{自从C++17起的值类型体系}
@@ -220,15 +230,16 @@ C++17再次明确了值类型体系，现在的值类型体系如\hyperref[f5.2]
 
 理解值类型体系的关键是现在广义上来说，我们只有两种类型的表达式：
 \begin{itemize}
-    \item \textbf{glvaue:} 描述对象或函数\emph{位置}的表达式
-    \item \textbf{prvalue:} 用于\emph{初始化}的表达式
+    \item \textbf{glvaue：} 描述对象或函数\emph{位置}的表达式
+    \item \textbf{prvalue：} 用于\emph{初始化}的表达式
 \end{itemize}
 而\textbf{xvalue}可以认为是一种特殊的位置，它代表一个资源可以被回收利用的对象
 （通常是因为该对象的生命周期即将结束）。
 
-C++17引入了一个新的术语：（临时对象的）\emph{实质化}(materialization)，
-目前prvalue就是一种临时对象。因此，\emph{临时对象实质化转换}
-(temporary materialization conversion)是一种prvalue到xvalue的转换。
+C++17引入了一个新的术语：（临时对象的）\emph{实质化(materialization)}，
+目前prvalue就是一种临时对象。
+因此，\emph{临时对象实质化转换(temporary materialization conversion)}
+是一种prvalue到xvalue的转换。
 
 在任何情况下prvalue出现在需要glvalue（lvalue或者xvalue）的地方都是有效的，
 此时会创建一个临时对象并用该prvalue来初始化（注意prvalue主要就是用来初始化的值）。
@@ -248,8 +259,9 @@ xvalue和prvalue，尽管后者现在会转换为一个xvalue。
 因为prvalue不再是对象而是可以被用来初始化对象的表达式，
 所以当使用prvalue来初始化对象时不再需要prvalue是可移动的，
 进而省略临时变量拷贝的特性可以完美实现。
-我们现在只需要简单的传递初始值，然后它会被自动实质化来初始化新对象。
+我们现在只需要简单的传递初始值，然后它会被自动\emph{实质化}来初始化新对象。
 \footnote{感谢Richard Smith和Graham Haynes指出这一点}
+
 
 \section{未实质化的返回值传递}
 所有以值返回临时对象(prvalue)的过程都是在传递未实质化的返回值：
@@ -280,6 +292,7 @@ xvalue和prvalue，尽管后者现在会转换为一个xvalue。
 \texttt{decltype(auto)}将会推导出值类型。因为我们在这些场景中都是以值返回一个prvalue，
 所以我们完全不需要任何拷贝/移动。
 
+
 \section{后记}
 用临时变量初始化时强制省略拷贝由Richard Smith在\url{https://wg21.link/p0135r0}中首次提出。
-最终被接受的正式提案由Richard Smith发表于\url{https://wg21.link/p0135r1}。
+最终被接受的是Richard Smith发表于\url{https://wg21.link/p0135r1}的提案。

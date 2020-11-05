@@ -1,6 +1,6 @@
 \chapter{内联变量}\label{ch3}
-出于可移植性和易于整合的目的，提供包含类库声明的头文件是很重要的。
-然而，在C++17之前，只有当这个库既不提供也不需要全局对象的时候才可以直接在头文件中定义。
+出于可移植性和易于整合的目的，在头文件中提供完整的类和库的定义是很重要的。
+然而，在C++17之前，只有当这个库既不提供也不需要全局对象的时候才可以这样做。
 
 自从C++17开始，你可以在头文件中以\texttt{inline}的方式\emph{定义}全局变量/对象：
 \begin{lstlisting}
@@ -11,7 +11,7 @@
 
     inline MyClass myGlobalObj;  // 即使被多个CPP文件包含也OK
 \end{lstlisting}
-只要一个翻译单元内没有重复的定义即可。此例中的定义即使被多个翻译单元使用，
+只要一个编译单元内没有重复的定义即可。此例中的定义即使被多个编译单元使用，
 也会指向同一个对象。
 
 \section{内联变量产生的动机}
@@ -30,7 +30,7 @@
     };
     std::string MyClass::msg{"OK"}; // 如果被多个CPP文件包含会导致链接ERROR
 \end{lstlisting}
-根据\emph{一次定义原则}(ODR)，一个变量或实体的定义只能出现在一个翻译单元内——
+根据\emph{一次定义原则}(ODR)，一个变量或实体的定义只能出现在一个编译单元内——
 除非该变量或实体被定义为\texttt{inline}的。
 
 即使使用预处理来进行保护也没有用：
@@ -47,7 +47,9 @@
     #endif
 \end{lstlisting}
 问题并不在于头文件是否可能被重复包含多次，而是两个不同的CPP文件都包含了这个头文件，
-因而都定义了\texttt{MyClass::msg}。出于同样的原因，如果你在头文件中定义了一个类的实例对象
+因而都定义了\texttt{MyClass::msg}。
+
+出于同样的原因，如果你在头文件中定义了一个类的实例对象
 也会出现相同的链接错误：
 \begin{lstlisting}
     class MyClass {
@@ -68,8 +70,8 @@
     \end{lstlisting}
     然而，这种方法只能初始化字面类型，例如基本的整数、浮点数、指针类型或者
     用常量表达式初始化了所有内部非静态成员的类，并且该类不能有用户自定义的或虚的析构函数。
-    另外，如果你需要获取这个静态常量成员的地址（例如你想定义一个指向它的引用）的话
-    那么你必须在那个翻译单元内定义它并且不能在其他翻译单元内再次定义。
+    另外，如果你需要获取这个静态常量成员的地址（例如你想定义一个它的引用）的话
+    那么你必须在那个编译单元内定义它并且不能在其他编译单元内再次定义。
     \item 你可以定义一个返回\texttt{static}的局部变量的内联函数：
     \begin{lstlisting}
     inline std::string& getMsg() {
@@ -92,7 +94,7 @@
     template<typename T = std::string>
     T myGlobalMsg{"OK"};
     \end{lstlisting}
-    \item 你可以为静态数据成员定义一个模板类：
+    \item 你可以为静态成员定义一个模板类：
     \begin{lstlisting}
     template<typename = void>
     class MyClassStatics
@@ -128,11 +130,12 @@
 \end{lstlisting}
 这里使用的\texttt{inline}和函数声明时的\texttt{inline}有相同的语义：
 \begin{itemize}
-    \item 它可以在多个翻译单元中定义，只要所有定义都是相同的。
-    \item 它必须在每个使用它的翻译单元中定义
+    \item 它可以在多个编译单元中定义，只要所有定义都是相同的。
+    \item 它必须在每个使用它的编译单元中定义
 \end{itemize}
 将变量定义在头文件里，然后多个CPP文件再都包含这个头文件，就可以满足上述两个要求。
 程序的行为就好像只有一个变量一样。
+
 你甚至可以利用它在头文件中定义原子类型：
 \begin{lstlisting}
     inline std::atomic<bool> ready{fasle};
@@ -153,7 +156,7 @@
     };
     inline MyType MyType::max{0};
 \end{lstlisting}
-另一个使用内联变量的例子参见\hyperref[ch30.4]{追踪所有\texttt{new}调用的头文件}。
+另一个使用内联变量的例子见\hyperref[ch30.4]{追踪所有\texttt{new}调用的头文件}。
 
 \section{\texttt{constexpr static}成员现在隐含\texttt{inline}}\label{ch3.3}
 对于静态成员，\texttt{constexpr}修饰符现在隐含着\texttt{inline}。
@@ -179,29 +182,29 @@
 如果不需要\texttt{D::n}的定义的话只有上面的声明就够了，
 例如当\texttt{D::n}以值传递时：
 \begin{lstlisting}
-    std::cout << D::n; // OK，ostream::operator<<(int)只需要D::n的值
+    std::cout << D::n;          // OK，ostream::operator<<(int)只需要D::n的值
 \end{lstlisting}
 如果\texttt{D::n}以引用传递到一个非内联函数，并且该函数调用没有被优化掉的话，
 该调用将会导致错误。例如：
 \begin{lstlisting}
     int twice(const int& i);
 
-    std::cout << twice(D::n);   // 通常情况下会导致ERROR
+    std::cout << twice(D::n);   // 通常会导致ERROR
 \end{lstlisting}
 这段代码违反了\emph{一次定义原则}(ODR)。如果编译器进行了优化，那么这段代码可能会像预期一样工作
 也可能会因为缺少定义导致链接错误。如果不进行优化，那么几乎肯定会因为缺少\texttt{D::n}的定义而
 导致错误。\footnote{感谢Richard Smith指出这一点。}
-如果创建一个\texttt{D::n}的指针那么更可能导致链接错误（但在某些编译模式下仍然可能正常编译）：
+如果创建一个\texttt{D::n}的指针那么更可能因为缺少定义导致链接错误（但在某些编译模式下仍然可能正常编译）：
 \begin{lstlisting}
-    const int* p = &D::n;   // 通常会导致ERROR
+    const int* p = &D::n;       // 通常会导致ERROR
 \end{lstlisting}
-因此在C++17之前，你必须在一个翻译单元内定义\texttt{D::n}:
+因此在C++17之前，你必须在一个编译单元内定义\texttt{D::n}:
 \begin{lstlisting}
-    constexpr int D::n;     // C++11/C++14: 定义
-                            // 自从C++17起: 多余的声明（已被废弃）
+    constexpr int D::n;         // C++11/C++14: 定义
+                                // 自从C++17起: 多余的声明（已被废弃）
 \end{lstlisting}
-现在当使用C++17进行构建时，类中的声明本身就成了定义，因此即使没有正式的定义，
-上面的所有例子现在也都可以正常工作。正式的定义现在仍然有效但已经成了废弃的多余声明。
+现在当使用C++17进行构建时，类中的声明本身就成了定义，因此即使没有上边的定义，
+上面的所有例子现在也都可以正常工作。上边的定义现在仍然有效但已经成了废弃的多余声明。
 
 \section{内联变量和\texttt{thread\_local}}
 通过使用\texttt{thread\_local}你可以为每个线程创建一个内联变量：
@@ -215,13 +218,13 @@
 \end{lstlisting}
 作为一个完整的例子，考虑如下头文件：
 \inputcodefile{lang/inlinethreadlocal.hpp}
-你可以在包含\texttt{main()}的翻译单元内使用它：
+你可以在包含\texttt{main()}的编译单元内使用它：
 \inputcodefile{lang/inlinethreadlocal1.cpp}
-你也可以在另一个定义了\texttt{foo()}函数的翻译单元内使用这个头文件，
+你也可以在另一个定义了\texttt{foo()}函数的编译单元内使用这个头文件，
 这个函数会在另一个线程中被调用：
 \inputcodefile{lang/inlinethreadlocal2.cpp}
 程序的输出如下：
-\begin{lstlisting}
+\begin{blacklisting}
     main() begin:
     - gName: global
     - tName: tls
@@ -242,9 +245,9 @@
     - gName: thread2 name
     - tName: thread1 name
     - lName: thread1 name
-\end{lstlisting}
+\end{blacklisting}
 
 \section{后记}
 内联变量的动机起源于David Krauss的\url{https://wg21.link/n4147}提案，
-之后由Hal Finkel和Richard Smith在\url{https://wg21.link/n4424}中第一次提出。
-最终被接受的提案由Hal Finkel和Richard Smith发表于\url{https://wg21.link/p0386r2}。
+之后由Hal Finkel和Richard Smith在\url{https://wg21.link/n4424}中首次提出。
+最终被接受的是Hal Finkel和Richard Smith发表于\url{https://wg21.link/p0386r2}的提案。

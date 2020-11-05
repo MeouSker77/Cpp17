@@ -4,6 +4,7 @@
 int main()
 {
     Customer c{"Tim", "Starr", 42};
+
     auto [f, l, v] = c;
 
     std::cout << "f/l/v:    " << f << ' ' << l << ' ' << v << '\n';

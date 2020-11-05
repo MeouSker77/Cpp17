@@ -1,7 +1,7 @@
 #include "customer2.hpp"
 #include <utility>  // for tuple-like API
 
-// 为类Customer提供tuple-like API
+// 为类Customer提供tuple-like API来支持结构化绑定：
 template<>
 struct std::tuple_size<Customer> {
     static constexpr int value = 3; // 有3个属性
@@ -9,11 +9,11 @@ struct std::tuple_size<Customer> {
 
 template<>
 struct std::tuple_element<2, Customer> {
-    using type = long;  // 最后一个属性是long类型
+    using type = long;              // 最后一个属性的类型是long
 }
 template<std::size_t Idx>
 struct std::tuple_element<Idx, Customer> {
-    using type = std::string;   // 其他的属性是string
+    using type = std::string;       // 其他的属性是string
 }
 
 // 定义特化的getter：
