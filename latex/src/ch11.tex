@@ -5,7 +5,7 @@
 \begin{lstlisting}
     template<typename... T>
     auto foldSum (T... args) {
-        return (... + args);    //((arg1 + arg2) + arg3)...
+        return (... + args);    // ((arg1 + arg2) + arg3)...
     }
 \end{lstlisting}
 注意返回语句中的括号是折叠表达式的一部分，不能被省略。
@@ -34,18 +34,18 @@
 \begin{lstlisting}
     ((arg1 + arg2) + arg3) ...
 \end{lstlisting}
-这意味着折叠表达式会以后递增式重复展开。你也可以写：
+这意味着折叠表达式会以“后递增式”重复展开。你也可以写：
 \begin{lstlisting}
     (args + ...)
 \end{lstlisting}
-这样就会前递增式展开，因此结果会变为：
+这样就会以“前递增式”展开，因此结果会变为：
 \begin{lstlisting}
     (arg1 + (arg2 + arg3)) ...
 \end{lstlisting}
 
 \section{折叠表达式的动机}
 折叠表达式的出现让我们不必再用递归实例化模板的方式来处理参数包。
-在C++17之前，你必须实现为：
+在C++17之前，你必须这么实现：
 \begin{lstlisting}
     template<typename T>
     auto foldSumRec (T arg) {
@@ -60,7 +60,7 @@
 \begin{lstlisting}
     template<typename... T>
     auto foldSum (T... args) {
-        return (... + args);    // arg1 + arg2 + arg3
+        return (... + args);    // arg1 + arg2 + arg3...
     }
 \end{lstlisting}
 能显著的减少程序员和编译器的工作量。
@@ -68,11 +68,11 @@
 \section{使用折叠表达式}\label{ch11.2}
 给定一个参数\emph{args}和一个操作符\emph{op}，C++17允许我们这么写：
 \begin{itemize}
-    \item \emph{\textbf{一元左折叠}}
-    ( \ldots \, \emph{\textbf{op} args} )
+    \item \emph{\textbf{一元左折叠}}\\
+    \hspace*{2em}( \ldots \, \emph{\textbf{op} args} )\\
     将会展开为：\emph{((arg1 \textbf{op} arg2) \textbf{op} arg3) \textbf{op} \ldots}
-    \item \emph{\textbf{一元右折叠}}
-    ( \emph{args \textbf{op}} \ldots \,)
+    \item \emph{\textbf{一元右折叠}}\\
+    \hspace*{2em}( \emph{args \textbf{op}} \ldots \,)\\
     将会展开为：\emph{arg1 \textbf{op} (arg2 \textbf{op} \ldots \, (argN-1 \textbf{op} argN))}
 \end{itemize}
 括号是必须的，然而，括号和省略号(\ldots)之间并不需要用空格分隔。
@@ -95,11 +95,10 @@
 \end{lstlisting}
 这意味着下面的例子能够通过编译：
 \begin{lstlisting}
-    std::cout << foldSumL(std::string("hello"), "world", "!")
-              << '\n';  // OK
+    std::cout << foldSumL(std::string("hello"), "world", "!") << '\n';  // OK
 \end{lstlisting}
 记住对字符串而言只有两侧至少有一个是\texttt{std::string}时才能使用\texttt{+}。
-使用作折叠式，会首先计算
+使用左折叠时会首先计算
 \begin{lstlisting}
     std::string("hello") + "world"
 \end{lstlisting}
@@ -107,8 +106,7 @@
 
 然而，如下调用
 \begin{lstlisting}
-    std::cout << foldSumL("hello", "world", std::string("!"))
-              << '\n';  // ERROR
+    std::cout << foldSumL("hello", "world", std::string("!")) << '\n';  // ERROR
 \end{lstlisting}
 将不能通过编译，因为它会求值为
 \begin{lstlisting}
@@ -121,6 +119,7 @@
     template<typename... T>
     auto foldSumR(T... args) {
         return (args + ...);    // (arg1 + (arg2 + arg3))...
+    }
 \end{lstlisting}
 那么如下调用
 \begin{lstlisting}
@@ -132,13 +131,11 @@
 \end{lstlisting}
 这意味着下面的例子不能再通过编译：
 \begin{lstlisting}
-    std::cout << foldSumR(std::string("hello"), "world", "!")
-              << '\n';  // ERROR
+    std::cout << foldSumR(std::string("hello"), "world", "!") << '\n';  // ERROR
 \end{lstlisting}
 然而如下调用现在反而可以编译了：
 \begin{lstlisting}
-    std::cout << foldSumR("hello", "world", std::string("!"))
-              << '\n';  // OK
+    std::cout << foldSumR("hello", "world", std::string("!")) << '\n';  // OK
 \end{lstlisting}
 在任何情况下，从左向右求值都是符合直觉的。
 因此，更推荐使用左折叠的语法：
@@ -158,11 +155,11 @@
 给定一个参数包\emph{args}，一个初始值\emph{value}，一个操作符\emph{op}，
 C++17允许我们这么写：
 \begin{itemize}
-    \item \emph{\textbf{二元左折叠}}
-    ( \emph{value \textbf{op} \ldots \, \textbf{op} args} )
+    \item \emph{\textbf{二元左折叠}}\\
+    \hspace*{2em}( \emph{value \textbf{op} \ldots \, \textbf{op} args} )\\
     将会展开为：\emph{(((value \textbf{op} arg1) \textbf{op} arg2) \textbf{op} arg3) \textbf{op} \ldots}
-    \item \emph{\textbf{二元右折叠}}
-    ( \emph{args \textbf{op} \ldots \, \textbf{op} value} )
+    \item \emph{\textbf{二元右折叠}}\\
+    \hspace*{2em}( \emph{args \textbf{op} \ldots \, \textbf{op} value} )\\
     将会展开为：\emph{arg1 \textbf{op} (arg2 \textbf{op} \ldots \, (argN \textbf{op} value))}
 \end{itemize}
 省略号两侧的\emph{op}必须相同。
@@ -190,7 +187,7 @@ C++17允许我们这么写：
 \label{输出任意个参数的print}
 \begin{lstlisting}
     template<typename... T>
-    void print(const T&... args)
+    void print (const T&... args)
     {
         (std::cout << ... << args) << '\n';
     }
@@ -204,10 +201,10 @@ C++17允许我们这么写：
 \texttt{'\textbackslash n'}的值通常是10，所以结果是1024。
 
 注意在这个\texttt{print()}的例子中，两个参数之间没有输出空格字符。
-因此，如下调用\texttt{print("hello", 42, "world")}将会打印出：
-\begin{lstlisting}
+因此，如果调用\texttt{print("hello", 42, "world")}将会打印出：
+\begin{blacklisting}
     hello42world
-\end{lstlisting}
+\end{blacklisting}
 为了用空格分隔传入的参数，
 你需要一个辅助函数来确保除了第一个参数之外的剩余参数输出前都先输出一个空格。
 例如，使用如下的模板\texttt{spaceBefore()}可以做到这一点：
@@ -220,12 +217,12 @@ C++17允许我们这么写：
 \begin{lstlisting}
     std::cout << spaceBefore(arg1) << spaceBefore(arg2) << ...
 \end{lstlisting}
-因此，对于参数包中的每一个参数\texttt{args}，都会调用辅助函数，
+因此，对于参数包中\texttt{args}的每一个参数，都会调用辅助函数，
 在输出参数之前先输出一个空格到\texttt{std::cout}。
 为了确保不会对第一个参数调用辅助函数，我们添加了额外的模板参数对第一个参数进行单独处理。
 
 注意要想让参数包正确输出需要确保对每个参数调用\texttt{spaceBefore()}之前左侧的所有输出都已经完成。
-得益于操作符\texttt{<<}的\nameref{ch8.2}，自从C++17起将保证行为正确：
+得益于操作符\texttt{<<}的\nameref{ch8.2}，自从C++17起将保证行为正确。
 
 我们也可以使用lambda来在\texttt{print()}内定义\texttt{spaceBefore()}：
 \begin{lstlisting}
@@ -236,7 +233,7 @@ C++17允许我们这么写：
             std::cout << ' ';
             return arg;
         };
-        (std::cout << ... << spaceBefore(args)) < '\n';
+        (std::cout << ... << spaceBefore(args)) << '\n';
     }
 \end{lstlisting}
 然而，注意默认情况下lambda以值返回对象，这意味着会创建参数的不必要的拷贝。
@@ -252,7 +249,7 @@ C++17允许我们这么写：
         (std::cout << ... << spaceBefore(args)) << '\n';
     }
 \end{lstlisting}
-如果你不能把他们写在一个表达式里那么C++就不是C++了：
+如果你不能把它们写在一个表达式里那么C++就不是C++了：
 \begin{lstlisting}
     template<typename First, typename... Args>
     void print (const First& firstarg, const Args&... args) {
@@ -326,7 +323,7 @@ C++17允许我们这么写：
 \begin{lstlisting}
     foo(arg1) , (foo(arg2) , foo(arg3));
 \end{lstlisting}
-然而，因为逗号表达式的求值顺序通常是自左向右，所以第一个调用通常发生在括号里的的后两个调用之前，
+然而，因为逗号表达式的求值顺序通常是自左向右，所以第一个调用通常发生在括号里的两个调用之前，
 并且括号里左侧的调用在右侧的调用之前。
 \footnote{如果重载逗号运算符，你可以改变它的求值顺序，这可能影响左折叠和右折叠的求值顺序。}
 
@@ -358,7 +355,7 @@ C++17允许我们这么写：
     hashCombine(seed, "Hi"), (hashCombine(seed, "World"), hashCombine(seed, 42));
 \end{lstlisting}
 有了这些定义，我们现在可以轻易的定义出一个新的哈希函数，
-并将这个函数用于某一个类型例如\texttt{Customer}的无序set或无序map：
+并将这个函数用于某一个类型例如\texttt{Customer}的unordered set或unordered map：
 \begin{lstlisting}
     sturct CustomerHash
     {
@@ -386,7 +383,7 @@ C++17允许我们这么写：
 \begin{lstlisting}
     MultiBase<A, B, C> mb;
 \end{lstlisting}
-进一步通过
+之后，通过
 \begin{lstlisting}
     (... , Bases::print());
 \end{lstlisting}
@@ -444,7 +441,7 @@ C++17允许我们这么写：
 标准库里\hyperref[ch9.2.6.3]{\texttt{std::array<>}的推导指引}就使用了这个特性。
 
 \section{后记}
-折叠表达式特性最早由Andrew Sutton和Richard Smith在\url{https://wg21.link/n4191}中提出。
+折叠表达式由Andrew Sutton和Richard Smith在\url{https://wg21.link/n4191}中首次提出。
 最终被接受的是Andrew Sutton和Richard Smith发表于\url{https://wg21.link/n4295}的提案。
 之后对运算符\texttt{*、+、\&、|}处理空参数包的支持由Thibaut Le Jehan在
 \url{https://wg21.link/p0036}中移除。

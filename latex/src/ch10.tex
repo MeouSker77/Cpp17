@@ -33,7 +33,7 @@
 
 注意被丢弃的语句并不是被忽略了。即使是被忽略的语句也必须符合正确的语法，
 并且所有和模板参数无关的调用也必须正确。
-事实上，模板翻译的第一个阶段（定义期间）将会检查语法和所有与模板无关的名称是否有效。
+事实上，模板编译的第一个阶段（\emph{定义期间}）将会检查语法和所有与模板无关的名称是否有效。
 所有的\texttt{static\_asserts}也必须有效，即使所在的分支没有被编译。
 
 例如：
@@ -59,25 +59,25 @@
     \begin{lstlisting}
     undeclared(); // 如果未声明将导致错误（即使被丢弃也一样）
     \end{lstlisting}
-    如果该函数未定义时即使处于被丢弃也会导致错误，因为这个调用并不依赖于模板参数。
-    \item 如下断言：
+    如果该函数未定义时即使处于被丢弃的\emph{else}部分也会导致错误，因为这个调用并不依赖于模板参数。
+    \item 如下断言
     \begin{lstlisting}
     static_assert(false, "no integral"); // 总是会进行断言（即使被丢弃也一样）
     \end{lstlisting}
-    即使被丢弃也总是会断言失败，因为它也不依赖于模板参数。
-    一个如下的编译期条件的静态断言将正常生效：
+    即使处于被丢弃的\emph{else}部分也总是会断言失败，因为它也不依赖于模板参数。
+    一个使用编译期条件的静态断言没有这个问题：
     \begin{lstlisting}
     static_assert(!std::is_integral_v<T>, "no integral");
     \end{lstlisting}
 \end{itemize}
-注意有一些编译器（例如Visual C++ 2013和2015）并没有正确实现模板翻译的两个阶段。
-它们把第一个阶段（定义期间）的大部分工作推迟到了第二个阶段（实例化期间），
+注意有一些编译器（例如Visual C++ 2013和2015）并没有正确实现模板编译的两个阶段。
+它们把第一个阶段（\emph{定义期间}）的大部分工作推迟到了第二个阶段（\emph{实例化期间}），
 因此有些无效的函数调用甚至一些错误的语法都可能通过编译。
 \footnote{Visual C++正在一步步的修复这个错误的行为，然而可能需要指定编译选项例如
 \texttt{/permissive-，因为这个修复可能会破坏现有的代码。}}
 
 \section{使用编译期\texttt{if}语句}
-原则上讲，只要条件表达式是编译期的表达式你就可以像使用运行期\texttt{if}一样使用编译期\texttt{if}。
+理论上讲，只要条件表达式是编译期的表达式你就可以像使用运行期\texttt{if}一样使用编译期\texttt{if}。
 你也可以混合使用编译期和运行期的\texttt{if}：
 \begin{lstlisting}
     if constexpr (std::is_integral_v<std::remove_reference_t<T>>) {
@@ -125,7 +125,7 @@
     \item 如果大于4字节，返回\texttt{42}的返回语句将会生效，因此返回值类型是\texttt{int}。
     \item 否则，返回\texttt{42u}的返回语句将生效，因此返回值类型是\texttt{unsigned int}。
 \end{itemize}
-通过这个方法，\texttt{if constexpr}可以返回完全不同的类型。
+这种情况下有\texttt{if constexpr}语句的函数可能返回完全不同的类型。
 例如，如果我们不写\emph{else}部分，返回值将会是\texttt{int}或者\texttt{void}：
 \begin{lstlisting}
     auto foo()  // 返回值类型可能是int或者void
@@ -231,8 +231,8 @@
 
 \subsection{其他编译期\texttt{if}的示例}
 \subsubsection{完美返回泛型值}
-编译期\texttt{if}的一个应用就是返回值的完美转发，这些返回值在返回之前必须先进行一些处理。
-因为\texttt{decltype(auto)}不能推导为\texttt{void}（因为\texttt{void}是不完全的类型），
+编译期\texttt{if}的一个应用就是先对返回值进行一些处理，再进行完美转发。
+因为\texttt{decltype(auto)}不能推导为\texttt{void}（因为\texttt{void}是不完全类型），
 所以你必须像下面这么写：
 \inputcodefile{tmpl/perfectreturn.hpp}
 函数的返回值类型可以推导为\texttt{void}，
@@ -312,7 +312,7 @@ case。然而，注意例子中的两种实现还是有一处不同的：
     \item 重载函数的版本遵循\textbf{最佳匹配}语义。
     \item 编译期\texttt{if}的版本遵循\textbf{最先匹配}语义。
 \end{itemize}
-另一个类型分发的例子是\hyperref[编译期if实现get<>]{使用编译期\texttt{if}实现\texttt{get<>}重载}
+另一个类型分发的例子是\hyperref[编译期if实现get<>]{使用编译期\texttt{if}实现\texttt{get<>()}重载}
 来实现结构化绑定接口。
 
 第三个例子是在用作\hyperref[ch16.3.3.2]{\texttt{std::variant<>}访问器}
@@ -331,10 +331,11 @@ case。然而，注意例子中的两种实现还是有一处不同的：
         }
         else {
             std::cout << "foo(x) yields different type\n";
+            ...
         }
     }
 \end{lstlisting}
-如果有一个接受参数类型的\texttt{constexpr}函数\texttt{foo()}，
+如果有一个参数类型也为\texttt{T}的\texttt{constexpr}函数\texttt{foo()}，
 你就可以根据\texttt{foo(x)}是否返回与\texttt{x}相同的类型来进行不同的处理。
 
 如果要根据\texttt{foo(x)}返回的值来进行判定，那么可以写：
@@ -365,7 +366,7 @@ case。然而，注意例子中的两种实现还是有一处不同的：
     int main()
     {
         if constexpr(std::numeric_limits<char>::is_signed) {
-            foo(42);    // OK
+            foo(42);        // OK
         }
         else {
             undeclared(42); // 未声明时总是ERROR（即使被丢弃）
@@ -373,7 +374,7 @@ case。然而，注意例子中的两种实现还是有一处不同的：
     }
 \end{lstlisting}
 
-下面的代码也永远不能通过编译，因为总有一个静态断言会失败：
+下面的代码也永远不能成功编译，因为总有一个静态断言会失败：
 \begin{lstlisting}
     if constexpr(std::numeric_limits<char>::is_signed) {
         static_assert(std::numeric_limits<char>::is_signed);
@@ -409,7 +410,7 @@ case。然而，注意例子中的两种实现还是有一处不同的：
 
 \section{后记}
 编译期\texttt{if}语句最初的灵感来自于Walter Bright、Herb Sutter、Andrei Alexandrescu
-发表的\url{https://wg21.link/n3329}以及
+在\url{https://wg21.link/n3329}中以及
 Ville Voutilainen在\url{https://wg21.link/n4461}中提出的\texttt{static if}特性。
 
 在\url{https://wg21.link/p0128r0}中，Ville Voutilainen提出了这个特性并命名为

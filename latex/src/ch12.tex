@@ -20,10 +20,10 @@
     void foo()
     {
         Message<hello> msg;     // OK（所有C++标准）
-        Message<hello11> msg11; // OK（自从C++11起）
+        Message<hello11> msg11; // 自从C++11起OK
 
         static const char hello17[] = "Hello World!";   // 无链接
-        Message<hello17> msg17; // OK（自从C++17起）
+        Message<hello17> msg17; // 自从C++17起OK
 
         Message<"hi"> msgError; // ERROR
     }
@@ -31,13 +31,13 @@
 也就是说自从C++17起你仍然需要至少两行才能把字符串字面量传给一个模板参数。
 然而，你现在可以把第一行写在和实例化代码相同的作用域内。
 
-这个特性还解决了一个不行的约束：自从C++11起可以把一个指针作为模板实参：
+这个特性还解决了一个不幸的约束：自从C++11起可以把一个指针作为模板实参：
 \begin{lstlisting}
     template<int* p> struct A {
     };
     
     int num;
-    A<&num> a;  // OK（自从C++11起）
+    A<&num> a;  // 自从C++11起OK
 \end{lstlisting}
 但不能用一个返回指针的编译期函数作为模板实参，然而现在可以了：
 \begin{lstlisting}
