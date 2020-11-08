@@ -1,7 +1,7 @@
 template<typename T>
 class Base {
     T value{};
-  public:
+public:
     Base() {
         ...
     }
@@ -14,7 +14,7 @@ class Base {
 template<typename... Types>
 class Multi : private Base<Types>...
 {
-  public:
+public:
     // 继承所有构造函数：
     using Base<Types>::Base...;
     ...

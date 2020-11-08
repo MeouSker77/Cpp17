@@ -5,11 +5,12 @@
 #include <iostream>
 
 class Circle {
-  private:
+private:
     Coord center;
     int rad;
-  public:
-    Circle (Coord c, int r) : center{c}, rad{r} { }
+public:
+    Circle (Coord c, int r) : center{c}, rad{r} {
+    }
 
     void move(const Coord& c) {
         center += c;

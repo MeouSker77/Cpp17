@@ -4,11 +4,11 @@
 
 class Name
 {
-  private:
+private:
     std::string first;
     std::optional<std::string> middle;
     std::string last;
-  public:
+public:
     Name (std::string f, std::optional<std::string> m, std::string l)
           : first{std::move(f)}, middle{std::move(m)}, last{std::move(l)} {
     }

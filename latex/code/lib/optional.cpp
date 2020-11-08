@@ -16,7 +16,7 @@ std::optional<int> asInt(const std::string& s)
 int main()
 {
     for (auto s : {"42", "  077", "hello", "0x33"}) {
-        // 尝试把s转换为int，并打印结果
+        // 尝试把s转换为int，并打印结果：
         std::optional<int> oi = asInt(s);
         if (oi) {
             std::cout << "convert '" << s << "' to int: " << *oi << "\n";

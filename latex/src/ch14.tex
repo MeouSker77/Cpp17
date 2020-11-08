@@ -1,37 +1,37 @@
 \chapter{扩展的using声明}\label{ch14}
-using声明扩展之后可以支持逗号分隔的名称，也可以支持参数包。
+using声明扩展之后可以支持逗号分隔的名称列表，这个特性也可以用于参数包。
 
 例如，你现在可以这么写：
 \begin{lstlisting}
     class Base {
-      public:
+    public:
         void a();
         void b();
         void c();
     };
 
     class Derived : private Base {
-      public:
+    public:
         using Base::a, Base::b, Base::c;
     };
 \end{lstlisting}
 在C++17之前，你需要使用3个using声明分别进行声明。
 
 \section{使用变长的using声明}\label{ch14.1}
-逗号分隔的using声明允许你用泛型代码从可变数量的所有基类中派生同一种运算。
+逗号分隔的using声明允许你在泛型代码中从可变数量的所有基类中派生同一种运算。
 
 这项技术的一个很酷的应用是创建一个重载的lambda的集合。通过如下定义：
 \inputcodefile{tmpl/overload.hpp}
 你可以像下面这样重载两个lambda：\label{重载的两倍lambda}
 \begin{lstlisting}
     auto twice = overload {
-                    [](std::string& s) { s += s; },
-                    [](auto& v) { v *= 2; }
+                     [](std::string& s) { s += s; },
+                     [](auto& v) { v *= 2; }
                  };
 \end{lstlisting}
 这里，我们创建了一个\texttt{overload}类型的对象，并且提供了\hyperref[ch9]{推导指引}
 来根据lambda的类型推导出\texttt{overload}的基类的类型。
-并且我们使用了\hyperref[ch4]{聚合体初始化}
+还使用了\hyperref[ch4]{聚合体初始化}
 来调用每个lambda生成的闭包类型的拷贝构造函数来初始化基类子对象。
 
 上例中的using声明使得\texttt{overload}类型可以同时访问所有子类中的函数调用运算符。
@@ -72,10 +72,10 @@ using声明扩展之后可以支持逗号分隔的名称，也可以支持参数
 \begin{lstlisting}
     MultiISB m2 = std::string("hello");
 \end{lstlisting}
-会调用\texttt{Base<int>}的默认构造函数，\texttt{Base<std::string>}的字符串构造函数，
+会调用\texttt{Base<int>}的默认构造函数、\texttt{Base<std::string>}的字符串构造函数、
 \texttt{Base<bool>}的默认构造函数。
 
-原则上讲，你也可以通过如下声明来支持\texttt{Multi<>}进行赋值操作：
+理论上讲，你也可以通过如下声明来支持\texttt{Multi<>}进行赋值操作：
 \begin{lstlisting}
     template<typename... Types>
     class Multi : private Base<Types>...
@@ -90,8 +90,8 @@ using声明扩展之后可以支持逗号分隔的名称，也可以支持参数
 逗号分隔的using声明列表由Robert Haberlach在\url{https://wg21.link/p0195r0}中首次提出。
 最终被接受的是Robert Haberlach和Richard Smith发表于\url{https://wg21.link/p0195r2}的提案。
 
-关于继承构造函数有一些核心的问题。最终修复这些问题的提案由Richard Smith发表于
-\url{https://wg21.link/n4429}。
+关于继承构造函数有一些核心的问题。最终修复这些问题的是Richard Smith发表
+于\url{https://wg21.link/n4429}的提案。
 
 还有一个由Vicente J.Botet Escriba提出的提案。
 除了lambda之外，它还支持重载普通函数、成员函数来实现泛型的\texttt{overload}函数。
