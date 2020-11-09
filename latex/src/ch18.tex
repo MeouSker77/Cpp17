@@ -3,7 +3,7 @@
 \texttt{std::byte}本质上代表一个字节的值，但并不能进行数字或字符的操作，
 也不对每一位进行解释。对于不需要数字计算和字符序列的场景，这样会更加类型安全。
 
-然而你，注意\texttt{std::byte}实现的大小和\texttt{unsigned char}一样，这意味着
+然而，注意\texttt{std::byte}实现的大小和\texttt{unsigned char}一样，这意味着
 它并不保证是8位，可能会更多。
 
 
@@ -13,7 +13,7 @@
     #include <cstddef>  // for std::byte
 
     std::byte b1{0x3F};
-    std::byte b2{0b1111'0000};
+    std::byte b2{0b1111`'`0000};
 
     std::byte b3[4] {b1, b2, std::byte{1}}; // 4个字节（最后一个是0）
 
@@ -40,12 +40,12 @@
 这是将\texttt{std::byte}实现为枚举类型的一个直接后果。
 花括号初始化使用了新的\hyperref[ch8.3]{用整数值初始化有作用域的枚举}特性。
 
-这里不能使用隐式类型转换，这意味着你必须显式对整数值进行转换才能初始化字节数组：
+也没有隐式类型转换，这意味着你必须显式对整数值进行转换才能初始化字节数组：
 \begin{lstlisting}
     std::byte b5[] {1};             // ERROR
     std::byte b6[] {std::byte{1}};  // OK
 \end{lstlisting}
-如果没有初始化，\texttt{std::byte}将是栈上的值未定义的对象：
+如果没有初始化，\texttt{std::byte}对象的值将是未定义的，因为它存储在栈上：
 \begin{lstlisting}
     std::byte b;    // 值未定义
 \end{lstlisting}
@@ -67,7 +67,7 @@
     ...
     std::cout << to_integer<int>(b1);       // OK
 \end{lstlisting}
-如果要将\texttt{std::byte}用作布尔值也需要这样的转换。例如：
+如果要将\texttt{std::byte}用作bool值也需要这样的转换。例如：
 \begin{lstlisting}
     if (b2) ...                         // ERROR
     if (b2 != std::byte{0}) ...         // OK
@@ -167,7 +167,7 @@
 \begin{lstlisting}
     std::byte ff{0xFF};
     std::cout << std::to_integer<unsigned int>(ff); // 255
-    std::cout << std::to_integer<int>(ff);          // 也是255
+    std::cout << std::to_integer<int>(ff);          // 也是255（没有负值）
     std::cout << static_cast<int>(std::to_integer<signed char>(ff)); // -1
 \end{lstlisting}
 
@@ -191,10 +191,10 @@
 \end{lstlisting}
 上例中using声明定义了一个位数和\texttt{std::byte}相同的bitset类型，
 之后把字节对象转换为整数来初始化一个这种类型的对象，最后输出了该对象。
-最后值42将会有如下输出（假设一个\texttt{char}是8位）：
-\begin{lstlisting}
+最后值42会以如下方式输出（假设一个\texttt{char}是8位）：
+\begin{blacklisting}
     00101010
-\end{lstlisting}
+\end{blacklisting}
 另外，你可以使用\texttt{std::underlying\_type\_t<std::byte>}代替\texttt{unsigned char}，
 这样using声明的目的将更明显。
 
@@ -202,7 +202,8 @@
 \begin{lstlisting}
     std::string s = ByteBitset{std::to_integer<unsigned>(b1)}.to_string();
 \end{lstlisting}
-如果你已经有了一个字符序列，你也可以像下面这样使用\nameref{ch31.2.2}：\label{byte到位序列}
+如果你已经有了一个字符序列，你也可以像下面这样
+使用\hyperref[ch31.2.2]{\texttt{std::to\_chars()}}：\label{byte到位序列}
 \footnote{感谢Daniel Krügler指出这一点。}
 \begin{lstlisting}
     #include <charconv>
@@ -229,18 +230,18 @@
 \begin{lstlisting}
     std::istream& operator>> (std::istream& strm, std::byte& b)
     {
-        // 读入一个bitset
+        // 读入一个bitset：
         std::bitset<std::numeric_limits<unsigned char>::digits> bs;
         strm >> bs;
-        // 如果没有失败就转换为std::byte
+        // 如果没有失败就转换为std::byte：
         if (!std::cin.fail()) {
             b = static_cast<std::byte>(bs.to_ulong());  // OK
         }
         return strm;
     }
 \end{lstlisting}
-注意我们必须使用\texttt{static\_cast<>()}来把bitset转换成的unsigned long转换为
-\texttt{std::byte}，列表初始化将不能工作，因为会发生窄化：
+注意我们必须使用\texttt{static\_cast<>()}来把bitset转换成的unsigned long转换
+为\texttt{std::byte}。列表初始化将不能工作，因为会发生窄化：
 \footnote{使用gcc/g++时，如果没有编译选项\texttt{-pedantic-errors}，
 窄化初始化也可能通过编译。}
 \begin{lstlisting}
@@ -248,19 +249,19 @@
 \end{lstlisting}
 并且我们也没有其他的初始化方法了。
 
-另外，你也可以使用\nameref{ch31.2.1}来从给定的字符序列读取：\label{位序列到byte}
+另外，你也可以使用\hyperref[ch31.2.1]{\texttt{std::from\_chars()}}来从给定的字符序列
+读取：\label{位序列到byte}
 \begin{lstlisting}
     #include <charconv>
 
     const char* str = "101001";
     int value;
-    std::from_chars_result res =
-        std::from_chars(str, str+6, // 要读取的字符范围
-                        value,      // 读取后存入的对象
-                        2);         // 2进制
+    std::from_chars_result res = std::from_chars(str, str+6, // 要读取的字符范围
+                                                 value,      // 读取后存入的对象
+                                                 2);         // 2进制
 \end{lstlisting}
 
 
 \section{后记}
-Neil MacIntosh在发表于\url{https://wg21.link/p0298r0}的提案中首次提出\texttt{std::byte}。
+\texttt{std::byte}由Neil MacIntosh在\url{https://wg21.link/p0298r0}中首次提出。
 最终被接受的是Neil MacIntosh发表于\url{https://wg21.link/p0298r3}的提案。

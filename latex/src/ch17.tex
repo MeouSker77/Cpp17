@@ -7,7 +7,7 @@
 也就是说，它可以持有任意类型的值，并且它知道自己当前持有的值是什么类型的。
 当声明一个这种类型的对象时不需要指明所有可能的类型。
 
-关键在于\texttt{std::any}对象同时\emph{包含}了值和值的类型。
+实现的关键在于\texttt{std::any}对象同时包含了值和值的类型。
 因为内含的值可以有任意的大小，所以可能会在堆上分配内存。
 然而，实现应该尽量避免为小类型的值例如\texttt{int}在堆上分配内存。
 
@@ -37,7 +37,7 @@
         useInt(std::any_cast<int>(a));
     }
 \end{lstlisting}
-你可以声明一个空的\texttt{std::any}，也可以用一个指定类型的值初始化。
+你可以声明一个空的\texttt{std::any}，也可以用某个类型的值初始化。
 如果传递了初始值，\texttt{std::any}内含的值的类型将变为初始值的类型。
 
 通过使用成员函数\texttt{type()}，你可以检查内含值的类型和某一个类型的ID是否相同。
@@ -47,8 +47,8 @@
 \begin{lstlisting}
     auto s = std::any_cast<std::string>(a);
 \end{lstlisting}
-如果转换失败，可能是因为对象为空或者与内部值的类型不匹配，这是会抛出一个
-\texttt{std::bad\_any\_cast}异常。因此，如果不进行检查并且不知道当前类型，
+如果转换失败，可能是因为对象为空或者与内部值的类型不匹配，这时会抛出一个
+\texttt{std::bad\_any\_cast}异常。因此，在不知道当前类型的情况下，
 你最好像下面这样使用：
 \begin{lstlisting}
     try {
@@ -103,7 +103,7 @@ any\_cast<>}的模板参数，
 \begin{lstlisting}
     a = {};
 \end{lstlisting}
-你也可以检查对象是否有值：
+你也可以直接检查对象是否有值：
 \begin{lstlisting}
     if (a.has_value()) {
         ...
@@ -128,9 +128,9 @@ any\_cast<>}的模板参数，
 没有定义哈希函数，也没有定义\texttt{value()}成员函数。
 而且，因为类型只有在运行时才能获取，所以也不能使用泛型lambda来独立于类型处理当前的值。
 你只能使用运行时的\texttt{std::any\_cast<>}函数来处理当前的值，
-这意味着处理当前值时你需要指定类型来重入C++的类型系统。
+这意味着处理当前值时你需要一些类型特定的代码来重入C++的类型系统。
 
-然而你，你可以把\texttt{std::any}对象放置在容器中。例如：
+然而，你可以把\texttt{std::any}对象放置在容器中。例如：
 \begin{lstlisting}
     std::vector<std::any> v;
 
@@ -165,7 +165,7 @@ any\_cast<>}的模板参数，
 另外，还定义了下面的类型和对象：
 \begin{itemize}
     \item 异常类\texttt{std::bad\_any\_cast}，当转换失败时会抛出这种异常。
-    这个类派生自\texttt{std::bad\_cast}，后者又派生自\texttt{std::exception}。。
+    这个类派生自\texttt{std::bad\_cast}，后者又派生自\texttt{std::exception}。
 \end{itemize}
 \texttt{std::any}类也使用了定义在头文件\texttt{<utility>}中的
 \texttt{std::in\_place\_type}对象（类型是\texttt{std::in\_place\\
@@ -180,7 +180,7 @@ any\_cast<>}的模板参数，
         \textbf{操作}             & \textbf{效果}                                            \\
         \hline
         \emph{构造函数}             & 创建一个any对象（可能会调用底层类型的构造函数）                              \\
-        \texttt{make\_any()}    & 创建一个any对象（传递参数来初始化）                                    \\
+        \texttt{make\_any<>()}  & 创建一个any对象（传递参数来初始化）                                    \\
         \emph{析构函数}             & 销毁any对象                                                \\
         \texttt{=}              & 赋予新值                                                   \\
         \texttt{emplace<T>()}   & 赋予一个类型\texttt{T}的新值                                    \\
@@ -225,12 +225,11 @@ any\_cast<>}的模板参数，
 \begin{lstlisting}
     // 用一个以lambda为排序准则的set初始化std::any对象
     auto sc = [] (int x, int y) {
-                    return std::abs(x) < std::abs(y);
+                  return std::abs(x) < std::abs(y);
               };
-    std::any a8{std::in_place_type<std::set<int, decltype(sc)>>,
-                {4, 8, -7, -2, 0, 5}, sc};
+    std::any a8{std::in_place_type<std::set<int, decltype(sc)>>, {4, 8, -7, -2, 0, 5}, sc};
 \end{lstlisting}
-注意还有一个快捷函数\texttt{make\_any()}，它可以接受一个或多个参数
+注意还有一个快捷函数\texttt{make\_any<>()}，它可以接受一个或多个参数
 （不需要使用\texttt{in\_place\_type}参数）。
 你必须显式指明初始化的类型（即使只有一个参数它也不会自动推导类型）：
 \begin{lstlisting}
@@ -247,12 +246,12 @@ any\_cast<>}的模板参数，
 
     a = 42;         // a含有int类型的值
     a = "hello";    // a含有const char*类型的值
-    a.emplace<std::string>("hello"); // a含有std::string类型的值
-    a.emplace<std::complex<double>>(4.4, 5.5); // a含有std::complex<double>类型的值
+    a.emplace<std::string>("hello");            // a含有std::string类型的值
+    a.emplace<std::complex<double>>(4.4, 5.5);  // a含有std::complex<double>类型的值
 \end{lstlisting}
 
 \subsubsection{访问值}
-为了访问内含的值，你必须使用\textbf{std::any\_cast<>}将它转换为真实的类型。
+为了访问内含的值，你必须使用\texttt{std::any\_cast<>}将它转换为真实的类型。
 例如为了把值转换成string，你有以下几种方法：
 \begin{lstlisting}
     std::any_cast<std::string>(a);        // 返回值的拷贝
@@ -261,10 +260,11 @@ any\_cast<>}的模板参数，
 
     std::any_cast<const std::string&>(a); // 通过引用获取读权限
 \end{lstlisting}
-当移除掉顶层引用之和\texttt{const}之后如果有相同的类型ID说明类型匹配。
-如果转换失败，将会抛出一个\texttt{std::bad\_any\_cast}异常。
+如果移除掉顶层引用和\texttt{const}之后类型ID相同则说明类型匹配。
+如果转换失败，将会抛出一个\texttt{std::bad\_\\
+any\_cast}异常。
 
-为了避免处理异常，你可以传递\texttt{any}对象的地址。
+为了避免异常处理，你可以传递\texttt{any}对象的地址。
 当因为类型不匹配导致转换失败时它会返回\texttt{nullptr}：
 \begin{lstlisting}
     if (auto sp{std::any_cast<std::string>(&a)}; sp != nullptr) {
@@ -275,14 +275,14 @@ any\_cast<>}的模板参数，
         ... // 使用*sp获取a的值的读权限
     }
 \end{lstlisting}
-注意这里，转换为应用将导致运行时错误：
+注意，这里如果转换为引用将导致运行时错误：
 \begin{lstlisting}
     std::any_cast<std::string&>(&a);    // 运行时错误
 \end{lstlisting}
 
 \subsubsection{move语义}
 \texttt{std::any}也支持move语义。然而，注意前提是底层类型要支持拷贝语义。
-这是因为，\textbf{move-only类型}不支持作为内含的值类型。
+也就是说\textbf{move-only类型}不支持作为内含的值类型。
 
 处理move语义的最佳方式可能不是很明显，你可以这样做：
 \begin{lstlisting}
@@ -294,7 +294,7 @@ any\_cast<>}的模板参数，
     s = std::move(std::any_cast<std::string&>(a));  // 把a中的string移动到s
 \end{lstlisting}
 注意像通常一样，值被移走的对象处于仍然有效但是值未定义的状态。
-因此，你可以继续将\texttt{a}用作字符串，只要不对他的值做任何假设。
+因此，你可以继续将\texttt{a}用作字符串，只要不对它的值做任何假设。
 下面的语句将\emph{不会}输出\texttt{"NIL"}，值被移走的字符串一般是空字符串
 （但也可能有其他的值）：
 \begin{lstlisting}
@@ -323,14 +323,14 @@ any\_cast<>}的模板参数，
 
 
 \section{后记}
-Any对象是由Kevlin Henney和Beman Dawes于2006年在\url{https://wg21.link/n1939}
+Any对象由Kevlin Henney和Beman Dawes于2006年在\url{https://wg21.link/n1939}
 中首次提出，并指定Boost.Any作为参考实现。这个类因Beman Dawes、Kevlin Henney、
 Daniel Krügler在\url{https://wg21.link/n3804}中的提案被Library Fundamentals TS采纳。
 
-后来这个类因Beman Dawes和Alisdair Meredith在\url{https://wg21.link/p0220r1}发表
-的提案而和其他组件一起被C++17标准采纳。
+后来这个类因Beman Dawes和Alisdair Meredith的\url{https://wg21.link/p0220r1}提案
+而和其他组件一起被C++17标准采纳。
 
-Vicente J.Botet Escriba在\url{https://wg21.link/p0032r3}中统一了\texttt{std::
-any}和\texttt{std::variant<>}以及\\
+Vicente J.Botet Escriba在\url{https://wg21.link/p0032r3}中统一
+了\texttt{std::any}和\texttt{std::variant<>}以及
 \texttt{std::optional<>}的API。Jonathan Wakely在
-\url{https://wg21.link/p0504r0}中修正了\texttt{in\_place}标记类型的行为。
+\url{https://wg21.link/p0504r0}中修正了\texttt{in\_place}标记的行为。
