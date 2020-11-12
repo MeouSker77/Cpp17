@@ -2,7 +2,7 @@
 #include <chrono>
 #include <filesystem>
 
-std::string asString(const std::filesystem::file_time_type &ft)
+std::string asString(const std::filesystem::file_time_type& ft)
 {
     using system_clock = std::chrono::system_clock;
     auto t = system_clock::to_time_t(system_clock::now()

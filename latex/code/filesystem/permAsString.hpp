@@ -2,7 +2,7 @@
 #include <chrono>
 #include <filesystem>
 
-std::string asString(const std::filesystem::perms &pm) {
+std::string asString(const std::filesystem::perms& pm) {
     using perms = std::filesystem::perms;
     std::string s;
     s.resize(9);

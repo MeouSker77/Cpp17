@@ -7,7 +7,7 @@ int main()
 {
     namespace fs = std::filesystem;
     try {
-        // 创建目录tmp/test/（如果不存在的话）
+        // 创建目录tmp/test/（如果不存在的话）：
         fs::path testDir{"tmp/test"};
         create_directories(testDir);
 
@@ -15,8 +15,8 @@ int main()
         auto testFile = testDir / "data.txt";
         std::ofstream  dataFile{testFile};
         if (!dataFile) {
-            std::cerr << "OOPS, can't open\"" << testFile.string() << "\"\n";
-            std::exit(EXIT_FAILURE);    // 以失败方式结束程序
+            std::cerr << "OOPS, can't open \"" << testFile.string() << "\"\n";
+            std::exit(EXIT_FAILURE);    // 失败退出程序
         }
         dataFile << "The answer is 42\n";
 
@@ -28,7 +28,7 @@ int main()
         std::cerr << "    path1: \"" << e.path1().string() << "\"\n";
     }
 
-    // 递归列出所有文件（同时遍历符号链接）
+    // 递归列出所有文件（同时遍历符号链接）：
     std::cout << fs::current_path().string() << ":\n";
     auto iterOpts{fs::directory_options::follow_directory_symlink};
     for (const auto& e : fs::recursive_directory_iterator(".", iterOpts)) {

@@ -29,7 +29,7 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
 然而，因为这些类型特征是在编译期求值，所以你也可以在编译期使用它们
 （例如，在一个\nameref{ch10}中）：
 \begin{lstlisting}
-    if constexpr (std::is_signed_v<char) {
+    if constexpr (std::is_signed_v<char>) {
         ...
     }
 \end{lstlisting}
@@ -54,12 +54,12 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
 \begin{lstlisting}
     int a[5][7];
     std::cout << std::extent_v<decltype(a)> << '\n';    // 打印出5
-    std::cout << std::extent_v<decltepe(a), 1> << '\n'; // 打印出7
+    std::cout << std::extent_v<decltype(a), 1> << '\n'; // 打印出7
 \end{lstlisting}
 
 
 \section{新的类型特征}
-表\hyperref[t21.1]{新类型特征}列出了C++17引入的新类型特征。
+表\hyperref[t21.1]{新的类型特征}列出了C++17引入的新类型特征。
 \begin{table}[htb]
     \centering
     \begin{tabular}{l|p{0.45\textwidth}}
@@ -67,23 +67,23 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
         \textbf{特征}                                        & \textbf{效果}                                   \\
         \hline
         \texttt{is\_aggregate<T>}                          & 是否是聚合体类型                                      \\
-        \texttt{is\_swappable<T>}                          & 该类型是否能调用\texttt{swap()}                      \\
-        \texttt{is\_nothrow\_swappable<T>}                 & 该类型是否能调用\texttt{swap()}并且该操作不会抛出异常           \\
-        \texttt{is\_swappable\_with<T,T2>}                 & 特定值类型的这两种类型是否能调用\texttt{swap()}              \\
-        \texttt{is\_nothrow\_swappable\_with<T, T2>}       & 特定值类型的这两种类型是否能调用\texttt{swap()}并且该操作不会抛出异常   \\
+        \texttt{is\_swappable<T>}                          & 该类型是否能调用\texttt{swap()}                       \\
+        \texttt{is\_nothrow\_swappable<T>}                 & 该类型是否能调用\texttt{swap()}并且该操作不会抛出异常            \\
+        \texttt{is\_swappable\_with<T1, T2>}               & 特定值类型的这两种类型是否能调用\texttt{swap()}               \\
+        \texttt{is\_nothrow\_swappable\_with<T1, T2>}      & 特定值类型的这两种类型是否能调用\texttt{swap()}并且该操作不会抛出异常    \\
         \texttt{has\_unique\_object\_representations<T>}   & 是否该类型的两个值相等的对象在内存中的表示也一样                      \\
         \texttt{is\_invocable<T, Args...>}                 & 该类型是否可以用\emph{Args...}调用                      \\
         \texttt{is\_nothrow\_invocable<T, Args...>}        & 该类型是否可以用\emph{Args...}调用，并且该操作不会抛出异常          \\
         \texttt{is\_invocable\_r<RT, T, Args...>}          & 该类型是否可以用\emph{Args...}调用并返回\emph{RT}类型        \\
         \texttt{is\_nothrow\_invocable\_r<RT, T, Args...>} & 该类型是否可以用\emph{Args...}调用并返回\emph{RT}类型且不会抛出异常 \\
-        \texttt{invoke\_result<T, Args...>}                & 用\emph{Args}作为实参进行调用会返回的类型                    \\
+        \texttt{invoke\_result<T, Args...>}                & 用\emph{Args...}作为实参进行调用会返回的类型                 \\
         \texttt{conjunction<B...>}                         & 对bool特征\emph{B...}进行逻辑与运算                     \\
         \texttt{disjunction<B...>}                         & 对bool特征\emph{B...}进行逻辑或运算                     \\
         \texttt{negation<B>}                               & 对bool特征B进行非运算                                 \\
         \texttt{is\_execution\_policy<T>}                  & 是否是\nameref{ch22.2}类型                         \\
         \hline
     \end{tabular}
-    \caption{新类型特征}
+    \caption{新的类型特征}
     \label{t21.1}
 \end{table}
 
@@ -181,7 +181,7 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
         }
     };
 \end{lstlisting}
-会有如下结果：
+会导致下列结果：
 \begin{lstlisting}
     std::is_invocable<C>::value                             // false
     std::is_invocable<C, int>::value                        // true
@@ -211,7 +211,7 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
 \begin{lstlisting}
     std::string foo(int);
 
-    using T1 = std::invoke_result_t<decltype(foo), int>;   // T1是std::string
+    using T1 = std::invoke_result_t<decltype(foo), int>;    // T1是std::string
 
     struct ABC {
         virtual ~ABC() = 0;
@@ -229,7 +229,7 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
     \centering
     \begin{tabular}{l|l}
         \hline
-        \textbf{特征}                & \textbf{效果}               \\
+        \textbf{特征}                & \textbf{效果}                      \\
         \hline
         \texttt{conjunction<B...>} & 对bool特征\emph{B...}进行逻辑\emph{与}运算 \\
         \texttt{disjunction<B...>} & 对bool特征\emph{B...}进行逻辑\emph{或}运算 \\
@@ -245,8 +245,8 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
 \begin{lstlisting}
     template<typename T>
     struct IsPtr : std::disjunction<std::is_null_pointer<T>,
-                                      std::is_member_pointer<T>,
-                                      std::is_pointer<T>> {
+                                    std::is_member_pointer<T>,
+                                    std::is_pointer<T>> {
     };
 \end{lstlisting}
 
@@ -268,15 +268,15 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
     template<typename T>
     struct IsIntegralOrEnum : std::conjunction<std::disjunction<std::is_integral<T>,
                                                                 std::is_enum<T>>,
-                              std::negation<std::is_same<T, bool>>> {
+                                               std::negation<std::is_same<T, bool>>> {
     };
 \end{lstlisting}
 这里，类似于计算
 \begin{lstlisting}
     (is_integral<T> || is_enum<T>) && !is_same<T, bool>
 \end{lstlisting}
-这么写的一个好处是\texttt{std::conjunction<>}和\texttt{std::disjunction<>}会
-\emph{短路求值}bool表达式，这意味着当\emph{conjunction}出现第一个\texttt{false}或者
+这么写的一个好处是\texttt{std::conjunction<>}和\texttt{std::disjunction<>}
+会\emph{短路求值}bool表达式，这意味着当\emph{conjunction}出现第一个\texttt{false}或者
 \emph{disjunction}出现第一个\texttt{true}时就会停止计算。
 这节省了编译时间，甚至因为短路求值可以在某些情况下使原本无效的代码变得有效。
 \footnote{感谢Howard Hinnant指出这一点。}
@@ -304,25 +304,25 @@ C++17扩展了类型特征（标准类型函数）的通用能力并引入了一
                   "can't init X or Y from int");
 \end{lstlisting}
 
+
 \section{后记}
 标准类型特征的变量模板由Stephan T. Lavavej于2014年在\url{https://wg21.link/n3854}
 中首次提出。它们最终因Alisdair Meredith发表于\url{https://wg21.link/p0006r0}
 的提案而被Library Fundamentals TS采纳。
 
-类型特征\texttt{std::is\_aggregate<>}在C++17标准中作为美国国家机构对的注释
+类型特征\texttt{std::is\_aggregate<>}作为美国国家机构对C++17标准的注释
 引入（见\url{https://wg21.link/lwg2911}）。
 
 \texttt{is\_swappable}特征家族由Andrew Morrow在\url{https://wg21.link/n3619}
 中首次提出。最终被接受的是Daniel Krügler发表于\url{https://wg21.link/p0185r1}的提案。
 
 \texttt{std::has\_unique\_object\_representations<>}由Michael Spencer在\\
-\url{https://wg21.link/p0258r0}中首次提出，当时的名称为\texttt{is\_contiguous\_layout}。
+\url{https://wg21.link/p0258r0}中以名称\texttt{is\_contiguous\_layout}首次提出，
 最终被接受的是Michael Spencer发表于\url{https://wg21.link/p0258r2}的提案。
 
-\texttt{is\_invocable}特征家族由Agustin Berge在\url{https://wg21.link/n4446}中
-首次提出。和\texttt{std::\\
-invoke\_result\_t<>}一起被接受的提案由Daniel Krügler、
-Pablo Halpern、Jonathan Wakely发表于\url{https://wg21.link/p0604r0}。
+\texttt{is\_invocable}特征家族由Agustin Berge在\url{https://wg21.link/n4446}中首次提出。\\
+它和\texttt{std::invoke\_result\_t<>}最终因Daniel Krügler、Pablo Halpern、
+Jonathan Wakely发表于\url{https://wg21.link/p0604r0}的提案而一起被标准库接受。
 
 bool类型特征的逻辑操作由Jonathan Wakely在\url{https://wg21.link/p0013r0}中首次提出。
 最终被接受的是Jonathan Wakely发表于\url{https://wg21.link/p0013r1}的提案。
