@@ -6,7 +6,7 @@
 
 int main()
 {
-    // 初始化一个有10,000个字符串的vector
+    // 初始化一个有10,000个string的vector：
     std::vector<std::string> coll;
     for (int i = 0; i < 10000; ++i) {
         coll.push_back("value" + std::to_string(i));

@@ -11,9 +11,9 @@
 ********************************************/
 
 class Timer {
-  private:
+private:
     std::chrono::steady_clock::time_point last;
-  public:
+public:
     Timer() : last{std::chrono::steady_clock::now()} {
     }
     void printDiff(const std::string& msg = "Timer diff: ") {

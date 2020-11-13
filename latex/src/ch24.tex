@@ -16,40 +16,41 @@
 \begin{enumerate}
     \item 字符串成员函数\texttt{find()}：
     \begin{lstlisting}
-        std::size_type idx = text.find(sub);
+    std::size_type idx = text.find(sub);
     \end{lstlisting}
     \item 算法\texttt{search()}：
     \begin{lstlisting}
-        auto pos = std::search(text.begin(), text.end(), sub.begin(), sub.end());
+    auto pos = std::search(text.begin(), text.end(), sub.begin(), sub.end());
     \end{lstlisting}
     \item \hyperref[ch22]{并行算法}\texttt{search()}：
     \begin{lstlisting}
-        auto pos = std::search(std::execution::par,
-                               text.begin(), text.end(), sub.begin(), sub.end());
+    auto pos = std::search(std::execution::par,
+                           text.begin(), text.end(), sub.begin(), sub.end());
     \end{lstlisting}
     \item 使用\texttt{default\_searcher}：
     \begin{lstlisting}
-        auto pos = std::search(text.begin(), text.end(),
-                               std::default_searcher{sub.begin(), sub.end()});
+    auto pos = std::search(text.begin(), text.end(),
+                           std::default_searcher{sub.begin(), sub.end()});
     \end{lstlisting}
     \item 使用\texttt{boyer\_moore\_searcher}：
     \begin{lstlisting}
-        auto pos = std::search(text.begin(), text.end(),
-                               std::boyer_moore_searcher{sub.begin(), sub.end()});
+    auto pos = std::search(text.begin(), text.end(),
+                           std::boyer_moore_searcher{sub.begin(), sub.end()});
     \end{lstlisting}
     \item 使用\texttt{boyer\_moore\_horspool\_searcher}：
     \begin{lstlisting}
-        auto pos = std::search(text.begin(), text.end(),
-                               std::boyer_moore_horspool_searcher{sub.begin(), sub.end()});
+    auto pos = std::search(text.begin(), text.end(),
+                           std::boyer_moore_horspool_searcher{sub.begin(), sub.end()});
     \end{lstlisting}
 \end{enumerate}
-新的搜索器定义在头文件\texttt{<functional>}。
+新的搜索器定义在头文件\texttt{<functional>}中。
 
 Boyer-Moore和Boyer-Moore-Horspool搜索器是非常著名的在搜索之前预计算“表”（存放哈希值）的算法，
 当搜索区间非常大时可以显著加快搜索速度。为了使用这些搜索器，算法需要随机访问迭代器
-（而不是前向迭代器，前向迭代器可以用于原本的\texttt{search()}。
+（而不是前向迭代器，前向迭代器可以用于原本的\texttt{search()}）。
 
-在\emph{lib/search1.cpp}中，你可以找到一个完整的使用这些不同方法搜索子串的例子。
+在\emph{lib/searcher1.cpp}中，你可以找到一个完整的使用这些不同方法搜索子串的例子。
+\footnote{译者注：\emph{lib/searcher1.cpp}见\url{https://www.cppstd17.com/code/lib/searcher1.cpp.html}。}
 
 注意所有形式的\texttt{search()}都返回一个迭代器指向匹配的子序列的第一个字符。
 如果没有匹配的子序列，将返回输入的尾后迭代器。这允许我们像下面这样搜索所有出现的子串：
@@ -70,7 +71,7 @@ Boyer-Moore和Boyer-Moore-Horspool搜索器是非常著名的在搜索之前预�
 \begin{itemize}
     \item 只使用（非并行版本的）\texttt{search()}通常是最慢的方法，因为对于\texttt{text}中的每个字符，
     我们都要查找以它开头的子串是否匹配搜索目标。
-    \item 使用\texttt{default\_search()}应该和上一种方法相差不多，但我发现实际运行时最差能比
+    \item 使用\texttt{default\_searcher}应该和上一种方法相差不多，但我发现实际运行时最差能比
     上一种情况慢三倍。
     \item 使用\texttt{find()}可能会更快，但这依赖于标准库实现的质量。我在测试中
     发现实际速度能比\texttt{search()}快20\%到\\
@@ -78,24 +79,26 @@ Boyer-Moore和Boyer-Moore-Horspool搜索器是非常著名的在搜索之前预�
     \item 如果文本或者要搜索的子串非常长，\texttt{boyer\_moore\_searcher}应该是最快的方法。
     和\texttt{search()}相比，我发现性能可以提高50倍甚至100倍。对于特别长的文本和子串，
     这种方法通常是最快的。
-    \item \texttt{boyer\_moore\_horspool\_searcher}用时间换空间（译者注：此处原文为
-    用空间换时间，应是作者笔误）。它通常比\texttt{boyer\_moore\_searcher}慢，但占用的内存
-    会更少。这个算法的性能改进在不同平台上差别极大，在有一个平台上它的性能接近\texttt{boyer\_moore}
+    \item \texttt{boyer\_moore\_horspool\_searcher}用时间换空间
+    \footnote{译者注：此处原文为用空间换时间，应是作者笔误。}。
+    它通常比\texttt{boyer\_moore\_searcher}慢，但占用的内存
+    会更少。这个算法的性能在不同平台上差别极大，在有一个平台上它的性能接近\texttt{boyer\_moore}
     （比\texttt{search()}快50倍，比\texttt{find()}快10倍），而在其他平台上速度只有\texttt{search()}的
     2到3倍，甚至还没有使用\texttt{find()}快。
     \item 还有，使用并行的\texttt{search()}的速度是普通\texttt{search()}的3倍，
     这表明Boyer-Moore搜索器通常要更快的多。
 \end{itemize}
 因此，我只有一条建议：\textbf{测试！}测试目标平台上的典型场景。
-这是值得的，因为你可能能获得100倍的性能改进（例如，当在接近1千万个字符中搜索一个1000个字符的子串，
+这是值得的，因为你可能能获得100倍的性能改进
+（例如，当在接近1千万个字符中搜索一个1000个字符的子串，
 且该子串在接近末尾位置时）。
 
-\emph{lib/searcher1.cpp}中的代码打印出了不同搜索方式的耗时，因此你可以在自己的平台上比较它们的性能。
-\footnote{译者注：\emph{lib/searcher1.cpp}见\url{https://www.cppstd17.com/code/lib/searcher1.cpp.html}。}
+\emph{lib/searcher1.cpp}中的代码打印出了不同搜索方式的耗时，
+因此你可以在自己的平台上比较它们的性能。
 
 \subsection{直接使用搜索器}\label{ch24.1.2}
-另一种使用Boyer-Moore搜索器的方式是：你可以直接使用搜索器的函数调用运算符，它会返回一个匹配子序列
-开头和尾后的迭代器的pair。
+另一种使用Boyer-Moore搜索器的方式是：你可以直接使用搜索器的函数调用运算符，
+它会返回一个匹配子序列开头和尾后迭代器的pair。
 
 代码类似于下面这样：
 \begin{lstlisting}
@@ -122,7 +125,7 @@ Boyer-Moore和Boyer-Moore-Horspool搜索器是非常著名的在搜索之前预�
                   << end - text.begin() << '\n';
     }
 \end{lstlisting}
-如果要直接使用搜索器来查找第一个出现的匹配子串，你可以使用\nameref{ch2}和\nameref{ch1}：
+如果要直接使用搜索器来查找第一个出现的匹配子串，你可以使用\nameref{ch2.1}和\nameref{ch1}：
 \begin{lstlisting}
     std::boyer_moore_searcher bmsearch{sub.begin(), sub.end()};
     ...
@@ -145,7 +148,7 @@ Boyer-Moore和Boyer-Moore-Horspool算法是作为字符串搜索器开发的。�
     std::deque<int> sub{0, 8, 15, ...};
     pos = std::search(coll.begin(), coll.end(), std::boyer_moore_searcher{sub.begin(), sub.end()});
 \end{lstlisting}
-而且，你还可以试用搜索器的函数调用运算符：
+而且，你还可以使用搜索器的函数调用运算符：
 \begin{lstlisting}
     std::vector<int> coll;
     ...
@@ -165,8 +168,8 @@ Boyer-Moore和Boyer-Moore-Horspool算法是作为字符串搜索器开发的。�
 却会把速度降低2倍。一定要测试！
 
 \texttt{lib/searcher2.cpp}中的代码展示了如何使用不同的搜索器在一个vector中搜索子序列，
-并且也打印出了不同方法的耗时，因此你可以在自己的平台上比较它们的性能。
-\footnote{译者注：lib/searcher2.cpp见\url{https://www.cppstd17.com/code/lib/searcher2.cpp.html}。}
+并且也打印出了不同方法的耗时，因此你可以在自己的平台上比较它们的性能
+\footnote{译者注：lib/searcher2.cpp见\url{https://www.cppstd17.com/code/lib/searcher2.cpp.html}。}。
 
 \section{使用搜索器谓词}\label{ch24.3}
 当使用搜索器时，你可以使用谓词。出于以下两个原因这是必须的：
@@ -194,8 +197,8 @@ Boyer-Moore和Boyer-Moore-Horspool算法是作为字符串搜索器开发的。�
 \begin{lstlisting}
     class Customer {
         ...
-      public:
-        Customer() = default();
+    public:
+        Customer() = default;
         std::string getID() const {
             return id;
         }
@@ -214,7 +217,7 @@ Boyer-Moore和Boyer-Moore-Horspool算法是作为字符串搜索器开发的。�
                                      [] (const Customer& c) {
                                          return std::hash<std::string>{}(c.getID());
                                      });
-    auto pos = bmcust(customers.begin(), customer.end());
+    auto pos = bmcust(customers.begin(), customers.end());
     if (pos.first != customers.end()) {
         ...
     }
@@ -228,5 +231,5 @@ Boyer-Moore和Boyer-Moore-Horspool算法是作为字符串搜索器开发的。�
 \section{后记}
 搜索器由Marshall Clow在\url{https://wg21.link/n3411}中首次提出，
 并指定Boost.Algorithm做为参考实现。之后它们被第一个Library Fundamentals TS采纳。
-到了C++17，它们和一些其它组件因为Beman Dawes和Alisdair Meredith在\url{https://wg21.link/p0220r1}
-发表的提案而被标准库采纳，Marshall Clow还在\url{https://wg21.link/p0253R1}中修正了一些接口的问题。
+到了C++17，它们和一些其它组件按照Beman Dawes和Alisdair Meredith在\url{https://wg21.link/p0220r1}中
+的提议而被标准库采纳，Marshall Clow还在\url{https://wg21.link/p0253R1}中修正了一些接口的问题。

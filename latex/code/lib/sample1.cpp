@@ -15,7 +15,7 @@ int main()
 
     // 打印10个从集合中随机抽取的元素：
     std::sample(coll.begin(), coll.end(),
-                std::ostream_iterator<std::string>{stdout, "\n"},
+                std::ostream_iterator<std::string>{std::cout, "\n"},
                 10,
                 std::default_random_engine{});
 }

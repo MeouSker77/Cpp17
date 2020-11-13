@@ -12,7 +12,7 @@ void printSum(long num)
     }
 
     auto squaredSum = [] (auto sum, auto val) {
-                        return sum + val * val;
+                          return sum + val * val;
                       };
 
     auto sum = std::accumulate(coll.begin(), coll.end(), 0L, squaredSum);

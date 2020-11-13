@@ -2,7 +2,7 @@
 #include <iostream>
 #include <algorithm>
 #include <numeric>
-#include <execution>    // for执行策略
+#include <execution>    // for 执行策略
 #include <cstdlib>      // for atoi()
 #include "timer.hpp"
 
@@ -32,16 +32,16 @@ int main(int argc, char* argv[])
         // 顺序执行：
         for_each(std::execution::seq,
                  coll.begin(), coll.end(),
-                 [](auto& val) {
-                    val.sqrt = std::sqrt(val.value);
+                 [] (auto& val) {
+                     val.sqrt = std::sqrt(val.value);
                  });
         t.printDiff("sequential: ");
 
         // 并行执行
         for_each(std::execution::par,
                  coll.begin(), coll.end(),
-                 [](auto& val) {
-                    val.sqrt = std::sqrt(val.value);
+                 [] (auto& val) {
+                     val.sqrt = std::sqrt(val.value);
                  });
         t.printDiff("parallel: ");
         std::cout << '\n';

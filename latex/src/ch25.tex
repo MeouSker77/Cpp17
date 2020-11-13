@@ -2,7 +2,7 @@
 C++17提供了很多新的工具函数和算法，将在这一章中讲述。
 
 
-\section{\texttt{size()}，\texttt{empty()}，\texttt{data()}}
+\section{\texttt{size()}、\texttt{empty()}、\texttt{data()}}
 为了让泛型代码更加灵活，C++标准库提供了三个新的辅助函数：\texttt{size()}、\texttt{empty()}、
 \texttt{data()}。
 
@@ -26,22 +26,22 @@ C++17提供了很多新的工具函数和算法，将在这一章中讲述。
     std::initializer_list<std::string> il{"just", "five", "small", "string", "literals"};
     printLast5(arr);
     printLast5(v);
-    printLast(il);
+    printLast5(il);
 \end{lstlisting}
 输出将是：
-\begin{lstlisting}
+\begin{blacklisting}
     9 elems: ... 7 12 22 0 55
     3 elems: 0 8.8 15.15
     5 elems: just five small string literals
-\end{lstlisting}
+\end{blacklisting}
 另外因为\texttt{std::size()}还支持原生C数组，所以我们也可以调用：
 \begin{lstlisting}
     printLast5("hello world");
 \end{lstlisting}
-这回打印出：
-\begin{lstlisting}
+这会打印出：
+\begin{blacklisting}
     12 elems: ... o r l d
-\end{lstlisting}
+\end{blacklisting}
 注意这个函数模板计算数组大小时不是使用通常的方法，而是使用\texttt{countof}或者
 如下定义的\texttt{ARRAYSIZE}:
 \begin{lstlisting}
@@ -91,12 +91,12 @@ initializer\_list<>}都可以）的原始数据。
     printData("hello world");
 \end{lstlisting}
 输出将是：
-\begin{lstlisting}
+\begin{blacklisting}
     27 5 7 22 55
     0 15.15
     just small literals
     h l o w r d
-\end{lstlisting}
+\end{blacklisting}
 
 
 \section{\texttt{as\_const()}}
@@ -119,11 +119,11 @@ initializer\_list<>}都可以）的原始数据。
     std::vector<int> coll{8, 15, 7, 42};
 
     auto printColl = [&coll = std::as_const(coll)] {
-                        std::cout << "coll: ";
-                        for (int elem : coll) {
-                            std::cout << elem << ' ';
-                        }
-                        std::cout << '\n';
+                         std::cout << "coll: ";
+                         for (int elem : coll) {
+                             std::cout << elem << ' ';
+                         }
+                         std::cout << '\n';
                      };
 \end{lstlisting}
 现在，调用
@@ -140,12 +140,12 @@ C++17提供了一个新的工具函数\texttt{clamp()}，它可以找出三个�
 \inputcodefile{lib/clamp.cpp}
 这里的\texttt{clamp(i, 5, 13)}等价于\texttt{std::min(std::max(i, 5), 13)}，
 其输出如下：
-\begin{lstlisting}
+\begin{blacklisting}
     5
     5
     8
     13
-\end{lstlisting}
+\end{blacklisting}
 类似于\texttt{min()}和\texttt{max()}，\texttt{clamp()}的所有参数也都
 是同一个类型\texttt{T}的\texttt{const}的引用：
 \begin{lstlisting}
@@ -154,9 +154,9 @@ C++17提供了一个新的工具函数\texttt{clamp()}，它可以找出三个�
         constexpr const T& clamp(const T& value, const T& min, const T& max);
     }
 \end{lstlisting}
-返回值是也是\texttt{const}引用，并且是输入参数之一。
+返回值也是\texttt{const}引用，并且是输入参数之一。
 
-如果你传递了不同类型的参数，你可以显示指明模板参数\texttt{T}：
+如果你传递了不同类型的参数，你可以显式指明模板参数\texttt{T}：
 \begin{lstlisting}
     double d{4.3};
     int max{13};
@@ -176,12 +176,12 @@ C++17提供了一个新的工具函数\texttt{clamp()}，它可以找出三个�
     }
 \end{lstlisting}
 将会有如下输出：
-\begin{lstlisting}
+\begin{blacklisting}
     -7
     5
     8
     13
-\end{lstlisting}
+\end{blacklisting}
 因为\texttt{-7}的绝对值介于\texttt{5}和\texttt{13}的绝对值之间，
 所以\texttt{clamp()}第一次调用会返回\texttt{-7}。
 
@@ -190,7 +190,7 @@ C++17提供了一个新的工具函数\texttt{clamp()}，它可以找出三个�
 
 \section{sample()}\label{ch25.4}
 C++17提供了\texttt{sample()}算法来从一个给定的范围（总体）内提取出一个随机的子集（样本）。
-有时这也被称为\emph{水塘抽样或者选择抽样}。
+有时这也被称为\emph{水塘抽样}或者\emph{选择抽样}。
 
 考虑下面的示例程序：
 \inputcodefile{lib/sample1.cpp}
@@ -199,7 +199,7 @@ C++17提供了\texttt{sample()}算法来从一个给定的范围（总体）内�
 \begin{lstlisting}
     // 打印10个从集合中随机抽取的元素：
     std::sample(coll.begin(), coll.end(),
-                std::ostream_iterator<std::string>{stdout, "\n"},
+                std::ostream_iterator<std::string>{std::cout, "\n"},
                 10,
                 std::default_random_engine{});
 \end{lstlisting}
@@ -207,11 +207,11 @@ C++17提供了\texttt{sample()}算法来从一个给定的范围（总体）内�
 \begin{itemize}
     \item 总体范围的起点和终点
     \item 一个用来写入提取出的值的迭代器（这里使用了输出迭代器把提取出的字符串写入到标准输出）
-    \item 要提取的元素数量的上限（如果总体范围小于指定数量就无法达到上限）
+    \item 要提取的元素数量的上限（如果总体范围小于指定数量则无法达到上限）
     \item 用来计算随机子集的随机数引擎
 \end{itemize}
 最后的结果是我们打印出了\texttt{coll}内的10个随机元素。输出的一个可能的示例是：
-\begin{lstlisting}
+\begin{blacklisting}
     value132
     value349
     value796
@@ -222,7 +222,7 @@ C++17提供了\texttt{sample()}算法来从一个给定的范围（总体）内�
     value4820
     value5509
     value8931
-\end{lstlisting}
+\end{blacklisting}
 如你所见，元素的顺序是稳定的（前后顺序和在\texttt{coll}里时一样）。
 然而，只有当传递的范围的迭代器至少是前向迭代器时才保证这一点。
 
@@ -245,9 +245,9 @@ C++17提供了\texttt{sample()}算法来从一个给定的范围（总体）内�
     \item 算法返回最后一个被拷贝的元素的下一个位置。
     \item 目标迭代器指向的位置不能在源区间中。
     \item \emph{num}可能是整数类型。如果源区间里的元素数量不足，将会提取出源区间里所有的元素。
-    \item 只要源区间的迭代器不只是输入迭代器那么被提取出的子集中元素的顺序将保持稳定。
+    \item 只要源区间的迭代器不只是输入迭代器，那么被提取出的子集中元素的顺序将保持稳定。
 \end{itemize}
-这里还有一个例子演示\texttt{sample()}的用法：
+这里还有一个演示\texttt{sample()}用法的例子：
 \inputcodefile{lib/sample2.cpp}
 我们首先初始化了一个有足够多字符串（\texttt{value0, value1, ...}）的vector，
 然后用一个随机数种子初始化了一个随机数引擎:
@@ -271,7 +271,7 @@ C++17提供了\texttt{sample()}算法来从一个给定的范围（总体）内�
                            eng);
 \end{lstlisting}
 返回值\texttt{end}被初始化为目的区间中最后一个被拷贝的元素的下一个位置，
-所以可以用来作为打印的终点：
+所以可以用作打印的终点：
 \begin{lstlisting}
     // 打印被提取出的元素（使用返回值作为终点）：
     std::for_each(subset.begin(), end,
@@ -281,13 +281,14 @@ C++17提供了\texttt{sample()}算法来从一个给定的范围（总体）内�
 \end{lstlisting}
 
 \section{后记}
-\texttt{size()}、\texttt{empty()}、\texttt{data()}由Riccardo Marcangelo在
-\url{https://wg21.link/n4017}中首次提出。最终被接受的是Riccardo Marcangelo
+\texttt{size()}、\texttt{empty()}、\texttt{data()}由Riccardo Marcangelo
+在\url{https://wg21.link/n4017}中首次提出。最终被接受的是Riccardo Marcangelo
 发表于\url{https://wg21.link/n4280}的提案。
 
-\texttt{as\_const()}由ADAM David Alan Martin和Alisdair Meredith在
-\url{https://wg21.link/n4380}中首次提出。最终被接受的是ADAM David Alan Martin和
-Alisdair Meredith发表于\url{https://wg21.link/p0007r1}的提案。
+\texttt{as\_const()}由ADAM David Alan Martin和Alisdair Meredith
+在\url{https://wg21.link/n4380}中首次提出。
+最终被接受的是ADAM David Alan Martin和Alisdair Meredith发表
+于\url{https://wg21.link/p0007r1}的提案。
 
 \texttt{clamp()}由Martin Moene和Niels Dekker在\url{https://wg21.link/n4536}中
 首次提出。最终被接受的是Martin Moene和Niels Dekker发表于\url{https://wg21.link/p002501}的提案。

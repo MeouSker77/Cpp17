@@ -17,14 +17,14 @@ int main()
                              0)                             // 初始值
               << '\n';
 
-    // 处理所有元素的积
+    // 计算所有元素的积
     std::cout << "product: "
               << std::reduce(coll.cbegin(), coll.cend(),    // 范围
                              1LL,                           // 初始值
                              std::multiplies{})             // 操作数
               << '\n';
 
-    // 处理所有元素的积（0作为初始值）
+    // 计算所有元素的积（0作为初始值）
     std::cout << "product: "
               << std::reduce(coll.cbegin(), coll.cend(),    // 范围
                              0,                             // 初始值
