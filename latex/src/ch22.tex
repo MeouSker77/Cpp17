@@ -502,7 +502,7 @@ C++17还引入了一些补充的算法来实现那些从C++98就可用的标准�
                     paths.cbegin(), paths.cend(),           // 范围
                     std::uintmax_t{0},                      // 初始值
                     std::plus<>(),                          // 累加...
-                    [](const std::filesystem::path& p) {    // 如果是普通文件返回文件大小
+                    [] (const std::filesystem::path& p) {    // 如果是普通文件返回文件大小
                         return is_regular_file(p) ? file_size(p) : std::uintmax_t{0};
                     });
 \end{lstlisting}

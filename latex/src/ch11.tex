@@ -254,9 +254,9 @@ C++17允许我们这么写：
     template<typename First, typename... Args>
     void print (const First& firstarg, const Args&... args) {
         std::cout << firstarg;
-        (std::cout << ... << [](const auto& arg) -> decltype(auto) {
-                                std::cout << ' ';
-                                return arg;
+        (std::cout << ... << [] (const auto& arg) -> decltype(auto) {
+                                 std::cout << ' ';
+                                 return arg;
                              }(args)) << '\n';
     }
 \end{lstlisting}
@@ -267,7 +267,7 @@ C++17允许我们这么写：
     template<typename First, typename... Args>
     void print(First first, const Args&... args) {
         std::cout << first;
-        auto outWithSpace = [](const auto& arg) {
+        auto outWithSpace = [] (const auto& arg) {
                                 std::cout << ' ' << arg;
                             };
         (... , outWithSpace(args));

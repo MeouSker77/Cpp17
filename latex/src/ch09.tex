@@ -239,7 +239,7 @@
 \end{lstlisting}
 我们仍然必须指明lambda的类型。例如：
 \begin{lstlisting}
-    auto sortcrit = [](const Cust& x, const Cust& y) {
+    auto sortcrit = [] (const Cust& x, const Cust& y) {
                         return x.getName() > y.getName();
                     };
     std::set<Cust, decltype(sortcrit)> coll(sortcrit);      // OK
@@ -799,9 +799,9 @@ C++17标准在标准库中引入了很多推导指引。
 对于数组则要：
 \begin{lstlisting}
     std::shared_ptr<std::string> p(new std::string[10],
-                                    [](std::string* p) {
-                                        delete[] p;
-                                    });
+                                   [] (std::string* p) {
+                                       delete[] p;
+                                   });
 \end{lstlisting}
 或者，使用\hyperref[ch28.2.1]{实例化原生数组的智能指针}的新特性，只需要：
 \begin{lstlisting}

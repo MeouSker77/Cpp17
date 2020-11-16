@@ -24,11 +24,11 @@
     \end{lstlisting}
     像下面这样调用程序：
     \begin{blacklisting}
-        checkpath checkpath.cpp
+    checkpath checkpath.cpp
     \end{blacklisting}
     将会有如下输出：
     \begin{blacklisting}
-        "checkpath.cpp" exists with 907 bytes
+    "checkpath.cpp" exists with 907 bytes
     \end{blacklisting}
     注意输出路径时会自动把路径名用双引号括起来输出
     （把路径用双引号括起来、反斜杠用另一个反斜杠转义，
@@ -48,14 +48,14 @@
     成员函数\texttt{path()}，返回该目录项的文件系统路径。
     像下面这样调用程序：
     \begin{blacklisting}
-        checkpath .
+    checkpath .
     \end{blacklisting}
     输出将是：
     \begin{blacklisting}
-        "." is a directory containing:
-        "./checkpath.cpp"
-        "./checkpath.exe"
-        ...
+    "." is a directory containing:
+    "./checkpath.cpp"
+    "./checkpath.exe"
+    ...
     \end{blacklisting}
     \item 最后，我们检查传入的文件系统路径是否不存在：
     \begin{lstlisting}
@@ -397,10 +397,8 @@ C++标准还尽可能的遵循POSIX标准的要求来实现。
     \item \texttt{"."}代表当前目录
     \item \texttt{".."}代表父目录
 \end{itemize}
-通用的路径格式如下：
-\begin{blacklisting}
-[rootname] [rootdir] [relativepath]
-\end{blacklisting}
+通用的路径格式如下：\\
+\hspace*{2em}\texttt{[rootname] [rootdir] [relativepath]}\\
 这里：
 \begin{itemize}
     \item 可选的根名称是实现特定的（例如，在POSIX系统上可以是\texttt{//host}，
@@ -904,8 +902,8 @@ filesystem}。在POSIX兼容的系统上这些被映射为\texttt{errno}的值�
 前三行的输出是相同的：
 \begin{blacklisting}
     path:               "/dir/./sub//sub1/../sub2"
-    string(): /dir/./sub//sub1/../sub2
-    wstring(): /dir/./sub//sub1/../sub2
+    string():           /dir/./sub//sub1/../sub2
+    wstring():          /dir/./sub//sub1/../sub2
 \end{blacklisting}
 但最后一行的输出就依赖于目录分隔符了。在POSIX兼容系统上输出是：
 \begin{blacklisting}
@@ -1102,13 +1100,13 @@ filesystem}。在POSIX兼容的系统上这些被映射为\texttt{errno}的值�
 将会有如下输出：
 \begin{blacklisting}
     p:                  "/dir\\subdir/subsubdir\\/./\\"
-    string(): /dir\subdir/subsubdir\/./\
-    wstring(): /dir\subdir/subsubdir\/./\
+    string():           /dir\subdir/subsubdir\/./\
+    wstring():          /dir\subdir/subsubdir\/./\
     lexically_normal(): "\\dir\\subdir\\subsubdir\\"
-    generic_string(): /dir/subdir/subsubdir//.//
-    generic_wstring(): /dir/subdir/subsubdir//.//
-    native(): /dir\subdir/subsubdir\/./\
-    c_str(): /dir\subdir/subsubdir\/./\
+    generic_string():   /dir/subdir/subsubdir//.//
+    generic_wstring():  /dir/subdir/subsubdir//.//
+    native():           /dir\subdir/subsubdir\/./\
+    c_str():            /dir\subdir/subsubdir\/./\
     make_preferred():   "\\dir\\subdir\\subsubdir\\\\.\\\\"
     p:                  "\\dir\\subdir\\subsubdir\\\\.\\\\"
 \end{blacklisting}
@@ -1262,18 +1260,18 @@ filesystem}。在POSIX兼容的系统上这些被映射为\texttt{errno}的值�
 \begin{itemize}
     \item 使用\texttt{==}、\texttt{!=}、\texttt{compare()}的结果是下面的路径都不相同：
     \begin{blacklisting}
-        tmp1/f
-        ./tmp1/f
-        tmp1/./f
-        tmp1/tmp11/../f
+    tmp1/f
+    ./tmp1/f
+    tmp1/./f
+    tmp1/tmp11/../f
     \end{blacklisting}
     \item 只有当分隔符以外的部分都相同时才会判定为相同。
     因此，下面的路径是相等的（假设反斜杠也是有效的目录分隔符）：
     \begin{blacklisting}
-        tmp1/f
-        tmp1//f
-        tmp1\f
-        tmp1/\/f
+    tmp1/f
+    tmp1//f
+    tmp1\f
+    tmp1/\/f
     \end{blacklisting}
 \end{itemize}
 如果你使用了\texttt{lexically\_normal()}那么上面的所有路径都相等

@@ -26,7 +26,7 @@ C++17引入了把某个节点从关联或无序容器中移入或移出的功能
     nh.key() = 4;
     m.insert(std::move(nh));
 \end{lstlisting}
-这段代码先是把key为\texttt{2}的元素节点移出容器，然后修改了key，最后有移进了容器，
+这段代码先是把key为\texttt{2}的元素节点移出容器，然后修改了key，最后又移进了容器，
 这个过程如\hyperref[f26.1]{图26.1}所示。
 \begin{figure}[htb]
     \centering
@@ -57,14 +57,14 @@ C++17引入了把某个节点从关联或无序容器中移入或移出的功能
 \inputcodefile{lib/nodemove.cpp}
 我们两次从\texttt{src}中提取元素（一次传递迭代器一次传递key）并把它们插入\texttt{dst}。
 因此，程序会有如下输出：
-\begin{lstlisting}
+\begin{blacklisting}
     values:
       [1.1:one]  [2.2:two]  [3.3:three]
       [3.3:old data]
     values:
       [3.3:three]
       [1.1:one]  [2.2:two]  [3.3:old data]
-\end{lstlisting}
+\end{blacklisting}
 注意当不允许重复时（set、map、unordered set、unordered map），以节点句柄为参数
 的\texttt{insert()}成员函数会返回一个有三个成员的结构体类型\emph{container}\texttt{::insert\_return\_type}，
 三个成员分别是（按照如下顺序）：\label{insert节点句柄}
@@ -84,7 +84,7 @@ C++17引入了把某个节点从关联或无序容器中移入或移出的功能
                   << "' but key exists with value '" << pos->second << "'\n";
     }
 \end{lstlisting}
-如果一个节点被提取之后再也没有被重新插入，那么节点句柄的析构函数会释放该元素的内存。
+如果一个元素被提取之后再也没有被重新插入，那么节点句柄的析构函数会释放该元素的内存。
 因此，在这段代码中，即使插入失败也不会有内存泄露。
 
 \subsection{合并容器}
@@ -102,14 +102,14 @@ C++17引入了把某个节点从关联或无序容器中移入或移出的功能
 例如，下面的程序：
 \inputcodefile{lib/nodemerge.cpp}
 会有如下输出：
-\begin{lstlisting}
+\begin{blacklisting}
     values:
       [1.1:one]  [2.2:two]  [3.3:three]
       [3.3:old data]
     values:
       [3.3:three]
       [1.1:one]  [2.2:two]  [3.3:old data]
-\end{lstlisting}
+\end{blacklisting}
 指向被合并元素的指针和引用仍然有效，只不过指向的容器发生了变化。
 
 
@@ -117,8 +117,9 @@ C++17引入了把某个节点从关联或无序容器中移入或移出的功能
 
 \subsection{emplace函数的返回类型}
 对于顺序容器\texttt{std::vector<>}、\texttt{std::deque<>}、\texttt{std::list<>}和\texttt{std::forward\_list<>}，
-还有迭代器适配\texttt{std::queue<>}和\texttt{std::stack<>}，它们的emplace函数现在
-返回一个指向新插入的对象的引用（关联容器以前就已经是这样了）。这允许我们实现类似于如下的代码：
+还有容器适配器\texttt{std::queue<>}和\texttt{std::stack<>}，它们的emplace函数现在
+返回新插入的对象的引用（关联容器以前就已经是这样了）。
+这允许我们实现类似于如下的代码：
 \begin{lstlisting}
     foo(myVector.emplace_back(...));
 \end{lstlisting}
@@ -135,10 +136,10 @@ C++17引入了把某个节点从关联或无序容器中移入或移出的功能
     \item \texttt{insert\_or\_assign()}稍微改进了插入/更新元素的方法。
 \end{itemize}
 
-\subsection{try\_emplace()}
+\subsection{\texttt{try\_emplace()}}
 考虑下列代码：
 \begin{lstlisting}
-    std::map<itn, std::string> m;
+    std::map<int, std::string> m;
     m[42] = "hello";
     std::string s{"world"};
     m.emplace(42, std::move(s));    // 可能移动，但如果42已经存在时可能不会移动
@@ -162,9 +163,9 @@ C++17引入了把某个节点从关联或无序容器中移入或移出的功能
 \begin{lstlisting}
     std::map<int, std::thread> m;
     std::thread t1{...};
-    m.insert({42, std::move(t1)});  // 即使没能插入也可能move
+    m.insert({42, std::move(t1)});      // 即使没能插入也可能move
 \end{lstlisting}
-这里，即使没有被插入\texttt{t1}也可能会被move，这会导致core dump，
+这里，即使\texttt{t1}没有被插入也可能会被move，这会导致core dump，
 因为之后\texttt{t1}会在调用内部被销毁并且没有调用\texttt{t1.join()}。
 作为代替，你可能必须像下面这样写：
 \begin{lstlisting}
@@ -255,12 +256,12 @@ C++17引入了把某个节点从关联或无序容器中移入或移出的功能
 你可以像下面这样使用这个类：
 \inputcodefile{lib/incomplete.cpp}
 程序会有如下输出：
-\begin{lstlisting}
+\begin{blacklisting}
     top
       elem1
         elem1.1
       elem2
-\end{lstlisting}
+\end{blacklisting}
 
 
 \section{string改进}

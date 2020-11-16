@@ -146,7 +146,7 @@ C++17扩展了lambda表达式的应用场景：
 \begin{lstlisting}
     std::array arr{ hashed("beer"),
                     hashed("wine"),
-                    hashed("water")};
+                    hashed("water") };
 \end{lstlisting}
 你甚至可以在\texttt{hashed}函数里联合使用另一个\texttt{constexpr} lambda。
 设想我们把\texttt{hashed}里根据当前哈希值和下一个字符值更新哈希值的逻辑定义为一个参数：
@@ -161,8 +161,8 @@ C++17扩展了lambda表达式的应用场景：
 \end{lstlisting}
 这个lambda可以像下面这样使用：
 \begin{lstlisting}
-    constexpr std::size_t hv1{hashed("wine"), [](auto h, char c) {return h*33 + c;})};
-    constexpr std::size_t hv2{hashed("wine"), [](auto h, char c) {return h*33 ^ c;})};
+    constexpr std::size_t hv1{hashed("wine", [](auto h, char c) {return h*33 + c;})};
+    constexpr std::size_t hv2{hashed("wine", [](auto h, char c) {return h*33 ^ c;})};
 \end{lstlisting}
 这里，我们在编译期通过改变更新逻辑初始化了两个不同的\texttt{"wine"}的哈希值。
 两个\texttt{hashed}都是在编译期调用。

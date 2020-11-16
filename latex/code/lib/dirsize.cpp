@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
                     paths.cbegin(), paths.cend(),           // 范围
                     std::uintmax_t{0},                      // 初始值
                     std::plus<>(),                          // 累加...
-                    [](const std::filesystem::path& p) {    // 如果是普通文件返回文件大小
+                    [] (const std::filesystem::path& p) {    // 如果是普通文件返回文件大小
                         return is_regular_file(p) ? file_size(p) : std::uintmax_t{0};
                     });
     std::cout << "size of all " << paths.size()

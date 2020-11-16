@@ -7,10 +7,10 @@
 
 class Node
 {
-  private:
+private:
     std::string value;
     std::vector<Node> children; // 自从C++17起OK（这里Node是一个不完全类型）
-  public:
+public:
     // 用单个值创建一个Node：
     Node(std::string s) : value{std::move(s)}, childern{} {
     }

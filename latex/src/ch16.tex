@@ -405,7 +405,7 @@ initializer\_list<>}：
 \subsubsection{使用泛型lambda作为访问器}\label{ch16.3.3.2}
 最简单的使用访问器的方式是使用泛型lambda，它是一个可以处理任意类型的函数对象：
 \begin{lstlisting}
-    auot printvariant = [](const auto& val) {
+    auot printvariant = [] (const auto& val) {
                             std::cout << val << '\n';
                         };
     ...
@@ -427,16 +427,16 @@ initializer\_list<>}：
 你也可以使用lambda来修改当前选项的值：
 \begin{lstlisting}
     // 将当前选项的值变为两倍：
-    std::visit([](auto& val) {
-                    val = val + val;
-                }, var);
+    std::visit([] (auto& val) {
+                   val = val + val;
+               }, var);
 \end{lstlisting}
 或者：
 \begin{lstlisting}
     // 将当前选项的值设为默认值：
-    std::visit([](auto& val) {
-                    val = std::remove_reference_t<decltype(val)>{};
-                }, var);
+    std::visit([] (auto& val) {
+                   val = std::remove_reference_t<decltype(val)>{};
+               }, var);
 \end{lstlisting}
 你甚至可以使用\nameref{ch10}来对不同的选项类型进行不同的处理。例如：
 \begin{lstlisting}
@@ -497,7 +497,7 @@ long double\&}这样的引用类型。
     ...
     std::visit(overload { // 为当前选项调用最佳匹配的lambda
                    [](int i) { std::cout << "int: " << i << '\n'; },
-                   [](const std::string& s) {
+                   [] (const std::string& s) {
                        std::cout << "string: " << s << '\n';
                    },
                }, var);
@@ -603,7 +603,7 @@ long double\&}这样的引用类型。
     std::vector<GeoObj> figure = createFigure();
     for (const GeoObj& geoobj : figure) {
         std::visit([] (const auto& obj) {
-                        obj.draw(); // 多态调用draw()
+                       obj.draw();  // 多态调用draw()
                    }, geoobj);
     }
 \end{lstlisting}
@@ -672,10 +672,10 @@ lambda为3种可能的类型分别实例化了一个函数调用。
     }
 \end{lstlisting}
 这意味着输出将是：
-\begin{lstlisting}
+\begin{blacklisting}
     42 0.19 "hello world" 0.815
-\end{lstlisting}
-通过使用\hyperref[ch16.3.3.4]{重载访问器}，我们可以像下面这样实现：
+\end{blacklisting}
+通过使用\hyperref[ch16.3.3.4]{重载的访问器}，我们可以像下面这样实现：
 \begin{lstlisting}
     for (const auto& val : values) {
         std::visit(overload {
@@ -730,7 +730,7 @@ lambda为3种可能的类型分别实例化了一个函数调用。
     std::variant<bool, std::string> v;
     v = "hi";   // OOPS：设置bool选项
     std::cout << "index: " << v.index() << '\n';
-    std::visit([](const auto& val) {
+    std::visit([] (const auto& val) {
                    std::cout << "value: " << val << '\n';
                }, v);
 \end{lstlisting}
