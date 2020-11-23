@@ -75,7 +75,8 @@ C++17中又有一些特性被废弃或者彻底被移除。
 \subsection{算法\texttt{random\_shuffle()}}
 C++98中提供的随机重排元素顺序的\texttt{random\_shuffle()}算法终于被移除。
 
-使用\texttt{std::shuffle()}代替它，或者如果你需要集合的随机子集，请使用新算法\nameref{ch25.4}。
+使用\texttt{std::shuffle()}代替它，或者如果你需要集合的随机子集，
+请使用新算法\hyperref[ch25.4]{\texttt{std::sample()}}。
 
 \subsection{\texttt{unary\_function}和\texttt{binary\_function}}
 实现函数对象的辅助函数\texttt{std::unary\_function}和\texttt{std::binary\_function}终
@@ -86,9 +87,9 @@ C++98中提供的随机重排元素顺序的\texttt{random\_shuffle()}算法终�
 移除基类并手动提供必须的类型定义来替代它们。
 
 \subsection{\texttt{ptr\_fun()}、\texttt{mem\_fun()}、绑定器}
-绑定器和创建更加复杂的函数调用适配器的包装终于被移除：
+绑定器和用于创建更加复杂的函数调用适配器的包装终于被移除：
 \begin{itemize}
-    \item 为了代替\texttt{std::ptr\_fun()}，你现在可以使用lambda，类模板\texttt{std::function}、
+    \item 为了代替\texttt{std::ptr\_fun()}，你现在可以使用lambda，类模板\texttt{std::function<>}、
     函数模板\texttt{std::bind()}。
     \item 为了代替\texttt{std::mem\_fun()}和\texttt{std::mem\_fun\_ref()}，你现在可以
     使用lambda和\texttt{std::mem\_fn()}。
@@ -118,7 +119,7 @@ C++98中提供的随机重排元素顺序的\texttt{random\_shuffle()}算法终�
     \item \texttt{std::basic\_streambuf<>}中的\texttt{pubseekoff(off\_type, ios\_base::seek\_dir,\\
     ios\_base::open\_mode)}
     \item \texttt{std::basic\_streambuf<>}中的\texttt{pubseekpos(pos\_type, ios\_base::open\_mode)}
-    \item \texttt{std::basic\_filebuf}、\texttt{stsd::basic\_ifstream<>}、\texttt{std::basic\_ofstream<>}中
+    \item \texttt{std::basic\_filebuf<>}、\texttt{std::basic\_ifstream<>}、\texttt{std::basic\_ofstream<>}中
     的\\
     \texttt{open(const char*, ios\_base::open\_mode)}
 \end{itemize}
@@ -142,7 +143,7 @@ C++98中提供的随机重排元素顺序的\texttt{random\_shuffle()}算法终�
     \item 类\texttt{std::iterator<>}被废弃。
     \item 类\texttt{std::raw\_storage\_iterator<>}被废弃。
     \item \texttt{std::get\_temporary\_buffer()}被废弃。
-    \item \texttt{std::allocator<void>}：为\texttt{void}特化的标准分配器，被废弃。
+    \item 为\texttt{void}特化的标准分配器\texttt{std::allocator<void>}被废弃。
     \item 头文件\texttt{<ccomplex>}、\texttt{<cstdalign>}、\texttt{<cstdbool>}、
     \texttt{<ctgmath>}的使用被废弃。
     \item \texttt{std::uncaught\_exception()}的使用被废弃。

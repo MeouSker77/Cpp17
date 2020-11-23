@@ -36,9 +36,9 @@
     ...
 \end{lstlisting}
 在C++17之前，这个请求并不保证是32字节对齐。
-\footnote{编译器/平台并不一定要支持超对齐数据。如果他们不支持，超对齐请求应该不能通过编译。}
+\footnote{编译器/平台并不一定要支持超对齐数据。如果它们不支持，超对齐请求应该不能通过编译。}
 
-像往常一样，没有初始值时对象会被默认初始化，这意味着要有可用的默认构造函数会被调用而基础类型
+像往常一样，没有初始值时对象会被默认初始化，这意味着默认构造函数会被调用而基础类型
 的子对象将会有未定义的值。因此，推荐的方式是使用\hyperref[]{列表初始化}，在最后加上空的花括号
 来保证基础类型会初始化为默认值：\texttt{0/false/nullptr}：
 \begin{lstlisting}
@@ -47,10 +47,10 @@
 
 \subsection{不同的动态/堆内存机制}\label{ch30.1.1}
 注意请求对齐的内存可能会导致从不相交的内存分配机制获取内存。
-因此，一个对对齐内存的请求还需要有指定一个相应的释放内存的请求。
+因此，一个对对齐内存的请求还需要指定一个相应的释放内存的请求。
 如果\emph{可能}的话会使用C11函数\texttt{aligned\_alloc()}
 （现在在C++17中也可以使用）来分配内存。在这种情况下，可以使用\texttt{free()}释放内存，
-和使用\texttt{malloc()}分配的内存没有什么区别。
+和使用\texttt{malloc()}分配内存时没有什么区别。
 
 然而，不同平台上也允许不同的\texttt{new}和\texttt{delete}实现，
 这导致释放默认对齐数据和超对齐数据时需要使用不同的内部函数。
@@ -69,7 +69,7 @@
     delete p1;                          // 使用默认内存操作
     delete p2;                          // 使用超对齐内存操作
 \end{lstlisting}
-然而，正如我们将在这一章的剩余小节看到的那样，有时程序员必须自己保证正确性。
+然而，正如我们将在这一章的剩余内容中看到的那样，有时程序员必须自己保证正确性。
 
 \subsection{带对齐的\texttt{new}表达式}\label{ch30.1.2}
 还有一种为特定的\texttt{new}表达式请求特定对齐的方式。例如：
@@ -77,7 +77,7 @@
     #include <new>  // for align_val_t
     ...
 
-    std::string*p = new(std::align_val_t{64}) std::string;  // 64字节对齐
+    std::string* p = new(std::align_val_t{64}) std::string; // 64字节对齐
     MyType32* p = new(std::align_val_t{64}) MyType32{};     // 64字节对齐
     ...
 \end{lstlisting}
@@ -94,13 +94,12 @@
 注意在C++中\texttt{operator new()}可以按照如下方式实现：
 \begin{itemize}
     \item 作为\emph{全局}函数（\hyperref[ch30.3]{默认提供不同的重载}，程序员可以进行替换）
-    \item 作为\emph{特定类型}实现，可以\hyperref[ch30.2]{由程序员提供}，并且比全局的重载有更高的优先级
+    \item 作为\emph{类型特定}的实现，可以\hyperref[ch30.2]{由程序员提供}，并且比全局的重载有更高的优先级
 \end{itemize}
-因为使用不同的内存机制使用的实现可能不同，
+因为不同的内存机制使用的实现可能不同，
 \footnote{内存机制确实不同。例如，Windows没有超对齐版本的\texttt{HeapAlloc()}，
 这意味着它们必须超分配内存，然后在请求到的空间内对齐。}
 所以想正确地处理它们需要特别小心。
-
 问题在于当使用\texttt{new}表达式指定特殊的对齐时，编译器不能根据类型推断出是否需要和
 需要什么样的对齐。因此，程序员必须指明要调用什么样的\texttt{delete}。
 \footnote{这并不是第一次因为类型系统不够好而导致不能调用正确实现的\texttt{delete}了。
@@ -124,7 +123,7 @@
 \end{lstlisting}
 注意\texttt{std::string}的析构函数名叫\texttt{\textasciitilde basic\_string()}。
 
-如果有特定类型的delete定义，你可以在调用析构函数之后调用它：
+如果有类型特定的delete定义，你可以在调用析构函数之后调用它：
 \begin{lstlisting}
     MyType32* p = new(std::align_val_t{64}) MyType32{};     // 64字节对齐
     ...
@@ -136,7 +135,7 @@
     void T::operator delete(void* ptr, std::size_t size, std::align_val_t align);
     void T::operator delete(void* ptr, std::align_val_t align);
     void T::operator delete(void* ptr, std::size_t size);
-    void T::operator delete(viod* ptr);
+    void T::operator delete(void* ptr);
     void ::operator delete(void* ptr, std::size_t size, std::align_val_t align);
     void ::operator delete(void* ptr, std::align_val_t align);
     void ::operator delete(void* ptr, std::size_t size);
@@ -145,10 +144,10 @@
 这样很复杂，我将会\hyperref[ch30.2.2.1]{在稍后详细解释}什么时候应该调用哪一个。
 现在，我推荐你按照如下指导方针：
 \begin{enumerate}
-    \item 完全不要再\texttt{new}表达式中直接使用超对齐。而是创建自己的辅助类型来代替。
+    \item 完全不要在\texttt{new}表达式中直接使用超对齐。而是创建自己的辅助类型来代替。
     \item 提供使用相同内存机制的\texttt{operator new()}和\texttt{operator delete()}实现
     （这样使用普通的\texttt{delete}也可以工作）。
-    \item 提供\texttt{operator delete()}的\hyperref[ch30.2.2]{特定类型的实现}来匹配那些
+    \item 提供\texttt{operator delete()}的\hyperref[ch30.2.2]{类型特定的实现}来匹配那些
     特定类型的\texttt{operator new()}，并且\hyperref[类型特定delete]{直接调用它们}而不是使用\texttt{delete}表达式。
 \end{enumerate}
 注意你不能使用\texttt{typedef}或者\texttt{using}声明定义别名：
@@ -161,8 +160,8 @@
 这是因为\texttt{typedef}或者\texttt{using}声明只是原本类型的别名，
 而这里按照不同规则对齐的对象的类型是不同的。
 
-如果你想让一个对齐\texttt{new}表达式返回\texttt{nullptr}而不是
-抛出\texttt{std::bad\_alloc}异常，你可以像下面这样做：
+如果你想让一个对齐的\texttt{new}表达式返回\texttt{nullptr}而不是
+抛出\texttt{std::bad\_alloc}异常，你可以像下面这样：
 \begin{lstlisting}
     // 分配一个64字节对齐的string（失败时返回nullptr）：
     std::string* p = new(std::align_val_t{64}, std::nothrow) std::string;
@@ -181,7 +180,7 @@
 这里，我们使用了\nameref{ch33.3}来SFNAE away掉调用类型特化的\texttt{operator delete}
 时无效的特化。
 
-通过使用\texttt{std::void\_t<>}，我们可以定义我们自己的placement \texttt{delete}辅助函数：
+通过使用\texttt{std::void\_t<>}，我们可以定义自己的placement \texttt{delete}辅助函数：
 \begin{lstlisting}
     template<typename TP, typename... Args>
     void placementDelete(TP* tp, Args&&... args)
@@ -210,12 +209,12 @@
 
 \section{实现内存对齐分配的\texttt{new()}运算符}\label{ch30.2}
 在C++中你可以自定义调用\texttt{new}和\texttt{delete}时分配和释放内存的实现。
-这个机制现在还支持传递一个对齐参数。
+这个机制现在还支持传递一个对齐数参数。
 
 \subsection{在C++17之前实现对齐的内存分配}
 在全局范围内，C++提供重载的\texttt{operator new()}和\texttt{operator delete()}，
-当没有特定类型的实现定义的时候会使用它们，如果有特定类型的实现那么会使用后者。
-注意只要有一个特定类型的\texttt{operator new()}那么处理这个类型时就会禁止
+当没有类型特定的实现定义的时候会使用它们，如果有类型特定的实现那么会使用后者。
+注意只要有一个类型特定的\texttt{operator new()}，那么处理这个类型时就会禁止
 所有全局的\texttt{operator new()}（\texttt{delete}、\texttt{new[]}、\texttt{delete[]}也是这样）。
 
 也就是说，每次你对类型\texttt{T}调用\texttt{new}时，要么会调用相应的类型特定的
@@ -240,7 +239,7 @@
 传递一个大小参数。因此，自从C++14，你应该总是同时定义有大小和无大小的\texttt{operator delete()}重载。
 用其中一个调用另一个通常是个好注意。
 
-有了这个定义，下面的代码可以的行为将是正确的：
+有了这个定义，下面代码的行为将是正确的：
 \inputcodefile{lang/alignednew11.cpp}
 自从C++17起，你可以省略对齐数据的分配和释放操作的实现。
 下面的例子即使在没有为自定义类型定义\texttt{operator new()}和\texttt{operator delete()}的
@@ -249,10 +248,10 @@
 
 \subsection{实现类型特化的\texttt{new()}运算符}\label{ch30.2.2}
 如果你必须提供自定义的\texttt{operator new()}和\texttt{operator delete()}实现，
-现在有了对超对齐数据的支持。在实践中，自从C++17起特定类型实现的相应代码看起来如下：
+现在有了对超对齐数据的支持。在实践中，自从C++17起类型特定实现的相应代码类似于如下：
 \inputcodefile{lang/alignednew.hpp}
-原则上讲，我们只需要接受额外的对齐参数的重载，并在这些重载里调用相应的函数来
-申请和释放对齐的内存。实现这一点的最有可移植性的方式是调用可以超对齐/释放的全局函数：
+理论上讲，我们只需要接受额外的对齐参数的重载，并在这些重载里调用相应的函数来
+申请和释放对齐的内存。实现这一点的最有可移植性的方式是调用为超对齐/释放提供的全局函数：
 \begin{lstlisting}
     static void* operator new (std::size_t size, std::align_val_t align) {
         ...
@@ -315,9 +314,9 @@
         ...
     }
 \end{lstlisting}
-虽然不大但也有可能直接调用\texttt{operator new()}（不使用\texttt{new}表达式）。
+虽然很罕见但也有可能直接调用\texttt{operator new()}（不使用\texttt{new}表达式）。
 有了\texttt{[[nodiscard]]}，编译器会检查调用者是否忘记了使用返回值，
-如果是可能会发生内存泄露。
+如果是则可能会发生内存泄露。
 
 \subsubsection{\texttt{operator new()}何时被调用？}\label{ch30.2.2.1}
 正如之前所解释的，我们现在可以有两个\texttt{operator new()}重载：
@@ -361,16 +360,17 @@
 
     auto p = new MyType32;
 \end{lstlisting}
-如果默认的对齐是\texttt{32}（或者更多并且能编译通过），表达式\texttt{new MyType32}将会
-调用\texttt{operator new()}的第一个版本，只有一个大小参数，因此输出将类似于：
+如果默认的对齐数是\texttt{32}（或者更多并且能编译通过），
+表达式\texttt{new MyType32}将会调用\texttt{operator new()}的第一个
+只有一个大小参数的版本，因此输出将类似于：
 \footnote{大小将依赖于平台上\texttt{int}和\texttt{std::string}的大小。}
-\begin{lstlisting}
+\begin{blacklisting}
     MyType32::new() with size 128
-\end{lstlisting}
+\end{blacklisting}
 如果默认的对齐小于\texttt{32}，那么将会调用有两个参数的第二个版本，因此输出将类似于：
-\begin{lstlisting}
+\begin{blacklisting}
     MyType32::new() with size 128 and alignment 32
-\end{lstlisting}
+\end{blacklisting}
 
 \subsubsection{类型特定备选项}\label{ch30.2.2.2}
 如果类型特定的\texttt{operator new()}没有提供\texttt{std::align\_val\_t}的重载，
@@ -383,7 +383,7 @@
         static void* operator new (std::size_t size) {
             ...
         }
-    ... // 没有operator new(std::size_t, std::align_val_t align)
+        ... // 没有operator new(std::size_t, std::align_val_t align)
     };
 
     auto p = new NonalignedNewOnly; // OK：使用operator new(size_t)
@@ -422,18 +422,19 @@
 \end{lstlisting}
 并且\texttt{MyType32}本身就是超对齐的，那么编译器会首先尝试调用：
 \begin{lstlisting}
-    operator new(std::size_t, std:;align_val_t, std::align_val_t)
+    operator new(std::size_t, std::align_val_t, std::align_val_t)
 \end{lstlisting}
 以32作为第二个参数（该超对齐类型的一般对齐）和64作为第三个参数（这里要求的特定对齐数）。
-它会回落到备选项
+它会回退到备选项
 \begin{lstlisting}
     operator new(std::size_t, std::align_val_t)
 \end{lstlisting}
 第二个实参是要求的对齐数64。理论上讲，你还可提供三参数的重载来
 实现这种为超对齐类型指定对齐数的情况下的分配操作。
 
-再次提醒，注意如果你需要超对齐数据的特殊释放内存函数，你必须在
-\hyperref[ch30.1.2]{在\texttt{new}表达式中传递对齐时}调用正确的释放的函数：\label{类型特定delete}
+再次提醒，注意如果你想让超对齐数据调用特殊的释放内存函数，
+当\hyperref[ch30.1.2]{在\texttt{new}表达式中传递对齐时}时你必须
+调用正确的分配内存函数：\label{类型特定delete}
 \begin{lstlisting}
     std::string* p1 = new(std::align_val_t{64}) std::string{};
     MyType32* p2 = new(std::align_val_t{64}) MyType32{};
@@ -460,7 +461,7 @@
     operator delete(void* ptr, std::align_val_t align);
     operator delete(void* ptr, std::size_t size, std::align_val_t align);
 \end{lstlisting}
-再提醒一次，\hyperref[ch30.1.2.2]{用户定义的placement delete}可能会有帮助。
+再提醒一次，\hyperref[ch30.1.2.2]{用户自定义的placement delete}可能会有帮助。
 
 
 \section{实现全局的\texttt{new()}运算符}\label{ch30.3}
@@ -491,7 +492,7 @@
     void ::operator delete[](void*, const std::nothrow_t&) noexcept;
     void ::operator delete[](void*, std::align_val_t, const std::nothrow_t&) noexcept;
 \end{lstlisting}
-如果你想实现自己的内存管理（例如，为了调试动态动态内存分配），你不需要重写所有这些重载。
+如果你想实现自己的内存管理（例如，为了调试动态内存分配的调用），你不需要重写所有这些重载。
 默认情况下只需要实现下面几个特定的函数就可以了，所有其他的函数（包括数组的版本）都是调用
 这几个基本的函数之一：
 \begin{lstlisting}
@@ -502,23 +503,24 @@
     void ::operator delete(void*, std::align_val_t) noexcept;
     void ::operator delete(void*, std::size_t, std::align_val_t) noexcept;
 \end{lstlisting}
-理论上讲，默认的有大小的\texttt{operator delete()}版本只简单的调用无大小的版本。
-然而，将来这一点可能会发生变化，因此这两种你都需要实现（如果你没有这么做有些编译器会给出一个警告）。
+理论上讲，默认的有大小的\texttt{operator delete()}版本只简单地调用无大小的版本。
+然而，将来这一点可能会发生变化，因此这两种你都需要实现
+（如果你没有这么做，有些编译器会给出一个警告）。
 
 \subsection{向后的不兼容性}
 注意C++17中下面的程序的行为会悄悄的发生变化：
 \inputcodefile{lang/alignednewincomp.cpp}
 在C++14中，全局的\texttt{::operator new(size\_t)}重载会被所有\texttt{new}表达式调用，
 这意味着程序总是有如下输出：
-\footnote{其他在堆上分配内存的初始化可能会有额外的输出}
-\begin{lstlisting}
+\footnote{其他在堆上分配内存的初始化可能会有额外的输出。}
+\begin{blacklisting}
     ::new called with size: 64
-\end{lstlisting}
+\end{blacklisting}
 自从C++17起，这个程序的行为会发生变化，因为现在默认的超对齐数据的重载
 \begin{lstlisting}
     ::operator new(size_t, align_val_t)
 \end{lstlisting}
-将会被调用，而我们\emph{没有}替换这个版本。因此，程序的输出将不再输出上面那一行。
+将会被调用，而我们\emph{没有}替换这个版本。因此，程序将不会再输出上面那一行。
 \footnote{一些编译器可能会对在C++17之前用\texttt{new}创建超对齐数据给出警告，因为
 在C++17之前对齐并没有被正确处理。}
 
@@ -560,8 +562,8 @@
 第三次调用请求一个64字节对齐的4个string的数组。
 最后的调用也分配了两次：一次是为数组，一次是为最后一个string的初始值。
 只有最后的string的值分配了内存，因为库的实现使用了经典的短字符串优化，
-通常在有一个最长15个字符的数据成员，长度小于这个值时不会在堆上分配内存。
-其他的一些实现这里可能会有5次内存分配。
+这是string通常有一个最多15个字符的数据成员，长度小于这个值时不会在堆上分配内存。
+如果没有这个优化这里可能会有5次内存分配。
 
 
 \section{后记}

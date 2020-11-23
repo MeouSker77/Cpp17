@@ -20,18 +20,19 @@ C++17以C11为基础，而不是C99，后者是C++14的基础。
     \item C11标准引入了一些为了“更安全的编程”设计的函数和宏来替代传统的可能导致例如
     覆写无限数量的内存等问题的函数和宏。它们中的大多数有后缀\texttt{\_s}。例如，
     C11引入了\texttt{strcpy\_s()}、\texttt{sprintf\_s()}函数接受一个额外的参数表示大小
-    来保证它们不会覆写一个长度不够的字节序列。
+    来保证它们不会覆写一个长度不够的字符序列。
 
     在C11中，这些函数和之前的不安全的版本在同一个头文件中。
     然而在相应的C++17头文件中，它们\emph{不}在命名空间\texttt{std}中。
     当包含了相应的头文件后它们是否会出现在全局命名空间中是实现定义的。
     \item 新的C头文件\texttt{<stdatomic.h>}，\texttt{<stdnoreturn.h>}、\texttt{<threads.h>}被
     忽略并且在C++中没有对应的内容。
-    \item 对头文件\texttt{<ccomplex>}、\texttt<{cstdalign>}、\texttt{<cstdbool>}、\texttt{<ctgmath>}的使用已经被废弃。
+    \item 对头文件\texttt{<ccomplex>}、\texttt{<cstdalign>}、\texttt{<cstdbool>}、\texttt{<ctgmath>}的使用已经被废弃。
 \end{itemize}
 
+
 \section{处理信号处理器}
-作为和C11兼容的一个副作用，C++17澄清了信号处理器中可以使用哪些调用和函数。
+作为兼容C11的一个副作用，C++17澄清了信号处理器中可以使用哪些调用和函数。
 
 C++17引入了术语\emph{信号安全}求值。根据它的定义，下列操作不能出现在信号处理器中：
 \begin{itemize}
@@ -52,10 +53,12 @@ C++17引入了术语\emph{信号安全}求值。根据它的定义，下列操�
     \item 所有类型特征
 \end{itemize}
 
+
 \section{向前运行保证}
 C++17澄清了一个程序“make progress”（取得进展）或者“block”（阻塞）的含义。
 
 参见\url{https://wg21.link/p0072r1}获取有关这个话题的进一步讨论。
+
 
 \section{后记}
 C++17兼容C11而不是C99由Hans-J. Boehm和Clark Nelson在\url{https://wg21.link/p0063r0}（以\\
@@ -65,4 +68,4 @@ Thomas Plum发表于\url{https://wg21.link/n3631}的文章中分析的情况为�
 关于信号处理器的说明由\url{Hans-J. Boehm}在\url{https://wg21.link/p0270r0}中首次提出。
 最终被接受的是Hans-J. Boehm发表于\url{https://wg21.link/p0270r3}的提案。
 
-向前运行保证被接受的提案由Torvald Riegel发表于\url{https://wg21.link/p0296r2}。
+向前运行保证按照Torvald Riegel在\url{https://wg21.link/p0296r2}中的提议被标准库采纳。

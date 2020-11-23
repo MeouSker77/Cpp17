@@ -1,7 +1,7 @@
 \chapter{编写泛型代码的改进}\label{ch33}
 C++17引入了很多辅助工具来帮助实现泛型代码和库。
 
-注意我们已经在在\nameref{ch21}这一章中介绍了一些新的类型特征。
+注意我们已经在\nameref{ch21}一章中介绍了一些新的类型特征。
 
 
 \section{\texttt{std::invoke<>()}}\label{ch33.1}
@@ -93,7 +93,7 @@ bool特征仍然是在满足特定属性时继承\texttt{std::true\_type}，
     struct IsLargerThanInt : std::bool_constant<(sizeof(T) > sizeof(int))> {
     }
 \end{lstlisting}
-之后你可以使用这样一个特征来在编译器判断一个类型是否大于\texttt{int}：
+之后你可以使用这样一个特征来在编译期判断一个类型是否大于\texttt{int}：
 \begin{lstlisting}
     template<typename T>
     void foo(T x)
@@ -154,7 +154,7 @@ bool特征仍然是在满足特定属性时继承\texttt{std::true\_type}，
     struct HasVarious<T, std::void_t<decltype(std::declval<T>().begin()),
                                      typename T::difference_type,
                                      typename T::iterator>>
-        : trye_type {
+        : std::true_type {
     };
 \end{lstlisting}
 这里，我们定义了一个新的类型特征\texttt{HasVariousT<>}，它会检查如下三个条件：
@@ -165,8 +165,8 @@ bool特征仍然是在满足特定属性时继承\texttt{std::true\_type}，
 \end{itemize}
 只有当对于类型\texttt{T}所有相应的条件都有效时才会使用部分特化版本。
 在这种情况下，它的特化程度比主模板更高所以会使用它，
-并且因为我们从\hyperref[ch33.2]{\texttt{std::true\_type}}，
-检查这个特征的值将返回\texttt{true}：
+并且因为我们从\hyperref[ch33.2]{\texttt{std::true\_type}}继承，
+所以该特征的值将是\texttt{true}：
 \begin{lstlisting}
     if constexpr (HasVarious<T>::value) {
         ...
@@ -174,8 +174,8 @@ bool特征仍然是在满足特定属性时继承\texttt{std::true\_type}，
 \end{lstlisting}
 如果任何表达式导致无效代码（即\texttt{T}没有\texttt{begin()}、或者
 没有类型成员\texttt{difference\_type}、或者没有类型成员\texttt{iterator}），
-部分特化版会\emph{SFINAE'd away}，这意味着根据
-\emph{代换失败不是错误(substitution failure is not an error)}规则它会被忽略。
+部分特化版会\emph{SFINAE'd away}，
+这意味着根据\emph{代换失败不是错误(substitution failure is not an error)}规则它会被忽略。
 之后，只有主模板可以使用，它派生自\texttt{std::false\_type}，如果检查它的值
 会返回\texttt{false}。
 
@@ -186,12 +186,13 @@ bool特征仍然是在满足特定属性时继承\texttt{std::true\_type}，
 
 \section{后记}
 \texttt{std::invoke<>}由Tomasz Kaminski在\url{https://wg21.link/n3727}中首次提出。
-最终被接受的是Tomasz Kaminski发表于\url{https://wg21.link/4169}的提案。
-之后根据Daniel Krügler、Pablo Halpern、Jonathan Wakely在
+最终被接受的是\\
+Tomasz Kaminski发表于\url{https://wg21.link/4169}的提案。
+之后按照Daniel Krügler、Pablo Halpern、Jonathan Wakely在
 \url{https://wg21.link/p0604r0}中的提议使用\nameref{ch21.2.0.5}修改了它的返回值类型。
 
 \texttt{std::bool\_constant<>}由Zhihao Yuan在\url{https://wg21.link/n4334}中
 首次提出。最终被接受的是Zhihao Yuan发表于\url{https://wg21.link/n4389}的提案。
 
-\texttt{std::void\_t<>}因Walter E. Brown在\url{https://wg21.link/n3911}中
-的提议而被采纳。
+\texttt{std::void\_t<>}按照Walter E. Brown在\url{https://wg21.link/n3911}中
+的提议被标准库采纳。

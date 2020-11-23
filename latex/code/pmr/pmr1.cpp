@@ -8,12 +8,12 @@
 
 int main()
 {
-    Track::reset();
+    TrackNew::reset();
 
     // 在栈上分配一些内存：
     std::array<std::byte, 200000> buf;
 
-    // 将它用作vector的初始内存池
+    // 将它用作vector的初始内存池：
     std::pmr::monotonic_buffer_resource pool{buf.data(), buf.size()};
     std::pmr::vector<std::string> coll{&pool};
 

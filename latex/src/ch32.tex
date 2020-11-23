@@ -1,6 +1,6 @@
 \chapter{\texttt{std::launder()}}\label{ch32}
 有一个叫\texttt{std::launder()}的新的库函数，就我了解和看到的，它是一个解决核心问题的方法，
-然而，它不能真的产生效果。
+然而，它其实并没有什么用。
 
 
 \section{\texttt{std::launder()}的动机}
@@ -25,14 +25,14 @@
         \item 原本对象的名称
     \end{itemize}
     将会自动指向新的对象\ldots 如果：
+    \footnote{译者注：因为英语喜欢把if放在后边，所以此处的“如果”是前边的结果的条件。}
     \begin{itemize}
         \item 原本对象的类型没有\texttt{const}修饰，并且如果是类类型的话还要
         不包含\texttt{const}修饰的或者引用类型的非静态数据成员。
         \item \ldots
     \end{itemize}
 \end{quote}
-\footnote{译者注：因为英语喜欢把if放在后边，所以此处的第二个“如果”是前边的结果的条件。}
-这个行为并不是新的。它在C++03中就被指明，目的是为了允许几项编译器优化
+这个行为并不是新定义的。它在C++03中就被指明，目的是为了允许几项编译器优化
 （包括使用虚函数时的相似优化）。
 
 按照标准中的说法，当对象中有常量或者引用类型的成员时，我们必须保证每次访问内存时
@@ -59,9 +59,9 @@
     template<typename T>
     class optional
     {
-      private:
+    private:
         T payload;
-      public:
+    public:
         optional(const T& t) : payload(t) {
         }
 
@@ -88,11 +88,11 @@
 \end{lstlisting}
 那么下面的代码将导致未定义行为：
 \begin{lstlisting}
-    optional<X> opStr{42};
+    optional<X> optStr{42};
     optStr.emplace(77);
     std::cout << *optStr;   // 未定义行为（可能是42也可能是77）
 \end{lstlisting}
-这是因为输出操作之前调用了\texttt{operator*}，后者返回\texttt{payload}，
+这是因为输出操作之前调用了\texttt{operator*}，它会返回\texttt{payload}，
 而placement new（在\texttt{emplace()}调用中）在\texttt{payload}处放置了
 一个新的值却没有使用返回值。
 
@@ -102,10 +102,10 @@
     template<typename T>
     class optional
     {
-      private:
+    private:
         T payload;
         T* p;   // 为了能使用placement new的返回值
-      public:
+    public:
         optional(const T& t) : payload(t) {
             p = &payload;
         }
@@ -128,15 +128,15 @@
     template<typename T, typename A = std::allocator<T>>
     class vector
     {
-      public:
+    public:
         typedef typename std::allocator_traits<A> ATR;
         typedef typename ATR::pointer pointer;
-      private:
+    private:
         A _alloc;       // 当前分配器
         pointer _elems; // 元素的数组
         size_t _size;   // 元素的数量
         size_t _capa;   // 容量
-      public:
+    public:
         void push_back(const T& t) {
             if (_capa == _size) {
                 reserve((_capa+1)*2);
@@ -147,6 +147,7 @@
 
         T& operator[] (size_t i) {
             return _elems[i];   // 对于被替换的有常量成员的元素将是未定义行为
+        }
     };
 \end{lstlisting}
 再一次，注意\texttt{ATR::construct()}并没有返回调用placement new的返回值。
@@ -193,9 +194,9 @@ C++标准委员会的核心工作组决定通过引入\texttt{std::launder()}来
     template<typename T>
     class optional
     {
-      private:
+    private:
         T payload;
-      public:
+    public:
         optional(const T& t) : payload(t) {
         }
 
@@ -221,15 +222,15 @@ C++标准委员会的核心工作组决定通过引入\texttt{std::launder()}来
     template<typename T, typename A = std::allocator<T>>
     class vector
     {
-      public:
+    public:
         typedef typename std::allocator_traits<A> ATR;
         typedef typename ATR::pointer pointer;
-      private:
+    private:
         A _alloc;       // 当前分配器
         pointer _elems; // 元素的数组
         size_t _size;   // 元素的数量
         size_t _capa;   // 容量
-      public:
+    public:
         void push_back(const T& t) {
             if (_capa == _size) {
                 reserve((_capa+1)*2);

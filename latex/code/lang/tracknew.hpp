@@ -38,9 +38,10 @@ public:
             p = _aligned_malloc(size, align);       // Windows API
 #else
             p = std::aligned_alloc(align, size);    // C++17 API
+#endif
         }
         if (doTrace) {
-            // 不要在这里使用std::cout因为它可能当我们在处理内存分配时
+            // 不要在这里使用std::cout，因为它可能在我们在处理内存分配时
             // 分配内存（最好情况也是core dump）
             printf("#%d %s ", numMalloc, call);
             printf("(%zu bytes, ", size);
@@ -79,7 +80,7 @@ void* operator new[] (std::size_t size, std::align_val_t align) {
     return TrackNew::allocate(size, static_cast<std::size_t>(align), "::new[] aligned");
 }
 
-// 确保释放操作匹配
+// 确保释放操作匹配：
 void operator delete (void* p) noexcept {
     std::free(p);
 }
@@ -91,6 +92,7 @@ void operator delete (void* p, std::align_val_t) noexcept {
     _aligned_free(p);   // Windows API
 #else
     std::free(p);       // C++17 API
+#endif
 }
 void operator delete (void* p, std::size_t, std::align_val_t align) noexcept {
     ::operator delete(p, align);

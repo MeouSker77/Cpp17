@@ -23,11 +23,10 @@ C++17现在提供了一种相当容易使用的方法来支持预定义的和用
 \begin{itemize}
     \item 使用标准库提供的\hyperref[ch29.1]{标准内存资源}
     \item 定义\hyperref[ch29.2]{自定义内存资源}
-    \item 提供\hyperref[ch29.3]{自定义类型的内存资源支持}
+    \item \hyperref[ch29.3]{为自定义类型提供内存资源支持}
 \end{itemize}
 
-如果没有Pablo Halpern、Arthur O'Dwyer、David Sankel、Jonathan Wakely的
-大力帮助我将不可能完成这一章。
+这一章的完成离不开Pablo Halpern、Arthur O'Dwyer、David Sankel、Jonathan Wakely的帮助。
 
 
 \section{使用标准内存资源}\label{ch29.1}
@@ -107,7 +106,7 @@ vector的18次内存分配将不会再发生在堆上，而是在我们初始化
 resource}使用了默认的分配器，它会把使用\texttt{new}分配内存作为备选项。
 
 \subsubsection{一次也不分配内存}
-我们甚至可以通过把\texttt{std::pmr::vector}的元素类型定义为\texttt{std::pmr::string}来
+我们甚至可以通过把\texttt{std::pmr::vector}的元素类型改为\texttt{std::pmr::string}来
 避免任何内存分配：
 \inputcodefile{pmr/pmr2.cpp}
 因为下面的vector的声明：
@@ -197,7 +196,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
 \end{lstlisting}
 一般情况下，内存资源都以指针的形式传递。
 因此，你必须保证指针指向的资源对象直到最后释放内存之前都一直有效
-（如果你到处move对象或者内存资源可互换的话最后释放内存的时机可能比你想的要晚）。
+（如果你到处move对象并且内存资源可互换的话最后释放内存的时机可能比你想的要晚）。
 
 \subsubsection{默认内存资源}
 如果没有传递内存资源的话多态分配器会有一个默认的内存资源。
@@ -217,8 +216,8 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
 \end{table}
 
 你可以使用\texttt{std::pmr::get\_default\_resource()}获取当前的默认资源，
-然后把传递它来初始化一个多态分配器。你也可以使用\texttt{std::default\_resource()}
-来全局的设置一个不同的默认内存资源。这个资源将在任何作用域中用作默认资源，直到
+然后传递它来初始化一个多态分配器。你也可以使用\texttt{std::set\_default\_resource()}
+来全局地设置一个不同的默认内存资源。这个资源将在任何作用域中用作默认资源，直到
 下一次调用\texttt{std::pmr::set\_default\_resource()}。例如：
 \begin{lstlisting}
     static std::pmr::synchronized_pool_resource myPool;
@@ -226,7 +225,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     // 设置myPool为新的默认内存资源：
     std::pmr::memory_resource* old = std::pmr::set_default_resource(&myPool);
     ...
-    // 恢复旧的默认内存资源
+    // 恢复旧的默认内存资源：
     std::pmr::set_default_resource(old);
 \end{lstlisting}
 如果你在程序中设置了自定义内存资源并且把它用作默认资源，
@@ -249,7 +248,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
 返回类型\texttt{memory\_resource}是任何内存资源的基类。
 
 注意之前的默认内存资源可能仍然会被使用，即使它已经被替换掉。
-如果你知道（并且确信）不会发生这种情况，那你可以不把自己的资源创建为静态对象，
+除非你知道（并且确信）不会发生这种情况，也就是没有使用该内存资源创建静态对象，
 否则你应该确保你的资源的生命周期尽可能的长
 （再提醒一次，可以在\texttt{main()}开始处创建它，这样它会在程序的最后才会被销毁）。
 \footnote{如果你有其他稍后会被销毁的对象你可能还会陷入麻烦，这意味着为了程序结束时能正确清理资源而做好记录是值得的。}
@@ -260,7 +259,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
 \subsubsection{\texttt{new\_delete\_resource()}}
 \texttt{new\_delete\_resource()}是默认的内存资源，
 也是\texttt{get\_default\_resource()}的返回值，
-除非你调用\texttt{set\_default\_resource()}设置了新的不同的默认内存资源，
+除非你调用\texttt{set\_default\_resource()}设置了新的不同的默认内存资源。
 这个资源处理内存分配的方式和普通的分配器一样：
 \begin{itemize}
     \item 每次分配内存会调用\texttt{new}
@@ -307,7 +306,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
 
 为了看到效果，程序会在迭代元素时打印出不同元素地址的差值。
 输出可能类似于如下：
-\begin{lstlisting}
+\begin{blacklisting}
     diff: 1777277585312
     diff: -320
     diff: 60816
@@ -318,7 +317,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     diff: -1120
     diff: 2720
     diff: -3040
-\end{lstlisting}
+\end{blacklisting}
 元素并不是相邻存储的，10个24字节的元素之间的距离能达到60,000字节。
 如果在分配这些元素期间还有其他内存分配，那么这种碎片化可能会变得更糟糕。
 
@@ -330,7 +329,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     std::pmr::map<long, std::pmr::string> coll{&pool};
 \end{lstlisting}
 输出现在看起来可能如下：
-\begin{lstlisting}
+\begin{blacklisting}
     diff: 2548552461600
     diff: 128
     diff: 128
@@ -341,8 +340,8 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     diff: 128
     diff: 128
     diff: 128
-\end{lstlisting}
-如你若见，现在元素是相邻存储的。然而，它们仍然不是在同一个内存块中。
+\end{blacklisting}
+如你所见，现在元素是相邻存储的。然而，它们仍然不是在同一个内存块中。
 当池发现第一个块不足以存放下所有的元素时，它会分配一个更大的块来存储剩余的元素。
 因此，我们分配了越多的内存，内存块就越大，相邻存储的元素就越多。
 这些算法的细节是实现特定的。
@@ -374,8 +373,8 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     std::array<std::byte, 200000> buf;
     std::pmr::monotonic_buffer_resource pool{buf.data(), buf.size()};
 \end{lstlisting}
-你也可以使用这个池来让所有的内存资源跳过释放操作（传递可选的初始大小参数）。
-默认情况下，这会作用到默认内存资源，默认情况下是\texttt{new\_delete\_resource()}。
+你也可以使用这个池来让所有的内存资源跳过释放操作（初始大小参数是可选的）。
+默认构造时会作用于默认内存资源，默认情况下是\texttt{new\_delete\_resource()}的返回值。
 如下代码：
 \begin{lstlisting}
     // 使用默认的内存资源但是在池销毁之前跳过释放操作：
@@ -389,11 +388,11 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
         coll.clear();   // 销毁元素但不会释放内存
     }   // 释放所有分配的内存
 \end{lstlisting}
-语句块内的循环内会不同的为vector和它的元素分配内存。因为我们使用了池，所以所有的内存
+语句块内每一次循环都会为vector和它的元素分配内存。因为我们使用了池，所以所有的内存
 都是按块分配的，这可能导致整个过程只需要14次分配。
 如果先调用\texttt{coll.reserve(100)}，那么可能会变成只需要两次分配。
 
-如同之前所述，池的生命周期内不会释放内存。因此，如果在循环内不停的创建并使用vector，
+如同之前所述，池的生命周期内不会释放内存。因此，如果在循环内不停地创建并使用vector，
 池里被分配的内存会持续增多。
 
 \texttt{monotonic\_buffer\_resource}还允许我们传递一个初始的大小，它将被用作第一次
@@ -432,10 +431,9 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
 分配的内存包括一开始的10,000字节加上后来分配的更大的内存块，
 将会在\texttt{keepAllocatedPool}离开作用域时销毁。
 
-这里发生的精确行为将在之后\hyperref[追踪嵌套池的allocation]{追踪嵌套池中所有的内存分配}
-的例子中介绍。\label{嵌套池}
+这里发生的精确行为将在之后\hyperref[追踪嵌套池的allocation]{追踪嵌套池中所有的内存分配}的例子中介绍。\label{嵌套池}
 
-\subsubsection{\texttt{null\_memory\_resource}}
+\subsubsection{\texttt{null\_memory\_resource()}}
 \texttt{null\_memory\_resource()}会对分配操作进行处理，让每一次分配都抛出\texttt{bad\_alloc}异常。
 
 它最主要的应用是确保使用在栈上分配的内存的池不会突然在堆上分配额外的内存。
@@ -451,10 +449,10 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
 更多内存的行为都会抛出异常而不是在堆上分配内存。
 
 效果就是程序早晚会结束，并带有类似于下面的输出：
-\begin{lstlisting}
+\begin{blacklisting}
     BAD ALLOC EXCEPTION: bad allocation
     size: 2048
-\end{lstlisting}
+\end{blacklisting}
 当不想在堆上分配内存时，这样可以帮助你获得有意义的反馈，而不是陷入想要避免的行为。
 
 
@@ -488,17 +486,17 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
         return op != nullptr && op->prefix == prefix && upstream->is_equal(other);
     }
 \end{lstlisting}
-第一个比较是为了挑过随后的开销更大的比较。如果不是在比较同一个追踪器，
+第一个比较是为了跳过随后的开销更大的比较。如果不是在比较同一个追踪器，
 那么必须另一个内存资源也是拥有相同前缀（值相等意义上的相同）的追踪器，
 并且底层资源类型要可以交换时我们才认为两个追踪器可交换。
 否则，如果我们使用了底层内存资源不同的追踪器，
 程序会假设释放另一个完全不同的内存资源分配的内存是OK的。
 
-让我们使用这个追踪器来理解\hyperref[嵌套池]{之前展示的嵌套池}
-在不释放内存的情况下按块分配内存的行为：\label{追踪嵌套池的allocation}
+让我们使用这个追踪器来理解\hyperref[嵌套池]{之前展示的嵌套池}在
+不释放内存的情况下按块分配内存的行为：\label{追踪嵌套池的allocation}
 \inputcodefile{pmr/tracker.cpp}
 输出可能类似于如下：
-\begin{lstlisting}
+\begin{blacklisting}
       syncpool:allocate 48 Bytes
     keeppool:allocate 10000 Bytes
       syncpool:allocate 16440 Bytes
@@ -526,22 +524,22 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     keeppool:deallocate 24696 Bytes
     keeppool:deallocate 16464 Bytes
     keeppool:deallocate 10000 Bytes
-\end{lstlisting}
+\end{blacklisting}
 这些输出展示了如下过程：
 \begin{itemize}
     \item 第一次为对象分配内存时，\texttt{syncpool}要分配48个字节，
     这触发了\texttt{keeppool}分配初始的10,000个字节。
     这10,000个字节使用\texttt{keeppool}初始化时\texttt{get\_defalut\_resource()}
     返回的资源在堆上分配。
-    \item 之后的对象不停的分配和释放内存，导致\texttt{syncpool}偶尔会分配更多的内存块，
+    \item 之后的对象不停地分配和释放内存，导致\texttt{syncpool}偶尔会分配更多的内存块，
     也会释放内存块。如果\texttt{syncpool}分配的内存超过了\texttt{keeppool}分配的，
     那么\texttt{keeppool}将会从堆上分配更多的内存。因此，只有\texttt{keeppool}分配内
     存时会调用（开销很大的）系统调用。
     \item 通过在第三次迭代结束时的额外追踪，你可以看到所有的分配操作都发生在前三次迭代。
     之后（重新）使用的内存数量就处于稳定状态。因此，剩余的97次迭代不会从操作系统分配任何内存。
     \item \texttt{keeppool}不会释放任何内存，即使\texttt{syncpool}已经释放了它的内存。
-    \item 只有当\texttt{keeppool}销毁时3个分配的内存块才会真正的调用\texttt{::delete}
-    （或者\texttt{keeppool}初始化之前用\texttt{set\_default\_resource()}设置的默认资源
+    \item 只有当\texttt{keeppool}销毁时3个分配的内存块才会真正的调用\texttt{::delete}（
+    或者\texttt{keeppool}初始化之前用\texttt{set\_default\_resource()}设置的默认资源
     释放内存的方式）释放。
 \end{itemize}
 如果我们在这个程序中引入第3个追踪器，我们还可以追踪对象什么时候从\texttt{synpool}中
@@ -583,11 +581,11 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     std::pmr::string s4{std::move(s3)};                 // move（分配器被拷贝）
     std::string s5{std::move(s4)};                      // 拷贝（其他的分配器）
 \end{lstlisting}
-这是因为，只有当源资对象目的对象有可交换的分配器时才会发生move。
+这是因为，只有当源对象和目的对象的分配器可交换时才会发生move。
 这也是多态分配器类型调用移动构造函数的条件（新的对象会拷贝分配器）。
-如果使用了不可交换的分配器（例如这里前缀不同的追踪器）或者类型不同的分配器
+然而，如果使用了不可交换的分配器（例如这里前缀不同的追踪器）或者类型不同的分配器
 （这里\texttt{std::string}的分配器是默认分配器），那么内存会被拷贝。
-总之，是否可交换会影响move的性能。
+因此，是否可交换会影响move的性能。
 
 如果我们改成只检查类型来允许所有\texttt{Tracker}类型的内存资源都可交换：
 \begin{lstlisting}
@@ -596,7 +594,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
         return this == &other || dynamic_cast<const Tracker*>(&other) != nullptr;
     }
 \end{lstlisting}
-我们会得到如下行为：
+我们会得到如下结果：
 \begin{lstlisting}
     Tracker track1{"track1:"};
     Tracker track2{"track2:"};
@@ -607,12 +605,12 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     std::pmr::string s4{std::move(s3)};                 // move（分配器被拷贝）
     std::string s5{std::move(s4)};                      // 拷贝（其他的分配器）
 \end{lstlisting}
-你可以看到，这样做的效果是\texttt{track1}分配的内存将会传递给\texttt{s3}再传递给\texttt{s4}，
-后两者都使用了\texttt{track2}分配器，因此我们得到：
-\begin{lstlisting}
+可以看到，这样做的效果是\texttt{track1}分配的内存将会传递给\texttt{s3}再传递
+给\texttt{s4}，后两者都使用了\texttt{track2}，因此我们得到：
+\begin{blacklisting}
     track1:allocate 32 Bytes
     track2:deallocate 32 Bytes
-\end{lstlisting}
+\end{blacklisting}
 如果我们的内存资源不会有不同的状态（即没有前缀）这将是一个很好的实现，因为这样可以提高move的性能。
 
 因此，让内存资源可交换是值得的，因为可以减少拷贝。然而，你不应该让它们在需求之外的场景可交换。
@@ -627,7 +625,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
 想要支持多态分配器出乎意料的简单，
 你只需要：
 \begin{itemize}
-    \item 定义一个公共成员\texttt{allocator\_type}作为一个多态分配器
+    \item 定义一个public成员\texttt{allocator\_type}作为一个多态分配器
     \item 为所有构造函数添加一个接受分配器作为额外参数的重载（包括拷贝和移动构造函数）
     \item 给初始化用的构造函数的分配器参数添加一个默认的\texttt{allocator\_type}类型的值
     （\emph{不}包括拷贝和移动构造函数）
@@ -671,7 +669,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     PmrCustomer(PmrCustomer&& c, allocator_type alloc) : name{std::move(c.name), alloc} {
     }
 \end{lstlisting}
-注意这两个都不是\texttt{noexcept}，因为如果分配器\texttt{alloc}不可互换的话即使是
+注意这两个函数都没有\texttt{noexcept}声明，因为如果分配器\texttt{alloc}不可互换的话即使是
 移动构造函数也需要拷贝传递的顾客类型。
 
 最后，我们实现了必须的setter和getter，通常是这样：
@@ -687,7 +685,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
 我们\hyperref[pmr转换]{在下文讨论它}。现在你可以不用考虑这个。
 
 \subsection{使用PMR类型}
-有了之前的\texttt{PmrCustomer}类的定义，我们可以在他pmr容器中使用这个类。例如：
+有了之前的\texttt{PmrCustomer}类的定义，我们可以在pmr容器中使用这个类。例如：
 \inputcodefile{pmr/pmrcustomer1.cpp}
 为了让过程更清楚，我们使用了\hyperref[ch29.2]{Tracker}来追踪所有分配和释放操作：
 \begin{lstlisting}
@@ -712,7 +710,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     coll.push_back(c1);                     // 使用vector的分配器(tracker)分配
 \end{lstlisting}
 如果我们把元素move进容器时也会发生同样的过程，因为vecotr的分配器（tracker）和顾客类的
-分配器（默认资源）是不可交换的：
+分配器（使用默认资源）是不可交换的：
 \begin{lstlisting}
     std::pmr::vector<PmrCustomer> coll(&tracker);
     ...
@@ -720,7 +718,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     ...
     coll.push_back(std::move(c1));          // 拷贝（分配器不可交换）
 \end{lstlisting}
-如果我们也把顾客对象的分配器初始化为追踪器，move将会生效：
+如果我们把顾客对象的分配器也初始化为追踪器，move将会生效：
 \begin{lstlisting}
     std:pmr::vector<PmrCustomer> coll(&tracker);
     ...
@@ -779,17 +777,16 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     \item 第二次\texttt{std::pmr::string}转换为\texttt{std::string}时也需要分配内存
 \end{itemize}
 因此，提供\hyperref[ch29.3.1]{额外的getter \texttt{getNameAsString()}}来直接
-创建并返回字符串类型是个好的注意：
+创建并返回字符串类型是个好主意：
 \begin{lstlisting}
     std::string s3 = c4.getNameAsString();      // OK：因此分配内存
 \end{lstlisting}
 
 \section{后记}
 多态分配器由Pablo Halpern在\url{https://wg21.link/n3525}中首次提出。
-这个方案因为Pablo Halpern在\\
-\url{https://wg21.link/n3916}中的提案而
-被Library Fundamentals TS采纳。
-这个方案最终和其他C++17的组件一起因Beman Dawes和Alisdair Meredith发表
-于\url{https://wg21.link/p0220r1}的提案而被标准库采纳。
+这个方案按照Pablo Halpern在\\
+\url{https://wg21.link/n3916}中的提议被Library Fundamentals TS采纳。
+最终和其他C++17的组件一起按照Beman Dawes和Alisdair Meredith在\url{https://wg21.link/p0220r1}中
+的提议而被标准库采纳。
 
 

@@ -1,8 +1,8 @@
 #include <string>
 #include <memeory_resource>
 
-//
-//
+// 支持多态分配器的顾客类型
+// 分配器存储在字符串成员中
 class PmrCustomer
 {
 private:

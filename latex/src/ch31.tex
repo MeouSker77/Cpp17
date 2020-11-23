@@ -1,6 +1,6 @@
 \chapter{\texttt{std::to\_chars()}和
 \texttt{std::from\_chars()}}\label{ch31}
-C++标准库中提供了底层的把数字转换为字符序列和反向转换的操作。
+C++标准库中提供了把数字转换为字符序列和反向转换的底层操作。
 
 
 \section{底层字符序列和数字值转换的动机}
@@ -28,7 +28,7 @@ C++17引入了有下列能力的新的底层字符串转换函数（引用自最
 
 
 \section{使用示例}
-标注库提供了两个重载过的函数：
+标注库提供了两个重载的函数：
 \begin{itemize}
     \item \texttt{std::from\_chars()}把一个字符序列转换为数字值。
     \item \texttt{std::to\_chars()}把一个数字值转换为字符序列。
@@ -55,7 +55,7 @@ C++17引入了有下列能力的新的底层字符串转换函数（引用自最
 \end{lstlisting}
 调用之后，\texttt{ptr}指向没有被解析为数字的部分的第一个字符（或者，如果所有字符都被解析了就
 等于传入的第二个参数），\texttt{ec}包含\texttt{std::errc}类型的错误条件，如果转换成功时
-等于\texttt{std::errc{}}。因此，你可以按照如下方式检查是否成功：
+等于\texttt{std::errc\{\}}。因此，你可以按照如下方式检查是否成功：
 \begin{lstlisting}
     if (res.ec != std::errc{}) {
         ... // 错误处理
@@ -128,7 +128,7 @@ C++17引入了有下列能力的新的底层字符串转换函数（引用自最
     };
 \end{lstlisting}
 调用之后，\texttt{ptr}指向最后一个被写入的字符的下一个位置，\texttt{ec}可能会包含一个
-\texttt{std::errc}类型的错误条件，如果转换成功，它的值等于\texttt{std::errc{}}。
+\texttt{std::errc}类型的错误条件，如果转换成功，它的值等于\texttt{std::errc\{\}}。
 
 因此，你可以像这样检查结果：
 \begin{lstlisting}
@@ -181,15 +181,15 @@ C++17引入了有下列能力的新的底层字符串转换函数（引用自最
 \inputcodefile{lib/charconv.cpp}
 我们按照不同的顺序累加了几个浮点数。\texttt{sum1}是从左到右累加，\texttt{sum2}是
 从右到左累加（使用反向迭代器）。最后这两个数看起来相同但事实上不是：
-\begin{lstlisting}
+\begin{blacklisting}
     sum1:  0.40001
     sum2:  0.40001
     equal: false
     sum1:  0.40001000000000003221
     sum2:  0.40000999999999997669
-\end{lstlisting}
+\end{blacklisting}
 当把值传给\texttt{d2str2d()}之后，你可以看到这两个值被按照必要的精度被存储为不同长度的字节序列：
-\begin{lstlisting}
+\begin{blacklisting}
     in:  0.40001000000000003221
     str: 0.40001000000000003
     out: 0.40001000000000003221
@@ -197,20 +197,20 @@ C++17引入了有下列能力的新的底层字符串转换函数（引用自最
     in:  0.40000999999999997669
     str: 0.40001
     out: 0.40000999999999997669
-\end{lstlisting}
+\end{blacklisting}
 再重复一次，注意粒度（决定了存储字符序列必须的长度）依赖于平台。
 
 双向支持应该支持包含\texttt{NAN}和\texttt{INFINITY}在内的所有浮点数值。
 例如，使用\texttt{INFINITY}调用\texttt{d2st2d()}应该有如下效果：
-\begin{lstlisting}
+\begin{blacklisting}
     in:  inf
     str: inf
     out: inf
-\end{lstlisting}
+\end{blacklisting}
 然而，注意\texttt{d2str2d()}中的断言会失败，因为\texttt{NAN}不能跟任何东西比较，即使是它自己也不行。
 
 \section{后记}
 字符序列和数字值的底层转换由Jens Maurer在\url{https://wg21.link/p0067r0}中首次提出。
 最终被接受的是Jens Maurer发表于\url{https://wg21.link/p0067r5}的提案。
-然而，一些重要的澄清和新的头文件由Jens Maurer在\url{https://wg21.link/p0682r1}中
+然而，一些重要的说明和新的头文件由Jens Maurer在\url{https://wg21.link/p0682r1}中
 作为C++17的缺陷提出。
