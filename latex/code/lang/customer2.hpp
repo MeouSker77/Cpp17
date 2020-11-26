@@ -8,7 +8,7 @@ private:
     long val;
 public:
     Customer (std::string f, std::string l, long v)
-            : first{std::move(f))}, last{std::move(l)}, val{v} {
+            : first{std::move(f)}, last{std::move(l)}, val{v} {
     }
     const std::string& firstname() const {
         return first;

@@ -219,12 +219,12 @@
     *res.ptr = '\0';    // 确保最后有一个空字符结尾
 \end{lstlisting}
 注意这种形式将不会写入前导0，这意味着对于值42，最后的结果是（假设一个\texttt{char}有8位）：
-\begin{lstlisting}
+\begin{blacklisting}
     101010
     // 译者注：此处原文写的是
     // 1111110
     // 应是作者笔误
-\end{lstlisting}
+\end{blacklisting}
 可以使用相似的方式进行输入：以整数、字符串或bitset类型读入并进行转换。
 例如，你可以像下面这样实现读入字节对象的二进制表示的输入运算符：
 \begin{lstlisting}

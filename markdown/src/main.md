@@ -27,11 +27,11 @@
 \CJKsetecglue{\,}   % 设置中英文间的空格
 
 \setlist{nosep}     % 设置列表垂直间距为0
-\setlist[enumerate,itemize]{leftmargin=*,listparindent=1em} % 设置列表项缩进
+\setlist[enumerate,itemize]{leftmargin=\*,listparindent=1em} % 设置列表项缩进
 
 \titleclass{\part}{top}     % Part后不换页
-\titleformat{\part}{\raggedright\Huge\bfseries}{Part \thepart}{1em}{\\[0.7em]} % 设置Part标题格式
-\titlespacing*{\part}{0pt}{0pt}{40pt}   % 设置Part后间距
+\titleformat{\part}{\raggedright\Huge\bfseries}{Part \thepart}{1em}{[0.7em]} % 设置Part标题格式
+\titlespacing\*{\part}{0pt}{0pt}{40pt}   % 设置Part后间距
 
 \newpagestyle{front}{               % 自定义页眉格式
 \sethead[\thepage][][\chaptertitle] % 偶数页页眉格式
@@ -73,85 +73,78 @@ title       = #1,       % 标题格式
 {\lstset{keywordstyle=\color{black},stringstyle=\color{black},commentstyle=\color{black}}}
 {}
 
+%\includeonly{ch30}
+
 % Document
 \begin{document}
-    \frontmatter
-    \pagestyle{front}
-    \tableofcontents
+\frontmatter
+\pagestyle{front}
+\tableofcontents
 
-    \mainmatter
-    \pagestyle{main}
+\mainmatter
+\pagestyle{main}
 
+\part{基本语言特性}
+这一部分介绍了C++17中新的核心语言特性，但不包括那些专为泛型编程（即模板）设计的特性。
+这些新增的特性对于应用程序员的日常编程非常有用，因此每一个使用C++17的C++程序员都应该了解它们。
 
-    \part{基本语言特性}\label{part1}
-    这一部分介绍了C++17中新的核心语言特性，但不包括那些专为泛型编程（即模板）设计的特性。
-    这些新增的特性对于应用程序员的日常编程非常有用，因此每一个使用C++17的C++程序员都应该了解它们。
+专为模板编程设计的新的核心语言特性在\autoref{part2}中介绍。
 
-    专为模板编程设计的新的核心语言特性在\autoref{part2}中介绍。
+\include{ch01}
+\include{ch02}
+\include{ch03}
+\include{ch04}
+\include{ch05}
+\include{ch06}
+\include{ch07}
+\include{ch08}
 
-    \include{ch01}
-    \include{ch02}
-    \include{ch03}
-    \include{ch04}
-    \include{ch05}
-    \include{ch06}
-    \include{ch07}
-    \include{ch08}
+\part{模板特性}
+这一部分介绍了C++17为泛型编程（即模板）提供的新的语言特性。
 
+我们首先从类模板参数推导开始，这一特性只影响模板的使用。之后的章节会介绍为编写泛型代码
+（函数模板，类模板，泛型库等）的程序员提供的新特性。
 
-    \part{模板特性}\label{part2}
-    这一部分介绍了C++17为泛型编程（即模板）提供的新的语言特性。
+\include{ch09}
+\include{ch10}
+\include{ch11}
+\include{ch12}
+\include{ch13}
+\include{ch14}
 
-    我们首先从类模板参数推导开始，这一特性只影响模板的使用。之后的章节会介绍为编写泛型代码
-    （函数模板，类模板，泛型库等）的程序员提供的新特性。
+\part{新的标准库组件}
+这一部分介绍C++17中新的标准库组件。
 
-    \include{ch09}
-    \include{ch10}
-    \include{ch11}
-    \include{ch12}
-    \include{ch13}
-    \include{ch14}
+\include{ch15}
+\include{ch16}
+\include{ch17}
+\include{ch18}
+\include{ch19}
+\include{ch20}
 
+\part{已有标准库的拓展和修改}
+这一部分介绍C++17对已有标准库组件的拓展和修改。
 
-    \part{新的标准库组件}\label{part3}
-    这一部分介绍C++17中新的标准库组件。
+\include{ch21}
+\include{ch22}
+\include{ch23}
+\include{ch24}
+\include{ch25}
+\include{ch26}
+\include{ch27}
+\include{ch28}
 
-    \include{ch15}
-    \include{ch16}
-    \include{ch17}
-    \include{ch18}
-    \include{ch19}
-    \include{ch20}
+\part{专家的工具}
+这一部分介绍了普通应用程序员通常不需要知道的新的语言特性和库。
+它主要包括了为编写基础库和语言特性的程序员准备的用来解决特殊问题语言的特性（例如修改堆内存的管理方式）。
 
+\include{ch29}
+\include{ch30}
+\include{ch31}
+\include{ch32}
+\include{ch33}
 
-    \part{已有标准库的拓展和修改}\label{part4}
-    这一部分介绍C++17对已有标准库组件的拓展和修改。
-
-    \include{ch21}
-    \include{ch22}
-    \include{ch23}
-    \include{ch24}
-    \include{ch25}
-    \include{ch26}
-    \include{ch27}
-    \include{ch28}
-
-
-    \part{专家的工具}\label{part5}
-    这一部分介绍了普通应用程序员通常不需要知道的新的语言特性和库。
-    它主要包括了为编写基础库和语言特性的程序员准备的用来解决特殊问题语言的特性（例如修改堆内存的管理方式）。
-
-    \include{ch29}
-    \include{ch30}
-    \include{ch31}
-    \include{ch32}
-    \include{ch33}
-
-
-    \part{一些通用的提示}\label{part6}
-    这一部分介绍了一些有关C++17的通用的提示，例如对C语言和废弃特性的兼容性更改。
-    \include{ch34}
-    \include{ch35}
-
-    \backmatter
-\end{document}
+\part{一些通用的提示}
+这一部分介绍了一些有关C++17的通用的提示，例如对C语言和废弃特性的兼容性更改。
+\include{ch34}
+\include{ch35}

@@ -307,14 +307,14 @@ directory\_symlink()}来创建目录的符号链接。
 或者我们可能需要特殊权限，这些情况下你可能会得到如下消息：\label{创建链接失败}
 \begin{blacklisting}
     EXCEPTION: create_directory_symlink: Can't create a file when it already exists:
-    "tmp\test\data.txt", "testdir"
-    path1: "tmp\test\data.txt"
+                                         "tmp\test\data.txt", "testdir"
+        path1: "tmp\test\data.txt"
 \end{blacklisting}
 或者：
 \begin{blacklisting}
     EXCEPTION: create_directory_symlink: A requied privilege is not held by the
-    client.: "test", "tmp\slink"
-    path1: "test"
+                                         client.: "test", "tmp\slink"
+        path1: "test"
 \end{blacklisting}
 在每一种情况下，都要注意在多用户/多进程操作系统中情况可能会在任何时候改变，
 这意味着你刚刚创建的目录甚至可能已经被删除、重命名、或已经被同名的文件覆盖。
@@ -334,8 +334,7 @@ directory\_symlink()}来创建目录的符号链接。
 再强调一次：文件系统并不保证进行处理之前的检查的结果直到你进行处理时仍然有效。
 
 \subsection{使用并行算法处理文件系统}
-参见\hyperref[ch22.6.1.4]{dirsize.cpp}
-查看另一个使用并行算法计算目录树中所有文件大小之和的例子。
+参见\hyperref[ch22.6.1.4]{dirsize.cpp}查看另一个使用并行算法计算目录树中所有文件大小之和的例子。
 
 
 \section{原则和术语}
@@ -2082,7 +2081,7 @@ filesystem}。在POSIX兼容的系统上这些被映射为\texttt{errno}的值�
 \hyperref[ch22.6.1.4]{在并行算法中使用目录迭代器}时必须考虑到这一点。
 
 表\hyperref[t20.22]{目录项操作}列出了目录项\texttt{e}的所有操作。
-她们基本都是一些查询\nameref{ch20.4.1}、获取\nameref{ch20.4.2}、
+它们基本都是一些查询\nameref{ch20.4.1}、获取\nameref{ch20.4.2}、
 检查\nameref{ch20.4.3}、\hyperref[ch20.3.6]{比较}路径的操作。
 \begin{table}[htb]
     \centering

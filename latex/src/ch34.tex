@@ -1,4 +1,4 @@
-\chapter{总体性的C++17设置}\label{ch34}
+\chapter{总体性的C++17事项}\label{ch34}
 这一章包括一些C++17中的总体性的内容。
 
 
@@ -25,7 +25,7 @@ C++17以C11为基础，而不是C99，后者是C++14的基础。
     在C11中，这些函数和之前的不安全的版本在同一个头文件中。
     然而在相应的C++17头文件中，它们\emph{不}在命名空间\texttt{std}中。
     当包含了相应的头文件后它们是否会出现在全局命名空间中是实现定义的。
-    \item 新的C头文件\texttt{<stdatomic.h>}，\texttt{<stdnoreturn.h>}、\texttt{<threads.h>}被
+    \item 新的C头文件\texttt{<stdatomic.h>}、\texttt{<stdnoreturn.h>}、\texttt{<threads.h>}被
     忽略并且在C++中没有对应的内容。
     \item 对头文件\texttt{<ccomplex>}、\texttt{<cstdalign>}、\texttt{<cstdbool>}、\texttt{<ctgmath>}的使用已经被废弃。
 \end{itemize}

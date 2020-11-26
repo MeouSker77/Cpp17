@@ -1,6 +1,7 @@
 # C++17完全指南
 
-本书为《C++17 the complete guide》by Nicolai M. Josuttis的个人中文翻译版，仅供学习和交流使用，侵删
+本书为《C++17 the complete guide》by Nicolai M. Josuttis的个人中文翻译版，
+仅供学习和交流使用，如有侵权请联系作者删除
 
 ## 以下为英文原版购买地址
 
@@ -9,105 +10,64 @@
 
 ---
 
-## 新版pdf版（推荐）（已完成，共35章）
+## 以下为中文翻译版
+
+### pdf 版（推荐）
 [点此下载](latex/out/main.pdf)
 
-## 旧版markdown版目录
+### markdown 版目录
 - 第一部分 基本语言特性
-    - [第一章 结构化绑定](markdown/Chapter01-结构化绑定.md)
-    - [第二章 带初始化的`if`和`switch`语句](markdown/Chapter02-带初始化的if和switch语句.md)
-    - [第三章 内联变量](markdown/Chapter03-内联变量.md)
-    - [第四章 聚合体扩展](markdown/Chapter04-聚合体扩展.md)
-    - [第五章 强制省略拷贝或传递未实质化的对象](markdown/Chapter05-强制省略拷贝或传递未实质化的对象.md)
-    - [第六章 lambda表达式扩展](markdown/Chapter6-Lambda表达式扩展.md)
-    - [第七章 其他语言特性](markdown/Chapter7-其他语言特性.md)
+  - [第一章 结构化绑定](markdown/src/ch01.md)
+  - [第二章 带初始化的 if 和 switch 语句](markdown/src/ch02.md)
+  - [第三章 内联变量](markdown/src/ch03.md)
+  - [第四章 聚合体扩展](markdown/src/ch04.md)
+  - [第五章 强制省略拷贝或传递未实质化的对象](markdown/src/ch05.md)
+  - [第六章 lambda 表达式扩展](markdown/src/ch06.md)
+  - [第七章 新属性和属性特性](markdown/src/ch07.md)
+  - [第八章 其他语言特性](markdown/src/ch08.md)
 - 第二部分 模板特性
-    - [第八章 类模板参数推导](markdown/Chapter8-类模板参数推导.md)
-    - [第九章 编译期`if`语句](markdown/Chapter9-编译期if语句.md)
-    - [第十章 折叠表达式](markdown/Chapter10-折叠表达式.md)
-    - [第十一章 处理字符串字面量模板参数](markdown/Chapter11-使用字符串作为模板参数.md)
-    - [第十二章 占位符类型作为模板参数](markdown/Chapter12-模板参数中的auto类型占位符.md)
-    - [第十三章 扩展的using声明](markdown/Chapter13-扩展的using声明.md)
+  - [第九章 类模板参数推导](markdown/src/ch09.md)
+  - [第十章 编译期 if 语句](markdown/src/ch10.md)
+  - [第十一章 折叠表达式](markdown/src/ch11.md)
+  - [第十二章 处理字符串字面量模板参数](markdown/src/ch12.md)
+  - [第十三章 占位符类型作为模板参数](markdown/src/ch13.md)
+  - [第十四章 扩展的 using 声明](markdown/src/ch14.md)
 - 第三部分 新的标准库组件
-    - [第十四章 `std::optional<>`](markdown/Chapter14-optional.md)
-    - [第十五章 `std::variant<>`](markdown/Chapter15-variant.md)
-    - [第十六章 `std::any`](markdown/Chapter16-any.md)
-    - [第十七章 `std::byte`](markdown/Chapter17-byte.md)
-    - [第十八章 字符串视图](markdown/Chapter18-String%20Views.md)
-    - [第十九章 文件系统库](markdown/Chapter19-文件系统库.md)
+  - [第十五章 std::optional<>](markdown/src/ch15.md)
+  - [第十六章 std::variant<>](markdown/src/ch16.md)
+  - [第十七章 std::any](markdown/src/ch17.md)
+  - [第十八章 std::byte](markdown/src/ch18.md)
+  - [第十九章 字符串视图](markdown/src/ch19.md)
+  - [第二十章 文件系统库](markdown/src/ch20.md)
 - 第四部分 已有标准库的扩展和修改
-    - [第二十章 类型特征扩展](markdown/Chapter20-类型特征扩展.md)
-    
+  - [第二十一章 类型特征扩展](markdown/src/ch21.md)
+  - [第二十二章 并行 STL 算法](markdown/src/ch22.md)
+  - [第二十三章 新的 STL 算法详解](markdown/src/ch23.md)
+  - [第二十四章 子串和子序列搜索器](markdown/src/ch24.md)
+  - [第二十五章 其他工具函数和算法](markdown/src/ch25.md)
+  - [第二十六章 容器和字符串扩展](markdown/src/ch26.md)
+  - [第二十七章 多线程和并发](markdown/src/ch27.md)
+  - [第二十八章 标准库的其他微小特性和修改](markdown/src/ch28.md)
+- 第五部分 专家的工具
+  - [第二十九章 多态内存资源 (PMR)](markdown/src/ch29.md)
+  - [第三十章 使用 new 和 delete 管理超对齐数据](markdown/src/ch30.md)
+  - [第三十一章 std::to_chars() 和 std::from_chars()](markdown/src/ch31.md)
+  - [第三十二章 std::launder()](markdown/src/ch32.md)
+  - [第三十三章 编写泛型代码的改进](markdown/src/ch33.md)
+- 第六部分 一些通用的提示
+  - [第三十四章 总体性的 C++17 事项](markdown/src/ch34.md)
+  - [第三十五章 废弃和移除的特性](markdown/src/ch35.md)
+  
 ---
 
-## 2020年11月23日更新
+## 说明
 
-### 更新说明
+markdown 版是用程序直接从 pdf 版转换而来，然后再进行校对和修正。
 
-完成了全书校对。
+但转换过程中不仅损失了一些信息，还导致了很多错误。
 
-因为最近忙于个人私事，导致校对的速度被大大减慢，一直到现在才完成。
+校对时虽然修正了很多错误，但因为时间有限，一定还有很多错误没有发现。
 
-### 剩余目标
+**因此更加推荐 pdf 版**
 
-- 完成markdown版
-- 为latex版添加序
-
----
-
-## 2020年11月1日更新
-
-### 更新说明
-
-之前说预计11月完成翻译，没想到最近有点事必须加快进度赶紧翻译完，恰好在11月1号翻译完成（笑）。
-
-因为加快了进度，最后几章的质量可能有所下降，最后校对时会改进，请读者见谅。
-
-### 剩余目标
-
-- 校对正文
-- 更新markdown版
-- 为latex版添加序
-
-### 最后
-
-最近有一些私事，校对可能会过一段时间才会进行，请各位读者见谅。
-
----
-
-## 2020年10月22日更新
-
-### 更新说明
-
-目前latex版的进度已经追上了markdown版，并且latex版中很多章节都有新增的内容，
-所以推荐阅读latex版的翻译。
-
-### 路线图
-
-进度追上markdwon版（已达成）
-
-&darr;
-
-完成latex版翻译（预期11月完成）
-
-&darr;
-
-校对（预期上一步完成后十天之内完成）
-
-&darr;
-
-更新markdown版翻译（预期上一步完成后三天之内完成）
-
----
-
-## 2020年9月23日更新
-
-以前的内容是根据一个不完整的版本进行的翻译。
-今天拿到了最终的完整版，与之前的版本相比多了很多内容，
-已有内容也有很多修改，因此直接重新翻译。
-
-**原本的markdown格式的内容移动到markdown文件夹下。**
-
-本人恰好最近在学习latex，因此直接用latex重新进行翻译，并尽量模仿英文原版的排版。
-
-**新的latex版编译生成的pdf文件在latex/out目录下**
+不管是 pdf 版还是 markdown 版，如果发现错误欢迎指出，也可以自行修正之后提交PR。
