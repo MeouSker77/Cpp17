@@ -1,0 +1,106 @@
+\chapter{前言}
+这本书在以下两个方面是一个实验：
+\begin{itemize}
+    \item 我在没有一位作为共同作者的核心语言专家的直接帮助下写出了
+    这本覆盖语言特性的深入书籍。当然，我还是可以向他们请教问题的，并且我确实这么做了。
+    \item 我自己在Leanpub上出版了这本书并按需印刷。
+    也就是说，这本书是一步一步完成的，
+    并且一旦有值得出新版本的重要改进，我就会发表一个新的版本。
+\end{itemize}
+
+美妙的事情是：
+\begin{itemize}
+    \item 你可以学习到一位经验丰富的应用程序员对新语言特性的看法。
+    这样的程序员可以感觉到新特性可能导致的问题，并提出一些相关的问题来帮助你理解
+    这个特性的设计和它在实际编程中能起到的效果。
+    \item 当我还在学习和写作时你就已经可以从我关于C++17的经验中受益了。
+\end{itemize}
+然而，你们也是这个实验不可缺少的一部分。
+所以请帮帮我：请提供关于缺陷、错误、解释的不够好的特性或者有偏差的内容的反馈。
+这样我们就都能从这些改进中收益了。
+
+
+\section{本书的版本}
+因为这本书是以增量更新的方式编写的，下面是这本书“发布”的历史（最新的放在最前）：
+\begin{itemize}
+    \item \textbf{2019-12-20}：根据读者的反馈修复了很多小问题
+    \item \textbf{2019-09-06}：完成了校对工作
+    \item \textbf{2019-08-20}：根据读者的反馈和校对过程修正了一些问题，发布了\textbf{第一个印刷版本}
+    \item \textbf{2019-08-11}：新增了信号处理器相关的保证
+    \item \textbf{2019-08-10}：新增了和C11的兼容性
+    \item \textbf{2019-07-07}：新增了移除和废弃的特性
+    \item \textbf{2019-07-06}：改进了字符串视图章节
+    \item \textbf{2019-07-04}：新增了共享指针的改进
+    \item \textbf{2019-06-28}：校对过程中更新和修正了很多内容
+    \item \textbf{2019-05-31}：新增了\texttt{chrono}扩展、\texttt{noexcept}扩展、\texttt{constexpr}扩展
+    \item \textbf{2019-05-30}：根据反馈和评论修复了大量问题
+    \item \textbf{2019-05-29}：修复了超对齐堆内存章节中的问题
+    \item \textbf{2019-05-12}：超对齐堆内存章节中新增了“placement \texttt{new}”
+    \item \textbf{2019-05-02}：新增了\texttt{\_\_cplusplus}的新值
+    \item \textbf{2019-04-26}：新增了所有的新类型特征和\texttt{std::invoke()}
+    \item \textbf{2019-04-24}：新增了\texttt{std::launder()}的动机和问题
+    \item \textbf{2019-04-24}：新增了关联/无序容器的\texttt{merge()}
+    \item \textbf{2019-04-23}：发布了一个带有一些修正和改进的\textbf{新的电子版本}
+    \item \textbf{2019-04-23}：接受了\texttt{create\_directory()}的一个标准修正
+    \item \textbf{2019-04-22}：新增了(unordered) map的\texttt{try\_emplace()}和\texttt{insert\_or\_assign()}
+    \item \textbf{2019-04-21}：新增了string的\texttt{data()}
+    \item \textbf{2019-03-28}：新增了所有新（并行）STL算法的详细描述
+    \item \textbf{2019-03-18}：添加了\texttt{uncaught\_exceptions()}
+    \item \textbf{2019-03-10}：根据读者的反馈修复了大量问题
+    \item \textbf{2019-02-14}：新增了\texttt{accumulate()}、\texttt{reduce()}、\texttt{transform\_reduce()}
+    \item \textbf{2019-02-12}：新增了\texttt{for\_each\_n()}算法
+    \item \textbf{2019-02-12}：新增了\texttt{sample()}算法
+    \item \textbf{2019-02-11}：新增了\texttt{clamp()}工具函数
+    \item \textbf{2019-02-03}：新增了执行策略和并行算法的列表
+    \item \textbf{2019-02-02}：新增了\texttt{to\_chars()}和\texttt{from\_chars()}的双向支持
+    \item \textbf{2019-01-11}：新增了并行算法中带有性能测量的新示例
+    \item \textbf{2018-12-26}：新增了\texttt{std::variant<>}实现多态
+    \item \textbf{2018-12-25}：新增了用于结构化绑定的\texttt{std::tie()}
+    \item \textbf{2018-12-24}：新增了Boyer-Moore(-Horspool)搜索器
+    \item \textbf{2018-11-24}：新增了泛型\texttt{size()}、\texttt{empty()}、\texttt{data()}
+    \item \textbf{2018-10-14}：发布了一个带有一些修正和改进的\textbf{新的电子版本}
+    \item \textbf{2018-08-14}：新增了多态内存资源(pmr)
+    \item \textbf{2018-08-07}：新增了\texttt{as\_const()}
+    \item \textbf{2018-07-15}：完成了文件系统库章节
+    \item \textbf{2018-05-30}：新增了\texttt{scoped\_lock}和\texttt{shared\_mutex}
+    \item \textbf{2018-05-29}：新增了\texttt{is\_always\_lock\_free()}和硬件相关的大小
+    \item \textbf{2018-05-28}：新增了带有占位符的可变参数模板
+    \item \textbf{2018-05-27}：新增了不完全类型的容器支持
+    \item \textbf{2018-05-11}：新增了关联和无序容器的节点句柄
+    \item \textbf{2018-05-11}：新增了第一个完全受支持的在文件系统中使用并行算法的示例
+    \item \textbf{2018-04-04}：开始有关（新的）并行算法的初步介绍
+    \item \textbf{2018-04-03}：改进了\texttt{std::optional<>}章节、新增了更多关于文件系统库的内容
+    \item \textbf{2018-03-15}：发布了一个带有一些修正的\textbf{新的电子版本}
+    \item \textbf{2018-01-12}：发布了一个带有一些修正和改进的\textbf{新的电子版本}
+    \item \textbf{2018-01-11}：新增了新的属性特性
+    \item \textbf{2018-01-03}：新增了新的属性
+    \item \textbf{2018-01-02}：新增了处理超对齐数据的\texttt{new}和\texttt{delete}
+    \item \textbf{2017-12-25}：发布了一个带有一些修正和改进的\textbf{新的电子版本}
+    \item \textbf{2017-12-24}：新增了异常声明变为类型的一部分
+    \item \textbf{2017-12-23}：新增了UTF-8字符字面量的\texttt{u8}前缀
+    \item \textbf{2017-12-22}：新增了十六进制浮点数字面数量
+    \item \textbf{2017-12-15}：发布了\textbf{第一个电子版本}
+\end{itemize}
+
+
+\section{致谢}
+首先我想感谢你们，C++社区。是你们让这本书成为了可能。
+新特性的巧妙设计、很有帮助的反馈和好奇心是让C++向一门成功语言进化的基础。
+特别地，感谢你们告诉我和向我解释的所有问题，感谢你们给出的反馈。
+
+我也特别感谢所有审阅了这本书草稿或相应幻灯片的人，感谢你们提供的宝贵反馈和说明。
+这些审阅显著提高了这本书的质量，并且再一次证明了好的东西需要许多“智者”的参与。
+到目前为止（列表还在增长中），非常感谢Roland Bock、Marshall Clow、Matthew Dodkins、
+Javier Estrada、Andreas Fertig、Bartlomiej Filipek、Davis Herring、Tom Honermann、
+Thomas、Köppe、Daniel Krügler、Graham Haynes、Austin McCartney、Alex Nash、
+Billy O’Neal、Paul Reilly、Barry Revzin、Vittorio Romeo、David Sankel、Tim Song、
+Zachary Turner和Tony Van Eerd。
+
+另外，我还想再感谢C++社区和C++标准委员会中的每一个人。
+除了为新的语言和库特性做出的努力之外，这些专家们还花费了很多很多时间来
+向我解释和讨论他们的工作，他们是如此的耐心和热情。
+
+特别感谢\LaTeX 社区设计出这一套优秀的排版系统，
+也特别感谢Frank Mittelbach解决了我的\LaTeX 的问题（这些问题几乎都是我的错误导致的）。
+
+最后，非常感谢我的校对Tracey Duffy，他付出了巨大的努力来把我的“德式英语”改写为本地英语。

@@ -1,6 +1,6 @@
 # C++17完全指南
 
-本书为《C++17 the complete guide》by Nicolai M. Josuttis的个人中文翻译版，
+本书为《C++17 the complete guide》(第一版) by Nicolai M. Josuttis的个人中文翻译版，
 仅供学习和交流使用，如有侵权请联系作者删除
 
 ## 以下为英文原版购买地址

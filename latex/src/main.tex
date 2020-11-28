@@ -76,10 +76,18 @@ title       = #1,       % 标题格式
 % Document
 \begin{document}
     \frontmatter
+    \setcounter{secnumdepth}{0}
     \pagestyle{front}
+    \phantomsection
+    \pdfbookmark[0]{目录}{\indexname}
     \tableofcontents
 
+    \include{preface}
+    \include{translator}
+    \include{about}
+
     \mainmatter
+    \setcounter{secnumdepth}{2}
     \pagestyle{main}
 
 
