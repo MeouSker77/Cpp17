@@ -169,7 +169,7 @@
     MyInt i4 = {42};    // 仍然ERROR
 
     // 带有默认底层类型的有作用域枚举
-    enmu class Weekday { mon, tue, wed, thu, fri, sat, sun };
+    enum class Weekday { mon, tue, wed, thu, fri, sat, sun };
     Weekday s1{0};      // 自从C++17起OK（C++17以前ERROR）
     Weekday s2 = 0;     // 仍然ERROR
     Weekday s3(0);      // 仍然ERROR
@@ -386,7 +386,7 @@ US-ASCII编码，而运行字符集通常是相同的。这意味着在任何C++
 \end{lstlisting}
 
 \subsubsection{对泛型库的影响}
-将\texttt{noexcept}做为类型类型的一部分意味着会对泛型库产生一些影响。例如，下面的代码
+将\texttt{noexcept}做为类型的一部分意味着会对泛型库产生一些影响。例如，下面的代码
 直到C++14是有效的，但从C++17起不能再通过编译：
 \inputcodefile{lang/noexceptcalls.cpp}
 问题在于自从C++17起\texttt{f1()}和\texttt{f2()}的类型不再相同，
