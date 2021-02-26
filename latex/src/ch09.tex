@@ -503,7 +503,7 @@ C++标准库中\hyperref[ch9.2.6]{为pair和tuple提供了相应的推导指引}
         Ptr(T) { std::cout << "Ptr(T)\n"; }
         template<typename U>
         Ptr(U) { std::cout << "Ptr(U)\n"; }
-    }
+    };
 
     template<typename T>
     explicit Ptr(T) -> Ptr<T*>;
