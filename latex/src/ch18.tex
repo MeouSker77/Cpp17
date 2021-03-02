@@ -160,7 +160,7 @@
     if (to_integer<bool>(b2)) ...       // ERROR（ADL在这里不生效）
     if (std::to_integer<bool>(b2)) ...  // OK
 \end{lstlisting}
-另一个例子使用它的例子是\hyperref[ch18.2.2.2]{\texttt{std::byte} I/O}。
+另一个使用它的例子是\hyperref[ch18.2.2.2]{\texttt{std::byte} I/O}。
 
 \texttt{to\_integer<>()}使用\texttt{static\_cast}来把\texttt{unsigned char}
 转换为目标类型。例如：
