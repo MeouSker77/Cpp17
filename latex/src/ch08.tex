@@ -334,7 +334,7 @@ US-ASCII编码，而运行字符集通常是相同的。这意味着在任何C++
 重载一个签名完全相同只有异常声明不同的函数是不允许的（就像不允许重载只有返回值不同的函数一样）：
 \begin{lstlisting}
     void f3();
-    void f3(); noexcept;        // ERROR
+    void f3() noexcept;     // ERROR
 \end{lstlisting}
 注意其他的规则不受影响。例如，你仍然不能忽略基类中的\texttt{noexcept}声明：
 \begin{lstlisting}
