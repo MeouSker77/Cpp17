@@ -15,6 +15,9 @@
 ### pdf 版（推荐）
 [点此下载](latex/out/main.pdf)
 
+注:直接在github中点击上方链接大概率会显示“something went wrong”，可以点击
+Download按钮下载之后在本地打开。
+
 ### markdown 版目录
 - 第一部分 基本语言特性
   - [第一章 结构化绑定](markdown/src/ch01.md)
