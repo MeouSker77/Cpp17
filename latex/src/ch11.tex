@@ -357,7 +357,7 @@ C++17允许我们这么写：
 有了这些定义，我们现在可以轻易的定义出一个新的哈希函数，
 并将这个函数用于某一个类型例如\texttt{Customer}的unordered set或unordered map：
 \begin{lstlisting}
-    sturct CustomerHash
+    struct CustomerHash
     {
         std::size_t operator() (const Customer& c) const {
             return combinedHashValue(c.getFirstname(), c.getLastname(), c.getValue());

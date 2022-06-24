@@ -15,8 +15,9 @@
 ### pdf 版（推荐）
 [点此下载](latex/out/main.pdf)
 
-注:直接在github中点击上方链接大概率会显示“something went wrong”，可以点击
-Download按钮下载之后在本地打开。
+注:
+- 直接在github中点击上方链接大概率会显示“something went wrong”，可以点击Download按钮下载之后在本地打开。
+- 貌似latex默认并不会嵌入用到的字体，如果pdf打开之后某一种字体看起来怪怪的，那大概率是缺少对应的字体，本书用到的字体有宋体、楷体、Times New Roman、Consolas
 
 ### markdown 版目录
 - 第一部分 基本语言特性
