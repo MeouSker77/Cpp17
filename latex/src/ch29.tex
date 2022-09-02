@@ -542,7 +542,7 @@ resource}使用了默认的分配器，它会把使用\texttt{new}分配内存�
     或者\texttt{keeppool}初始化之前用\texttt{set\_default\_resource()}设置的默认资源
     释放内存的方式）释放。
 \end{itemize}
-如果我们在这个程序中引入第3个追踪器，我们还可以追踪对象什么时候从\texttt{synpool}中
+如果我们在这个程序中引入第3个追踪器，我们还可以追踪对象什么时候从\texttt{syncpool}中
 分配和释放内存：
 \begin{lstlisting}
     // 追踪所有sync pool和mono pool中的调用：

@@ -554,7 +554,7 @@ C++17为一些标准库结构体（例如\hyperref[insert节点句柄]{\texttt{i
     template<std::size_t> decltype(auto) get(Customer&& c);
     template<> decltype(auto) get<0>(const Customer& c) { return c.firstname(); }
     template<> decltype(auto) get<0>(Customer& c) { return c.firstname(); }
-    template<> decltype(auto) get<0>(Customer&& c) { return c.firstname(); }
+    template<> decltype(auto) get<0>(Customer&& c) { return std::move(c.firstname()); }
     template<> decltype(auto) get<1>(const Customer& c) { return c.lastname(); }
     template<> decltype(auto) get<1>(Customer& c) { return c.lastname(); }
     ...
