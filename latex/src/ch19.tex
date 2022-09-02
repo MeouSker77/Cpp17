@@ -489,7 +489,7 @@ C++标准库保证值相同的字符串和字符串视图的哈希值相同。
 \end{lstlisting}
 一个操作数必须是string：
 \begin{lstlisting}
-    auto s2 = std::string(sv1) + sv2;   // OK
+    auto s2 = std::string(sv1) + std::string(sv2);   // OK
 \end{lstlisting}
 注意字符串视图没有到string的隐式类型转换，因为这个过程需要分配内存，开销很大。
 所以必须使用显式的转换。

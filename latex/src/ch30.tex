@@ -353,7 +353,6 @@
             std::cout << "MyType32::new() with size " << size
                       << " and alignment " << static_cast<std::size_t>(align) << '\n';
             return ::operator new(size, align);
-            ::operator delete(p);
         }
         ...
     };
@@ -440,9 +439,9 @@
     MyType32* p2 = new(std::align_val_t{64}) MyType32{};
     ...
     p1->~basic_string();
-    ::operator delete(p2, std::align_val_t{64});            // !!!
+    ::operator delete(p1, std::align_val_t{64});            // !!!
     p2->~MyType32();
-    MyType32::operator delete(p1, std::align_val_t{64});    // !!!
+    MyType32::operator delete(p2, std::align_val_t{64});    // !!!
 \end{lstlisting}
 这意味着这个例子中的\texttt{new}表达式将会调用
 \begin{lstlisting}

@@ -14,7 +14,7 @@ public:
     }
 
     explicit Tracker(std::string p, std::pmr::memory_resource *us
-            = std::pmr::get_default_resource()) : prefix{std::move(p)}, upstream{us} {
+            = std::pmr::get_default_resource()) : upstream{us}, prefix{std::move(p)} {
     }
 private:
     void* do_allocate(size_t bytes, size_t alignment) override {

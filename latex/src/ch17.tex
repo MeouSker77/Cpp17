@@ -203,7 +203,7 @@ any\_cast<>}的模板参数，
 如果传递值来初始化，内含值的类型将是它\emph{退化}后的类型：
 \begin{lstlisting}
     std::any a2 = 42;       // a2包含int类型的值
-    std::any a3 = "hello";  // a2包含const char*类型的值
+    std::any a3 = "hello";  // a3包含const char*类型的值
 \end{lstlisting}
 为了使内部值的类型和初始值的类型不同，你需要使用\texttt{in\_place\_type}标记：
 \begin{lstlisting}

@@ -220,7 +220,7 @@
 \end{lstlisting}
 注意这种形式将不会写入前导0，这意味着对于值42，最后的结果是（假设一个\texttt{char}有8位）：
 \begin{blacklisting}
-    101010
+    00101010
     // 译者注：此处原文写的是
     // 1111110
     // 应是作者笔误
@@ -234,7 +234,7 @@
         std::bitset<std::numeric_limits<unsigned char>::digits> bs;
         strm >> bs;
         // 如果没有失败就转换为std::byte：
-        if (!std::cin.fail()) {
+        if (!strm.fail()) {
             b = static_cast<std::byte>(bs.to_ulong());  // OK
         }
         return strm;
