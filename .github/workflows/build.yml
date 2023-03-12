@@ -1,0 +1,37 @@
+name: Nightly Build
+
+on:
+  schedule:
+    - cron: '0 16 * * *'
+  workflow_dispatch:
+
+jobs:
+  nightly-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: wtfjoke/setup-tectonic@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.7
+
+      - name: build pdf
+        shell: bash
+        run: |
+          # apt-get update && apt-get install -y libfuse2
+          # pip install Pygments
+          cd latex/src
+          sed '/includeonly/d' main.tex > Cpp17.tex
+          tectonic Cpp17.tex
+      - name: upload pdf file to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: latex/src/Cpp17.pdf
+          asset_name: Cpp17.pdf
+          tag: refs/tags/v1.0
+          overwrite: true
