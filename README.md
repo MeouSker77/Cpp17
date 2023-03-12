@@ -13,10 +13,10 @@
 ## 以下为中文翻译版
 
 ### pdf 版（推荐）
-[点此下载](latex/out/main.pdf)
+[点此下载](https://github.com/MeouSker77/Cpp17/releases/download/v1.0/Cpp17.pdf)
 
 注:
-- 直接在github中点击上方链接大概率会显示“something went wrong”，可以点击Download按钮下载之后在本地打开。
+- 在github中点击上方链接可能会显示“something went wrong”，可以下载之后在本地打开。
 - 貌似latex默认并不会嵌入用到的字体，如果pdf打开之后某一种字体看起来怪怪的，那大概率是缺少对应的字体，本书用到的字体有宋体、楷体、Times New Roman、Consolas
 
 ### markdown 版目录
@@ -75,3 +75,19 @@ markdown 版是用程序直接从 pdf 版转换而来，然后再进行校对和
 **因此更加推荐 pdf 版**
 
 不管是 pdf 版还是 markdown 版，如果发现错误欢迎指出，也可以自行修正之后提交PR。
+
+## 编译
+
+1. 安装`tectonic`
+2. 确保有所需字体：宋体、楷体（可选）、Times New Roman、Consolas
+3. 如果`latex/src/main.tex`中有`\includeonly{xxx}`这一行且未被注释掉（%后的内容是注释），请在编译之前删除这一行
+4. 编译pdf文件
+    ```
+    cd latex/src
+    tectonic main.tex
+    ```
+5. 生成的`main.pdf`就是最后的pdf文件
+
+- note: 如果安装`tectonic`之后`tectonic`不在`PATH`中，请把第5步中的`tectonic`替换成完整的路径
+- note: 如果希望进行替换字体或修改行距等操作，可以修改`latex/src/main.tex`
+- note: 如果所有步骤都正确操作仍编译失败，欢迎提issue
