@@ -164,7 +164,8 @@ Boyer-Moore和Boyer-Moore-Horspool算法是作为字符串搜索器开发的。�
 
 再强调一次：测试性能（速度和内存占用）提升。我注意到对于一些例子性能提升的变化更大。
 例如，使用\texttt{boyer\_moore\_searcher}能把搜索速度提高100倍（比并行算法还要快得多）。
-然而，使用\texttt{boyer\_moore\_horspool\_searcher}有时候能把速度提高50倍，但有时候
+然而，使用\\
+\texttt{boyer\_moore\_horspool\_searcher}有时候能把速度提高50倍，但有时候
 却会把速度降低2倍。一定要测试！
 
 \emph{lib/searcher2.cpp}中的代码展示了如何使用不同的搜索器在一个vector中搜索子序列，
