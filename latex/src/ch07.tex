@@ -21,7 +21,7 @@ C++17引入了新的属性，还扩展了属性的使用场景，这样可以带
     例如\texttt{malloc()}函数或者分配器的\texttt{allocate()}成员函数。
 
     然而，注意有些函数\emph{可能}会返回一个无需再处理的值。例如，程序员在调用\texttt{realloc()}函数的时候，可能
-    会有意的将参数\texttt{new_size}设为0来达到释放内存的目的，这种情况下的返回值无需之后调用\texttt{free()}函数释放。
+    会有意的将参数\texttt{new\_size}设为0来达到释放内存的目的，这种情况下的返回值无需之后调用\texttt{free()}函数释放。
     因此，如果把\texttt{realloc()}函数标记为\texttt{[[nodiscard]]}将会适得其反。
     当然，并不推荐使用\texttt{realloc()}函数释放内存，因为那是未定义行为。
     \item 有时如果没有使用返回值将导致函数行为和预期不同，一个很好的例子是\texttt{std::async()}
