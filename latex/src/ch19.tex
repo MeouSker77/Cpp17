@@ -487,7 +487,7 @@ C++标准库保证值相同的字符串和字符串视图的哈希值相同。
     std::string_view sv2 = "world";
     auto s1 = sv1 + sv2;    // ERROR
 \end{lstlisting}
-一个操作数必须是string：
+两个操作数都必须是string：
 \begin{lstlisting}
     auto s2 = std::string(sv1) + std::string(sv2);   // OK
 \end{lstlisting}
