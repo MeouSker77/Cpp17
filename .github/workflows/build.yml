@@ -15,15 +15,9 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.7
-
       - name: build pdf
         shell: bash
         run: |
-          # apt-get update && apt-get install -y libfuse2
-          # pip install Pygments
           cd latex/src
           sed '/includeonly/d' main.tex > Cpp17.tex
           tectonic Cpp17.tex
