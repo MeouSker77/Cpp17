@@ -729,8 +729,8 @@ C++17标准在标准库中引入了很多推导指引。
     std::map m1{elem1, elem2};              // 原来的C++17推导指引会ERROR
 \end{lstlisting}
 这是因为\texttt{elem1}和\texttt{elem2}会被推导为\texttt{std::pair<int, int>}，
-而推导指引需要\texttt{pair}中的第一个元素是\texttt{const}的\\
-类型，所以不能成功匹配。因此你仍然要像下面这么写：
+而推导指引需要\texttt{pair}中的第一个元素是\texttt{const}\\
+的类型，所以不能成功匹配。因此你仍然要像下面这么写：
 \begin{lstlisting}
     std::map<int, int> m1{elem1, elem2};    // OK
 \end{lstlisting}
