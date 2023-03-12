@@ -78,7 +78,7 @@ markdown 版是用程序直接从 pdf 版转换而来，然后再进行校对和
 
 ## 编译
 
-1. 安装`tectonic`
+1. 安装[`tectonic`](https://tectonic-typesetting.github.io/en-US/)
 2. 确保有所需字体：宋体、楷体（可选）、Times New Roman、Consolas
 3. 如果`latex/src/main.tex`中有`\includeonly{xxx}`这一行且未被注释掉（%后的内容是注释），请在编译之前删除这一行
 4. 编译pdf文件
