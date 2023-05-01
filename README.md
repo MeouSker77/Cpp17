@@ -19,6 +19,12 @@
 - 在github中点击上方链接可能会显示“something went wrong”，可以下载之后在本地打开。
 - 貌似latex默认并不会嵌入用到的字体，如果pdf打开之后某一种字体看起来怪怪的，那大概率是缺少对应的字体，本书用到的字体有宋体、楷体、Times New Roman、Consolas
 
+### epub 版
+[点此下载](https://github.com/MeouSker77/Cpp17/releases/download/v1.0-epub/C++17.epub)
+
+注：
+- epub版由@wizardforcel提供，感谢贡献。
+
 ### markdown 版目录
 - 第一部分 基本语言特性
   - [第一章 结构化绑定](markdown/src/ch01.md)
