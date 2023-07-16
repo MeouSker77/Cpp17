@@ -11,7 +11,7 @@ struct MyVisitor
         std::cout << "string: " << s << '\n';
     }
     void operator() (long double d) const {
-        std::cotu << "double: " << d << '\n';
+        std::cout << "double: " << d << '\n';
     }
 };
 
