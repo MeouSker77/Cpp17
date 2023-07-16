@@ -311,7 +311,7 @@ initializer\_list<>}：
 赋值操作和\texttt{emplace()}函数可以修改值：
 \begin{lstlisting}
     std::variant<int, int, std::string> var; // 设置第一个int为0，index()==0
-    var == "hello";         // 设置string选项，index()==2
+    var = "hello";          // 设置string选项，index()==2
     var.emplace<1>(42);     // 设置第二个int，index()==1
 \end{lstlisting}
 注意\texttt{operator=}将会直接赋予variant一个新值，只要有和新值类型对应的选项。
