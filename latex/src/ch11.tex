@@ -285,7 +285,7 @@ C++17允许我们这么写：
 也就是说，你现在可以简单写出如下实现：
 \begin{lstlisting}
     template<typename... Types>
-    void callFoo(const Types&... args)
+    void callFoo(Types&&... args)
     {
         ...
         (... , foo(args));  // 调用foo(arg1)，foo(arg2)，foo(arg3)，...
@@ -422,11 +422,11 @@ C++17允许我们这么写：
 \inputcodefile{tmpl/ishomogeneous.hpp}
 类型特征\texttt{IsHomogeneous<>}可以像下面这样使用：
 \begin{lstlisting}
-    IsHomogeneous<int, MyType, decltype(42)>::value
+    IsHomogeneous<int, Size, decltype(42)>::value
 \end{lstlisting}
 这种情况下，折叠表达式将会展开为：
 \begin{lstlisting}
-    std::is_same_v<int, MyType> && std::is_same_v<int, decltype(42)>
+    std::is_same_v<int, Size> && std::is_same_v<int, decltype(42)>
 \end{lstlisting}
 函数模板\texttt{isHomogeneous<>()}可以像下面这样使用：
 \begin{lstlisting}
