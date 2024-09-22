@@ -73,7 +73,8 @@ variant没有空的状态。这意味着每一个构造好的variant对象，至
 \subsubsection{\texttt{std::monostate}}\label{ch16.2.1}
 为了支持第一个类型没有默认构造函数的variant，C++标准库提供了一个特殊的辅助类：
 \texttt{std::monostate}。\texttt{std::monostate}类型的对象总是处于相同的状态。
-因此，比较它们的结果总是相等。它们自己的目的是表示替代类型，以便variant\emph{没有其他任何类型的值}。
+因此，比较它们的结果总是相等。它唯一的作用是可以作为一个选项，当variant处于这个选项时表示
+此variant\emph{没有其他任何类型的值}。
 
 因此，\texttt{std::monostate}可以作为第一个选项类型来保证variant能默认构造。例如：
 \begin{lstlisting}
