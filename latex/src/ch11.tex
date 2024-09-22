@@ -285,7 +285,7 @@ C++17允许我们这么写：
 也就是说，你现在可以简单写出如下实现：
 \begin{lstlisting}
     template<typename... Types>
-    void callFoo(Types&&... args)
+    void callFoo(const Types&... args)
     {
         ...
         (... , foo(args));  // 调用foo(arg1)，foo(arg2)，foo(arg3)，...
